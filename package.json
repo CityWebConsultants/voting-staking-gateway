@@ -32,7 +32,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "webpack": "webpack --display-error-details",
     "babel": "babel --plugins transform-async-to-generator ui/src/EthPaymentGateway.js --out-file ui/src/EthPaymentGateway-transpiled.js",
-    "build": "babel --plugins transform-async-to-generator ui/src/EthPaymentGateway.js --out-file ui/src/EthPaymentGateway-transpiled.js && webpack --display-error-details"
+    "build": "babel --plugins transform-async-to-generator ui/src/EthPaymentGateway.js --out-file ui/src/EthPaymentGateway-transpiled.js && webpack --display-error-details",
+    "deploy" : "npm run build && npm run purge && npm run truff",
+    "purge" : "rm build/contracts/*.json -f",
+    "truff" : "truffle deploy"
   },
   "repository": {
     "type": "git",

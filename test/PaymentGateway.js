@@ -7,4 +7,6 @@ contract('PaymentGatewayContract', function(accounts){
         });
 
     });
-});
+}); 
+
+
