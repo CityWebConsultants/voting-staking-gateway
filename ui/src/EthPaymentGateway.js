@@ -1,9 +1,12 @@
+import { EthPaymentGatewayBase, promisify } from "./EthPaymentGatewayBase";
+
 export class EthPaymentGateway{
     constructor(network, contractAddress){
         this.web3Instance = new Web3(new Web3.providers.HttpProvider(network));
         this.contractAddress = contractAddress;
         this.priceDiscoveryUrl = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=GBP";
         this.contractAbiUrl = "http://127.0.0.1/src/gateway-contract-abi.json";
+        this.gatewayBase = new EthPaymentGatewayBase(network, contractAddress);
     }    
 
     async makePayment(merchant, ether, reference){
@@ -50,7 +53,6 @@ export class EthPaymentGateway{
 
     async setTokenContractAddress(address){
         let contract = await this.getContract();
-        console.log("set token contract address to:" + address);
         var result = await contract.setTokenContract(address);
         return result;        
     }
@@ -62,7 +64,6 @@ export class EthPaymentGateway{
     }
 
     async addMerchant(address, name){
-        console.log("add merchant");
         let contract = await this.getContract();
         var result = await contract.addMerchant(address, name);
         return result;
@@ -121,7 +122,7 @@ export class EthPaymentGateway{
         let contract = await this.getContract();
         let eventsCallback = null;
         if(eventType == EventType.PaymentMadeEvent){
-            eventsCallback = this.promisify(cb => contract.PaymentMadeEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb));
+            eventsCallback = promisify(cb => contract.PaymentMadeEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb));
         }
         if(eventType == EventType.WithdrawPaymentEvent){
             eventsCallback = this.promisify(cb => contract.WithdrawPaymentEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb));
@@ -141,7 +142,6 @@ export class EthPaymentGateway{
         let eventArray = [];
         for(let e = 0; e < events.length; e++){
             let event = events[e];
-            console.log(event);
             eventArray.push(this.withdrawalRecord(event));
         }
         return eventArray;          

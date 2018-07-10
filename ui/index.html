@@ -207,10 +207,9 @@
 </div>
 
     <script>      
-            var gatewayyy;
-            const paymentContractAddress = "0xfb84392134924982cf29bc3a05bcea8c2090cbdc";
-            const tokenContractAddress = "0xeb5e4bb110e14b66b5a020bf29c1dc2cdd158809";
-
+            const paymentContractAddress = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
+            const tokenContractAddress = "0xe186255319a4c5354e57ae553811498a5129e790";
+            const network = "http://localhost:7545";
 
             function EthPaymentGatewayViewModel(){
                 var self = this;
@@ -231,8 +230,7 @@
                 self.tokenPaymentRef = ko.observable("");
                 self.noOfTokens = ko.observable(0);
 
-                self.gateway = new EthPaymentGatewayLib.EthPaymentGateway("http://localhost:7545", paymentContractAddress);
-                gatewayyy = self.gateway;
+                self.gateway = new EthPaymentGatewayLib.EthPaymentGateway(network, paymentContractAddress);
 
                 self.calculatePrice = async function(){
                     let price = await self.gateway.getCostInWeiFromCostInGbp(self.itemPrice());
@@ -240,7 +238,7 @@
                 }
 
                 self.addMerchant = async function(){
-                    console.log("event click");
+                    console.log("add merchant");
                     var result = await self.gateway.addMerchant(self.merchantAddress());
                     console.log(result);
                 }
