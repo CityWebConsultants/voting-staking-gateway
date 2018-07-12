@@ -5,24 +5,36 @@ var pump = require('pump');
 
 gulp.task('client', function(cb){
     pump([ 
-        gulp.src('src/ts/EthPaymentGatewayClient.ts'),
+        gulp.src('web/src/ts/EthPaymentGatewayClient.ts'),
         ts({
-            noImplicitAny: true,
+            noImplicitAny: false,
             outFile: 'gateway-client.js'
         }),
         uglify(),
-        gulp.dest('src/js')
+        gulp.dest('web/src/js')
+    ], cb);
+});
+
+gulp.task('merchant', function(cb){
+    pump([ 
+        gulp.src('web/src/ts/EthPaymentGatewayMerchant.ts'),
+        ts({
+            noImplicitAny: false,
+            outFile: 'gateway-merchant.js'
+        }),
+        uglify(),
+        gulp.dest('web/src/js')
     ], cb);
 });
 
 gulp.task('admin', function(cb){
     pump([ 
-        gulp.src('src/ts/EthPaymentGatewayAdmin.ts'),
+        gulp.src('web/src/ts/EthPaymentGatewayAdmin.ts'),
         ts({
-            noImplicitAny: true,
+            noImplicitAny: false,
             outFile: 'gateway-admin.js'
         }),
         uglify(),
-        gulp.dest('src/js')
+        gulp.dest('web/src/js')
     ], cb);
 });

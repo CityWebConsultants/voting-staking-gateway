@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css" />
+    <script type="text/javascript" src="js/knockout-min.js"></script>
+    <script type="text/javascript" src="js/web3.min.js"></script>
+    <script type="text/javascript" src="js/gateway-admin.js"></script>
+
+    <title>Testing Eth Payment Gateway - Admin</title>
+</head>
+<body>
+<div class="container">
+    <h2>Eth Payment Gateway - test</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Price conversion</h5>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">£</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: itemPrice" aria-label="Amount (in GBP)">
+                <span class="input-group-text"> --- </span>
+                <input type="text" class="form-control" disabled data-bind="value: priceInEth" aria-label="Amount (in Ether)">                
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: calculatePrice}">Get Ether price</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script type="text/javascript">
+    function EthPaymentGatewayAdminViewModel(){
+        var self = this;
+        self.itemPrice = ko.observable(0);
+        self.priceInEth = ko.observable(0);
+        
+        self.gateway = new EthPaymentGateway.EthPaymentGatewayAdmin();
+
+        self.calculatePrice = async function(){
+            let price = await self.gateway.getCostInWeiFromCostInGbp(self.itemPrice());
+            self.priceInEth(price);
+        }        
+    }
+
+    ko.applyBindings(new EthPaymentGatewayAdminViewModel())
+</script>
+</body>
+</html>

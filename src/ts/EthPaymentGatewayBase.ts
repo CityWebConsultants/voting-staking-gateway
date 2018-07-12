@@ -1,4 +1,7 @@
 var Web3: any;
+var Promise: any;
+
+const priceDiscoveryUrl = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=GBP";
 
 namespace EthPaymentGateway{
     export class EthPaymentGatewayBase{
@@ -22,6 +25,22 @@ namespace EthPaymentGateway{
             return data.abi;
         }     
 
+
+        /*
+            Utility methods
+        */
+
+        async getCostInWeiFromCostInGbp(amountInGbp: number){
+            let response = await fetch(priceDiscoveryUrl);
+            let data = await response.json();
+            let price = this.calculateCost(amountInGbp, data.GBP);
+            return price;
+        }      
+        
+        calculateCost(unitCostPerItem: number, unitsPerEth: number){
+            let costInEth = unitCostPerItem / unitsPerEth;
+            return costInEth;
+        }         
     }
 
     export class GatewayConfigObject{
@@ -38,6 +57,18 @@ namespace EthPaymentGateway{
             this.tokenAddress = tokenAddress;
             this.tokenContractAbiUrl = tokenContractAbiUrl;            
         }
+    }
+
+    export function promisify(inner: any){
+        return new Promise((resolve: any, reject: any) =>
+                    inner((err: any, res: any) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(res);
+                        }
+                    })
+        ); 
     }
 }
 

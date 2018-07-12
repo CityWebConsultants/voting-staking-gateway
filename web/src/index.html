@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <link type="text/css" rel="stylesheet" href="contents/bootstrap.min.css" />
+    <script type="text/javascript" src="contents/knockout-min.js"></script>
+    <script type="text/javascript" src="contents/web3.min.js"></script>
+    <script type="text/javascript" src="contents/gateway.js"></script>
+
+    <title></title>
+</head>
+<body>
+<div class="container">
+    <h2>Eth Payment Gateway - test</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Price conversion</h5>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">£</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: itemPrice" aria-label="Amount (in GBP)">
+                <span class="input-group-text"> --- </span>
+                <input type="text" class="form-control" disabled data-bind="value: priceInEth" aria-label="Amount (in Ether)">                
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: calculatePrice}">Get Ether price</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Add merchant</div>
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Merchant address</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: merchantAddress"/>
+            </div>
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: addMerchant}">Add merchant</button>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Make payment</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Merchant address</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: paymentAddress"/>
+            </div>
+            </br>            
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Amount to pay</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: priceInEth"/>
+            </div>   
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Reference</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: paymentRef"/>
+                </div>                      
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: makePayment}">Make payment</button>        
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Make payment in tokens</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Merchant address</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: tokenPaymentAddress"/>
+            </div>
+            </br>            
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Amount to pay</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: noOfTokens"/>
+            </div>   
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Reference</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: tokenPaymentRef"/>
+                </div>                      
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: makePaymentUsingTokens}">Make payment</button>        
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Withdrawals</div>
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Merchant address</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: withdrawalAddress"/>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: withdrawMerchant}">withdraw</button>  
+                    </div>
+                </div>
+                <br>
+                <button type="button" class="btn btn-lg btn-outline-secondary" data-bind="event: { click: withdrawGatewayFees}">withdraw gateway fees</button>  
+                <br>
+                <button type="button" class="btn btn-lg btn-outline-secondary" data-bind="event: { click: getGatewayWithdrawalHistory}">get gateway withdrawal history</button>     
+                <br>
+                <button type="button" class="btn btn-lg btn-outline-secondary" data-bind="event: { click: getMerchantWithdrawalHistory}">get merchant withdrawal history</button>                               
+        </div>
+
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Check payment</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Tx Hash</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: txHash"/>
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: checkTxStatus}">Check Status</button>  
+                </div>                
+            </div>
+
+
+
+        </div>
+
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Check using merchant and ref</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Merchant address</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: lookupMerch"/>
+            </div>
+            </br>            
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Reference</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: lookupRef"/>
+            </div> 
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: checkPayment}">Check payment</button>  
+            
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Set token contract</div>
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Contract address</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: tokenContractAddress"/>
+            </div>
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: setTokenContractAddress }">Set token contract address</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Issue tokens</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Recipient address</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: tokenRecipientAddress"/>
+            </div>
+            </br>            
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">No of tokens</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: tokenAmountToIssue"/>
+            </div> 
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: issueTokens}">Check payment</button>  
+        </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getTokenIssueEvents}">Check token issue events</button> 
+        </br>
+        <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getBalance}">Check token balance</button>            
+        </div>
+    </div>    
+
+</div>
+
+    <script>      
+            const paymentContractAddress = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
+            const tokenContractAddress = "0xe186255319a4c5354e57ae553811498a5129e790";
+            const network = "http://localhost:7545";
+
+            function EthPaymentGatewayViewModel(){
+                var self = this;
+                self.itemPrice = ko.observable(100);
+                self.priceInEth = ko.observable(0);
+                self.paymentRef = ko.observable("");
+                self.txRef = ko.observable("");
+                self.merchantAddress = ko.observable("");                
+                self.paymentAddress = ko.observable("");
+                self.withdrawalAddress = ko.observable("");
+                self.txHash = ko.observable("");
+                self.lookupMerch = ko.observable("")
+                self.lookupRef = ko.observable("")
+                self.tokenContractAddress = ko.observable("");
+                self.tokenRecipientAddress = ko.observable("");
+                self.tokenAmountToIssue = ko.observable(0);
+                self.tokenPaymentAddress = ko.observable("");
+                self.tokenPaymentRef = ko.observable("");
+                self.noOfTokens = ko.observable(0);
+
+                self.gateway = new EthPaymentGatewayLib.EthPaymentGateway(network, paymentContractAddress);
+
+                self.calculatePrice = async function(){
+                    let price = await self.gateway.getCostInWeiFromCostInGbp(self.itemPrice());
+                    self.priceInEth(price);
+                }
+
+                self.addMerchant = async function(){
+                    console.log("add merchant");
+                    var result = await self.gateway.addMerchant(self.merchantAddress());
+                    console.log(result);
+                }
+
+                self.makePayment = async function(){
+                    console.log("make payment");
+                    var result = await self.gateway.makePayment(self.paymentAddress(), self.priceInEth(), self.paymentRef());
+                    console.log("payment made");
+                    console.log(result);
+                }
+
+                self.withdrawMerchant = async function(){
+                    console.log("withdraw for merchant");
+                    let tx = await self.gateway.withdrawMerchantBalance(self.withdrawalAddress());
+                    console.log(tx);
+                }
+
+                self.withdrawGatewayFees = async function(){
+                    console.log("withdraw gateway fees");
+                    let tx = await self.gateway.withdrawGatewayFees();
+                    console.log(tx);                    
+                }
+
+                self.checkTxStatus = async function(){
+                    console.log("checking status of tx:" + self.txHash());
+                    let status = await self.gateway.getPaymentReceivedStatusFromHash(self.txHash());
+                    console.log(status);
+                }
+
+                self.checkPayment = async function(){
+                    console.log("Checking payment status:" + self.lookupMerch() + ", " + self.lookupRef());
+                    let status = await self.gateway.getPaymentStatusFromMerchantAndReference(self.lookupMerch(), self.lookupRef());
+                    console.log(status);                    
+                }
+
+                self.getMerchantWithdrawalHistory = async function(){
+                    console.log("getting merchant withdrawal history...");
+                    let withdrawals = await self.gateway.getMerchantWithdrawalHistory();
+                    console.log(withdrawals);
+                }                
+
+                self.getGatewayWithdrawalHistory = async function(){
+                    console.log("getting gateway withdrawal history...");
+                    let withdrawals = await self.gateway.getGatewayWithdrawalHistory();
+                    console.log(withdrawals);
+                }
+
+                self.setTokenContractAddress = async function(){
+                    console.log("setting token contract address");
+                    let addressSet = await self.gateway.setTokenContractAddress(tokenContractAddress);
+                    let ethPaymentGatewayToken = new EthPaymentGatewayLib.EthPaymentGatewayToken("http://localhost:7545", tokenContractAddress);
+                    let setpaymentresult = await ethPaymentGatewayToken.setPaymentContractAddress(paymentContractAddress);
+                    console.log("contract address set");                    
+                }
+
+                self.issueTokens = async function(){
+                    console.log("issue tokens");
+                    let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
+                    console.log("tokens issued");
+                }
+
+                self.getTokenIssueEvents = async function(){
+                    console.log("token issue events..");
+                    let ethPaymentGatewayToken = new EthPaymentGatewayLib.EthPaymentGatewayToken("http://localhost:7545",tokenContractAddress);
+                    let events = await ethPaymentGatewayToken.getTokenIssueEvents();
+                    console.log(events);
+                }
+
+                self.getBalance = async function(){
+                    console.log("Get balance...");
+                    let ethPaymentGatewayToken = new EthPaymentGatewayLib.EthPaymentGatewayToken("http://localhost:7545", tokenContractAddress);
+                    let bal = await ethPaymentGatewayToken.getBalance(self.tokenRecipientAddress());
+                    console.log(bal);
+                }
+
+                self.makePaymentUsingTokens = async function(){
+                    console.log("pay with tokens...");
+                    let result = await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress(), self.tokenPaymentRef(), self.noOfTokens());
+                    console.log(result);
+                }
+            }
+            
+            ko.applyBindings(new EthPaymentGatewayViewModel())
+        </script>    
+</body>
+</html>
