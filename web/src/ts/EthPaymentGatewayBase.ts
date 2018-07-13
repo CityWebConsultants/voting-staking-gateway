@@ -1,7 +1,6 @@
 ///<reference path="EthPaymentGatewayModels.ts"/>
 
 var Web3: any;
-var Promise: any;
 
 const priceDiscoveryUrl: string = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=GBP";
 
@@ -47,7 +46,7 @@ namespace EthPaymentGateway{
                 return paymentStatus(null);
             }         
     
-            var blockNumber: number = txReceipt.blockNumber;
+            let blockNumber: number = txReceipt.blockNumber;
             let events: any = await this.getEventsFromBlocks(EventType.PaymentMadeEvent, blockNumber, blockNumber);
             let event: any = this.getEventFromListUsingTxHash(events, txHash);
             return paymentStatus(event);
@@ -75,7 +74,7 @@ namespace EthPaymentGateway{
     
         async getTokenBalance(address: string){
             let contract: any = await this.getTokenContract();        
-            var result: number = await contract.balanceOf(address);
+            let result: number = await contract.balanceOf(address);
             return result;
         }      
 

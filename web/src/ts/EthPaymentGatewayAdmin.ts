@@ -26,7 +26,7 @@ namespace EthPaymentGateway{
 
         async issueTokens(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            var result: any = await contract.issueTokens(address, amount);
+            let result: any = await contract.issueTokens(address, amount);
             return result;          
         }  
 
@@ -44,13 +44,13 @@ namespace EthPaymentGateway{
 
         async setTokenContractAddress(address: string){
             let contract: any = await this.baseClass.getGatewayContract();
-            var result: any = await contract.setTokenContract(address);
+            let result: any = await contract.setTokenContract(address);
             return result;        
         }          
 
         async setPaymentContractAddress(address: string){
             let contract: any = await this.baseClass.getTokenContract();
-            var result: any = await contract.setPaymentGatewayAddress(address);
+            let result: any = await contract.setPaymentGatewayAddress(address);
             return result;
         }          
 

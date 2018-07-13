@@ -20,13 +20,13 @@ namespace EthPaymentGateway{
         async makePayment(merchant: string, ether: string, reference: string){
             let contract: any = await this.baseClass.getGatewayContract();
             let priceInWei: number = this.baseClass.web3Instance.toWei(ether, 'ether');
-            var result: any = await contract.makePayment(merchant, reference, {value : priceInWei});
+            let result: any = await contract.makePayment(merchant, reference, {value : priceInWei});
             return result;
          }
     
          async makePaymentUsingTokens(merchant: string, reference: string, tokenAmount: string){
             let contract: any = await this.baseClass.getGatewayContract();
-            var result: any = await contract.makePaymentInTokens(merchant, reference, tokenAmount);
+            let result: any = await contract.makePaymentInTokens(merchant, reference, tokenAmount);
             return result;      
          }
 

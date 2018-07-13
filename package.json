@@ -19,7 +19,6 @@
     "web3-typescript-typings": "^0.10.2"
   },
   "devDependencies": {
-    "@types/es6-promise": "^3.3.0",
     "@types/node": "^10.3.1",
     "core-js": "^2.5.7",
     "gulp": "^3.9.1",
