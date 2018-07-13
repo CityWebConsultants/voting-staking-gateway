@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css" />
+    <script type="text/javascript" src="js/knockout-min.js"></script>
+    <script type="text/javascript" src="js/web3.min.js"></script>
+    <script type="text/javascript" src="js/gateway-admin.js"></script>
+
+    <title>Testing Eth Payment Gateway - Admin</title>
+</head>
+<body>
+<div class="container">
+    <h2>Eth Payment Gateway - test</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Price conversion</h5>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">£</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: itemPrice" aria-label="Amount (in GBP)">
+                <span class="input-group-text"> --- </span>
+                <input type="text" class="form-control" disabled data-bind="value: priceInEth" aria-label="Amount (in Ether)">                
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: calculatePrice}">Get Ether price</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Add merchant</div>
+            <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Merchant address</span>
+                    </div>
+                    <input type="text" class="form-control" data-bind="value: merchantAddress"/>
+            </div>
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: addMerchant}">Add merchant</button>
+        </div>
+    </div>    
+
+    <div class="card">
+        <div class="card-body">
+            <div class="card-title">Issue tokens</div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">Recipient address</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: tokenRecipientAddress"/>
+            </div>
+            </br>            
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">No of tokens</span>
+                </div>
+                <input type="text" class="form-control" data-bind="value: tokenAmountToIssue"/>
+            </div> 
+            </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: issueTokens}">Issue tokens</button>  
+        </br>
+            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getTokenIssueEvents}">Check token issue events</button> 
+        </br>
+        <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getBalance}">Check token balance</button>            
+        </div>
+    </div>      
+</div>
+
+<script type="text/javascript">
+    function EthPaymentGatewayAdminViewModel(){
+        var self = this;
+        self.itemPrice = ko.observable(0);
+        self.priceInEth = ko.observable(0);
+        self.merchantAddress = ko.observable("");  
+        self.tokenRecipientAddress = ko.observable(""); 
+        self.tokenAmountToIssue = ko.observable(0);                      
+        
+        self.gateway = new EthPaymentGateway.EthPaymentGatewayAdmin();
+
+        self.calculatePrice = async function(){
+            let price = await self.gateway.getCostInWeiFromCostInGbp(self.itemPrice());
+            self.priceInEth(price);
+        }      
+        
+        self.addMerchant = async function(){
+                    console.log("add merchant");
+                    var result = await self.gateway.addMerchant(self.merchantAddress());
+                    console.log(result);
+                }    
+                
+        self.issueTokens = async function(){
+            console.log("issue tokens");
+            let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
+            console.log("tokens issued");
+        }
+
+        self.getTokenIssueEvents = async function(){
+            console.log("token issue events..");
+            let events = await self.gateway.getTokenIssueEvents();
+            console.log(events);
+        }
+
+        self.getBalance = async function(){
+            console.log("Get balance...");
+            let bal = await self.gateway.getTokenBalance(self.tokenRecipientAddress());
+            console.log(bal);
+        }                
+    }
+
+    ko.applyBindings(new EthPaymentGatewayAdminViewModel())
+</script>
+</body>
+</html>

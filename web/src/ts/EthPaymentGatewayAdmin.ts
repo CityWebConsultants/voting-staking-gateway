@@ -3,9 +3,9 @@
 namespace EthPaymentGateway{
     const network: string = "http://localhost:7545";
     const contractAddress: string = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
-    const contractAbiUrl: string = "http://127.0.0.1/src/gateway-contract-abi.json";
+    const contractAbiUrl: string = "http://127.0.0.1/abis/gateway-contract-abi.json";
     const tokenAddress: string = "0xe186255319a4c5354e57ae553811498a5129e790";
-    const tokenAbiUrl: string = "http://127.0.0.1/src/erc20-contract-abi.json";
+    const tokenAbiUrl: string = "http://127.0.0.1/abis/erc20-contract-abi.json";
     const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 
     export class EthPaymentGatewayAdmin{
@@ -15,55 +15,72 @@ namespace EthPaymentGateway{
             this.baseClass = new EthPaymentGatewayBase(gatewayConfig);
         }
 
-        async getCostInWeiFromCostInGbp(amountInGbp: number){
-            return await this.baseClass.getCostInWeiFromCostInGbp(amountInGbp);            
-        }
-
+        /*
+            Merchant and token administration functions
+        */
         async addMerchant(address: string, name: string){
-            let contract = await this.baseClass.getGatewayContract();
-            var result = await contract.addMerchant(address, name);
+            let contract: any = await this.baseClass.getGatewayContract();
+            let result: any = await contract.addMerchant(address, name);
             return result;
-        }    
-
-        async withdrawMerchantBalance(merchant: string){
-            return await this.baseClass.withdrawMerchantBalance(merchant);
-        }
-
-        async getTransactionReceiptFromNetwork(txHash: string){
-            return this.baseClass.getTransactionReceiptFromNetwork(txHash);
-        }        
-        
-        async getPaymentStatusFromMerchantAndReference(merchant: string, reference: string){
-            return await this.baseClass.getPaymentStatusFromMerchantAndReference(merchant, reference);
-        }
-
-        async setTokenContractAddress(address: string){
-            let contract = await this.baseClass.getGatewayContract();
-            var result = await contract.setTokenContract(address);
-            return result;        
-        }        
+        }  
 
         async issueTokens(address: string, amount: number){
-            let contract = await this.baseClass.getTokenContract();
-            var result = await contract.issueTokens(address, amount);
+            let contract: any = await this.baseClass.getTokenContract();
+            var result: any = await contract.issueTokens(address, amount);
             return result;          
         }  
 
-        async getTokenBalance(address: string){
-            return await this.baseClass.getTokenBalance(address);
-        }
+        withdrawMerchantBalance = async (merchant: string) => { return await this.baseClass.withdrawMerchantBalance(merchant); } 
 
-        async getTokenIssueEvents(){
-            let contract = await this.baseClass.getTokenContract();
-            let eventsCallback = promisify(cb => contract.IssueTokens({}, { fromBlock: 0, toBlock: 'latest' }).get(cb));
-            let events = await eventsCallback;
-            return events;          
+
+        /*
+            Gateway administration functions
+        */
+        async withdrawGatewayFees(){
+            let contract: any = await this.baseClass.getGatewayContract();
+            let tx: any = await contract.withdrawGatewayFees();
+            return tx;       
+        }  
+
+        async setTokenContractAddress(address: string){
+            let contract: any = await this.baseClass.getGatewayContract();
+            var result: any = await contract.setTokenContract(address);
+            return result;        
         }          
 
         async setPaymentContractAddress(address: string){
-            let contract = await this.baseClass.getTokenContract();
-            var result = await contract.setPaymentGatewayAddress(address);
+            let contract: any = await this.baseClass.getTokenContract();
+            var result: any = await contract.setPaymentGatewayAddress(address);
             return result;
+        }          
+
+
+        /*
+            Read or retrieve data functions
+        */       
+        getCostInWeiFromCostInGbp = async (amountInGbp: number) => { return await this.baseClass.getCostInWeiFromCostInGbp(amountInGbp); }
+
+        getTransactionReceiptFromNetwork = async (txHash: string) => { return this.baseClass.getTransactionReceiptFromNetwork(txHash); }
+
+        getPaymentStatusFromMerchantAndReference = async (merchant: string, reference: string) => { return await this.baseClass.getPaymentStatusFromMerchantAndReference(merchant, reference); }
+
+        getTokenBalance = async (address: string) => { return await this.baseClass.getTokenBalance(address); }      
+
+        async getGatewayWithdrawalHistory(){
+            let events: any = await this.baseClass.getEventsFromBlocks(EventType.WithdrawGatewayFundsEvent, 0, 'latest');
+            return this.baseClass.createWithdrawalEventArray(events);       
+        }       
+        
+        async getMerchantWithdrawalHistory(){
+            let events: any = await this.baseClass.getEventsFromBlocks(EventType.WithdrawPaymentEvent, 0, 'latest');
+            return this.baseClass.createWithdrawalEventArray(events);
         }        
+
+        async getTokenIssueEvents(){
+            let contract: any = await this.baseClass.getTokenContract();
+            let eventsCallback: any = this.baseClass.promisify(cb => contract.IssueTokens({}, { fromBlock: 0, toBlock: 'latest' }).get(cb));
+            let events: any = await eventsCallback;
+            return events;          
+        }          
     }
 }
