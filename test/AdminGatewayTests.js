@@ -9,21 +9,22 @@ var test_invalidGatewayFeeAmount = 150;
 
 contract('PaymentGatewayContract - Admin',  function(accounts){
     let gatewayContract;
+    let tokenContract;
     let merchantAddress = accounts[1];
     let clientAddress = accounts[2];
 
-    beforeEach('setup and deploy gateway contract', async function(){
-        gatewayContract = await PaymentGatewayContract.deployed();        
+    before('setup and deploy gateway contract', async function(){
+        gatewayContract = await PaymentGatewayContract.new(); 
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address);
     })
 
     /*
         Gateway Admin
     */
     it('Gateway Admin - As Owner, should be able to set the token contract address', async function(){    
-        let tokenContractAddress = await gatewayContract.getTokenContractAddress();
         let addressSet = false;
         try{
-            await gatewayContract.setTokenContract(tokenContractAddress);
+            await gatewayContract.setTokenContract(tokenContract.address);
             addressSet = true;
         }
         catch(error){}
@@ -219,11 +220,12 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
         let tokenBalance = 0;
         try{
             await gatewayContract.issueTokens(clientAddress, test_validAmountOfTokens);
-            let tokenContract = await GatewayERC20Contract.deployed();
             let balance = await tokenContract.balanceOf(clientAddress);
             tokenBalance = balance.c[0];
         }
-        catch(error){ }
+        catch(error){
+            console.log(error);
+         }
 
         assert.equal(tokenBalance, test_validAmountOfTokens, "Did not issue the correct amount of tokens.");
     });

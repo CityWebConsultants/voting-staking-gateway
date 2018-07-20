@@ -13,6 +13,7 @@
     "ethjs-abi": "^0.2.1",
     "file-loader": "^1.1.11",
     "npx": "^10.2.0",
+    "truffle-test-utils": "^0.1.0",
     "tsify": "^4.0.0",
     "uglify-js": "^3.4.4",
     "web3": "^1.0.0-beta.34",
@@ -27,7 +28,10 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-admin" : "truffle test ./test/AdminGatewayTests.js",
+    "test-merchant" : "truffle test ./test/MerchantGatewayTests.js",
+    "test-client" : "truffle test ./test/ClientGatewayTests.js",
+    "contract-tests": "npm run test-admin && npm run test-merchant && npm run test-client",
     "build": "npm run client && npm run merchant && npm run admin",
     "deploy": "npm run purge && truffle migrate --reset",
     "purge": "rm build/contracts/*.json -f",

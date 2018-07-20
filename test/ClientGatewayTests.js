@@ -1,7 +1,7 @@
 var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
 var GatewayERC20Contract = artifacts.require("GatewayERC20Contract");
 
-var test_validAmountOfWeiToPay = web3.toWei(5,'ether');
+var test_validAmountOfWeiToPay = web3.toWei(12,'ether');
 var test_invalidAmountOfWeiToPay = -10;
 var test_validPaymentReference = "ReferenceOne";
 var test_invalidPaymentReference = "";
@@ -13,8 +13,10 @@ contract('PaymentGatewayContract - Client',  function(accounts){
     let clientAddress = accounts[2];
 
     before('setup, deploy contract and add merchant', async function(){
-        gatewayContract = await PaymentGatewayContract.deployed();        
-        await gatewayContract.addMerchant(merchantAddress);
+        gatewayContract = await PaymentGatewayContract.new(); 
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address);   
+        await gatewayContract.addMerchant(merchantAddress);     
+        await gatewayContract.setTokenContract(tokenContract.address);
     })
 
     it("Payments - Given a valid merchant and reference, should be able to make payment in Eth ", async function(){
@@ -95,7 +97,6 @@ contract('PaymentGatewayContract - Client',  function(accounts){
     it("Payments with Tokens - Given a valid merchant and reference but invalid token amount, should not be able to make payment", async function(){
         let paymentUnsuccessful = false;
         try{
-            let tokenContract = await GatewayERC20Contract.deployed();
             let currentBalance = await tokenContract.balanceOf(clientAddress);
             let invalidTokenAmountToPay = currentBalance * 2;            
             await gatewayContract.makePaymentInTokens(merchantAddress,test_validPaymentReference, invalidTokenAmountToPay, {from: clientAddress} );
@@ -106,6 +107,7 @@ contract('PaymentGatewayContract - Client',  function(accounts){
 
         assert.equal(paymentUnsuccessful, true, "Made payment in tokens despite not having enough");
     });  
+    
 });
 
 

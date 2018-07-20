@@ -1,21 +1,32 @@
 var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
 
+var test_validAmountOfWeiToPay = web3.toWei(10,'ether');
+var test_validPaymentReference = "ReferenceOne";
+
 contract('PaymentGatewayContract - Merchant',  function(accounts){
     let gatewayContract;
     let merchantAddress = accounts[1];  
     let clientAddress = accounts[2];
 
-    beforeEach('setup and deploy gateway contract', async function(){
-        gatewayContract = await PaymentGatewayContract.deployed();        
+    console.log("merch:"+ merchantAddress);
+    console.log("client:"+ clientAddress);
+
+
+    before('setup and deploy gateway contract', async function(){
+        gatewayContract = await PaymentGatewayContract.new();  
+        await gatewayContract.addMerchant(merchantAddress); 
     })    
 
     it("Withdrawals - As Merchant, should be able to withdraw merchant payments", async function(){
         let withdrawalSuccessful = false;
+        
         try{
             await gatewayContract.withdrawPayment(merchantAddress, {from: merchantAddress});
             withdrawalSuccessful = true;
         }
-        catch(error){}
+        catch(error){
+            console.log(error)
+        }
 
         assert.equal(withdrawalSuccessful, true, "Withdraw merchant funds as contract merchant unsuccessful");
     });
@@ -34,9 +45,9 @@ contract('PaymentGatewayContract - Merchant',  function(accounts){
     
 
     it("Balance - As Merchant, should be able to check balance", async function(){
-        let balanceCheckSucessful = false;
+         let balanceCheckSucessful = false;
         try{
-            await gatewayContract.getMerchantBalance(merchantAddress, {from: merchantAddress});
+            let balance = await gatewayContract.getMerchantBalance(merchantAddress, {from: merchantAddress});
             balanceCheckSucessful = true;
         }
         catch(error){ }
