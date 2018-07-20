@@ -45,15 +45,16 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
     }
 
     function gatewayTokenTransfer(address from, address to, uint tokens) public
-        callerIsGatewayContract() hasSufficientBalanceForTransfer(from, tokens) returns (bool success) {
+        callerIsGatewayContract() returns (bool success) {
+        require(hasSufficientBalanceForTransfer(from, tokens));
         balances[from] = balances[from].sub(tokens);
         balances[to] = balances[to].add(tokens);
         emit Transfer(msg.sender, to, tokens);
         return true;
     }
 
-    function transfer(address to, uint tokens) public 
-        hasSufficientBalanceForTransfer(msg.sender, tokens) returns (bool success) {
+    function transfer(address to, uint tokens) public returns (bool success) {
+        require(hasSufficientBalanceForTransfer(msg.sender, tokens));
         balances[msg.sender] = balances[msg.sender].sub(tokens);
         balances[to] = balances[to].add(tokens);
         emit Transfer(msg.sender, to, tokens);
@@ -78,9 +79,8 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         _;
     }
 
-    modifier hasSufficientBalanceForTransfer(address _sender, uint _amount){
+    function hasSufficientBalanceForTransfer(address _sender, uint _amount) private view returns(bool){
         uint balance = balances[_sender];
-        require(balance >= _amount);
-        _;
+        return balance >= _amount;
     }
 }
