@@ -26,6 +26,10 @@ contract PaymentGatewayContract is Ownable{
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
     }
 
+    function getTokenContractAddress() public view returns(address){
+        return tokenContract;
+    }
+
     function issueTokens(address _recipient, uint _amount) public onlyOwner{
         tokenContract.issueTokens(_recipient, _amount);
     }
@@ -50,6 +54,7 @@ contract PaymentGatewayContract is Ownable{
 
     function makePaymentInTokens(address _merchantAddress, string _reference, uint _tokenAmount) 
         allowedToMakePayment(_merchantAddress, _reference) public{
+        require(hasSufficientTokensForTransfer(_tokenAmount));
         tokenContract.gatewayTokenTransfer(msg.sender, _merchantAddress, _tokenAmount);
         emit PaymentMadeInTokensEvent(_merchantAddress, _reference, _tokenAmount);
     }
@@ -103,7 +108,7 @@ contract PaymentGatewayContract is Ownable{
         return msg.sender == _address;
     }
 
-    function isExistingMerchant(address _merchantAddress) internal view returns (bool){
+    function isExistingMerchant(address _merchantAddress) public view returns (bool){
         return merchants[_merchantAddress].created;
     }
 
@@ -118,6 +123,11 @@ contract PaymentGatewayContract is Ownable{
 
     function keccakHash(string _input) private pure returns (bytes32){
         return keccak256(abi.encodePacked(_input));
+    }
+
+    function hasSufficientTokensForTransfer(uint _amount) private view returns(bool){
+        uint balance = tokenContract.balanceOf(msg.sender);
+        return balance >= _amount;
     }
 
     modifier allowedToMakePayment(address _merchant, string _reference){
