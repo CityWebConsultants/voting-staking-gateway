@@ -2,10 +2,10 @@
 
 namespace EthPaymentGateway{
     const network: string = "http://localhost:7545";
-    const contractAddress: string = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
-    const contractAbiUrl: string = "http://127.0.0.1/abis/gateway-contract-abi.json";
-    const tokenAddress: string = "0xe186255319a4c5354e57ae553811498a5129e790";
-    const tokenAbiUrl: string = "http://127.0.0.1/abis/erc20-contract-abi.json";
+    const contractAddress: string = "0x43a8b19e042a774d95f0ac30b11780a343b6fa0c";
+    const contractAbiUrl: string = "http://gateway.local/abis/gateway-contract-abi.json";
+    const tokenAddress: string = "0x3f9d31616f5dfc0401116df0613b56ecf89966fc";
+    const tokenAbiUrl: string = "http://gateway.local/abis/erc20-contract-abi.json";
     const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 
     export class EthPaymentGatewayAdmin{

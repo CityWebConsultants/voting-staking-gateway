@@ -6,115 +6,175 @@
     <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css" />
     <script type="text/javascript" src="js/knockout-min.js"></script>
     <script type="text/javascript" src="js/web3.min.js"></script>
-    <script type="text/javascript" src="js/gateway-admin.js"></script>
+    <script type="text/javascript" src="js/gateway-client.js"></script>
 
-    <title>Testing Eth Payment Gateway - Admin</title>
+    <title>TokenPay</title>
+    <style>
+
+        html, body {
+            background: #efefef;
+        }
+        #main-content {
+            text-align: center;
+            padding:40px 0;
+            max-width: 800px;
+            margin: auto;
+        }
+        #currency {
+            text-transform: uppercase;
+        }
+    </style>
 </head>
 <body>
+<main id="main-content">
 <div class="container">
-    <h2>Eth Payment Gateway - test</h2>
+    <h2>TokenPay</h2>
 
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Price conversion</h5>
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">£</span>
-                </div>
-                <input type="text" class="form-control" data-bind="value: itemPrice" aria-label="Amount (in GBP)">
-                <span class="input-group-text"> --- </span>
-                <input type="text" class="form-control" disabled data-bind="value: priceInEth" aria-label="Amount (in Ether)">                
-                <div class="input-group-append">
-                    <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: calculatePrice}">Get Ether price</button>
-                </div>
+            <h5 class="card-title">Make payment</h5>
+            <p>
+                <strong>Pay:</strong> <span data-bind="html: noOfTokens"></span> <span id="currency" data-bind="html: currency"></span>
+            </p>
+
+            <div id="account">
+                <p><strong>Wallet address:</strong> <span data-bind="html: walletAddress"></span></p>
+                <p><strong>Token balance:</strong> <span data-bind="html: tokenBalance"></span></p>
+            </div>
+            <div class="buttons">
+
+                    <button id="pay-button" type="button" class="btn btn-success" data-bind="event: { click: makePaymentUsingTokens}">Pay</button>  <button type="button" class="btn btn-warning" data-bind="event: { click: cancel}">Cancel</button>
+
+            </div>
+
+            <div id="status-area" style="display:none;">
+                <div>Transaction id: <span data-bind="html: txid"></span></div>
+                <div id="status-message">
+                    <img style="width:30px" src="/css/lg.pie-chart-loading-gif.gif" /> Please wait while the transaction is processed. You will be redirected automatically.</div>
             </div>
 
         </div>
 
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <div class="card-title">Add merchant</div>
-            <div class="input-group">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text">Merchant address</span>
-                    </div>
-                    <input type="text" class="form-control" data-bind="value: merchantAddress"/>
-            </div>
-            </br>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: addMerchant}">Add merchant</button>
-        </div>
-    </div>    
-
-    <div class="card">
-        <div class="card-body">
-            <div class="card-title">Issue tokens</div>
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">Recipient address</span>
-                </div>
-                <input type="text" class="form-control" data-bind="value: tokenRecipientAddress"/>
-            </div>
-            </br>            
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">No of tokens</span>
-                </div>
-                <input type="text" class="form-control" data-bind="value: tokenAmountToIssue"/>
-            </div> 
-            </br>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: issueTokens}">Issue tokens</button>  
-        </br>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getTokenIssueEvents}">Check token issue events</button> 
-        </br>
-        <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getBalance}">Check token balance</button>            
-        </div>
-    </div>      
 </div>
+</main>
 
 <script type="text/javascript">
-    function EthPaymentGatewayAdminViewModel(){
+    function EthPaymentGatewayClientViewModel(){
         var self = this;
-        self.itemPrice = ko.observable(0);
-        self.priceInEth = ko.observable(0);
-        self.merchantAddress = ko.observable("");  
-        self.tokenRecipientAddress = ko.observable(""); 
-        self.tokenAmountToIssue = ko.observable(0);                      
-        
-        self.gateway = new EthPaymentGateway.EthPaymentGatewayAdmin();
 
-        self.calculatePrice = async function(){
-            let price = await self.gateway.getCostInWeiFromCostInGbp(self.itemPrice());
-            self.priceInEth(price);
-        }      
-        
-        self.addMerchant = async function(){
-                    console.log("add merchant");
-                    var result = await self.gateway.addMerchant(self.merchantAddress());
-                    console.log(result);
-                }    
-                
-        self.issueTokens = async function(){
-            console.log("issue tokens");
-            let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
-            console.log("tokens issued");
+        var query_string = window.location.search.substring(1);;
+        var parsed_qs = parse_query_string(query_string);
+
+        self.tokenPaymentAddress = parsed_qs.merchant;
+        self.tokenPaymentRef = parsed_qs.ref;
+        self.noOfTokens = parsed_qs.total;
+        self.txid = ko.observable(0);
+        self.walletAddress = ko.observable(0);
+        self.tokenBalance = ko.observable(0);
+        self.currency = parsed_qs.type;
+        self.gateway = new EthPaymentGateway.EthPaymentGatewayClient();
+
+        self.cancel = function() {
+          window.location = parsed_qs.cancel;
         }
 
-        self.getTokenIssueEvents = async function(){
-            console.log("token issue events..");
-            let events = await self.gateway.getTokenIssueEvents();
-            console.log(events);
+        try {
+          var account = web3.eth.accounts[0];
+        }
+        catch (err ) {
+          disablePay();
         }
 
-        self.getBalance = async function(){
+        if (!account) {
+          disablePay();
+        }
+        else {
+          self.walletAddress(account);
+          self.gateway.getTokenBalance(account).then(function(returned) {
+            self.tokenBalance(returned.c);
+          });
+
+        }
+
+      var accountInterval = setInterval( async function() {
+        try {
+          if (web3.eth.accounts[0] !== account) {
+            account = web3.eth.accounts[0];
+            self.walletAddress(account);
             console.log("Get balance...");
-            let bal = await self.gateway.getTokenBalance(self.tokenRecipientAddress());
-            console.log(bal);
-        }                
+            let balance = await self.gateway.getTokenBalance(account);
+            self.tokenBalance(balance);
+            document.getElementById('pay-button').removeAttribute('disabled');
+            // console.log(bal);
+          }
+        }
+        catch (err ) {
+          disablePay();
+        }
+
+        if (!account) {
+          disablePay();
+        }
+
+      }, 100);
+
+        function disablePay() {
+          document.getElementById('pay-button').setAttribute('disabled', 'disabled');
+          self.walletAddress('<div class="alert alert-danger" role="alert">You do not have an active Ethereum account. Do you need to login into MetaMask?</div>');
+          self.tokenBalance('N\\A');
+        }
+
+
+      self.makePaymentUsingTokens = async function(){
+          console.log("pay with tokens...");
+          self.txid(await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress, self.tokenPaymentRef, parseInt(self.noOfTokens)));
+          var status = document.getElementById('status-area');
+          status.style.display = 'block';
+
+          function waitToBeMined() {
+            self.gateway.checkTransaction(self.txid() ).then(function(transaction) {
+              if (typeof transaction.blockNumber !== 'undefined') {
+                window.location = parsed_qs.return + '?txid=' + self.txid() + '&block=' + transaction.blockNumber;
+              }
+              else {
+                setTimeout(waitToBeMined, 1600);
+              }
+            });
+          }
+
+          setTimeout(waitToBeMined, 1600);
+        }
+
     }
 
-    ko.applyBindings(new EthPaymentGatewayAdminViewModel())
+    ko.applyBindings(new EthPaymentGatewayClientViewModel())
+
+    function parse_query_string(query) {
+      var vars = query.split("&");
+      var query_string = {};
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        var key = decodeURIComponent(pair[0]);
+        var value = decodeURIComponent(pair[1]);
+        // If first entry with this name
+        if (typeof query_string[key] === "undefined") {
+          query_string[key] = decodeURIComponent(value);
+          // If second entry with this name
+        } else if (typeof query_string[key] === "string") {
+          var arr = [query_string[key], decodeURIComponent(value)];
+          query_string[key] = arr;
+          // If third or later entry with this name
+        } else {
+          query_string[key].push(decodeURIComponent(value));
+        }
+      }
+      return query_string;
+    }
+
+    var query_string = "a=1&b=3&c=m2-m3-m4-m5";
+    var parsed_qs = parse_query_string(query_string);
 </script>
 </body>
 </html>
