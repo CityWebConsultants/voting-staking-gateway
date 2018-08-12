@@ -135,6 +135,7 @@
 
           function waitToBeMined() {
             self.gateway.checkTransaction(self.txid() ).then(function(transaction) {
+              console.log(transaction);
               if (typeof transaction.blockNumber !== 'undefined') {
                 window.location = parsed_qs.return + '?txid=' + self.txid() + '&block=' + transaction.blockNumber;
               }

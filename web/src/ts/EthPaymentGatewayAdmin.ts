@@ -1,11 +1,11 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
 
 namespace EthPaymentGateway{
-    const network: string = "http://localhost:7545";
-    const contractAddress: string = "0x43a8b19e042a774d95f0ac30b11780a343b6fa0c";
-    const contractAbiUrl: string = "http://gateway.local/abis/gateway-contract-abi.json";
-    const tokenAddress: string = "0x3f9d31616f5dfc0401116df0613b56ecf89966fc";
-    const tokenAbiUrl: string = "http://gateway.local/abis/erc20-contract-abi.json";
+    const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
+    const contractAddress: string = "0x6fcbf9822bcca91212ba58441ccae72aaadc9c7c";
+    const contractAbiUrl: string = "/abis/gateway-contract-abi.json";
+    const tokenAddress: string = "0x772f4e6eb507d5365e08c572b0e300f3dc074c1b";
+    const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
     const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 
     export class EthPaymentGatewayAdmin{
@@ -20,13 +20,16 @@ namespace EthPaymentGateway{
         */
         async addMerchant(address: string, name: string){
             let contract: any = await this.baseClass.getGatewayContract();
-            let result: any = await contract.addMerchant(address, name);
+            //let result: any = await contract.addMerchant(address, name);
+
+            let result = this.baseClass.promisify(cb => contract.addMerchant(address, name, cb))
             return result;
         }  
 
         async issueTokens(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            let result: any = await contract.issueTokens(address, amount);
+            //let result: any = await contract.issueTokens(address, amount);
+            let result = this.baseClass.promisify(cb => contract.issueTokens(address, amount, cb))
             return result;          
         }  
 
@@ -38,19 +41,22 @@ namespace EthPaymentGateway{
         */
         async withdrawGatewayFees(){
             let contract: any = await this.baseClass.getGatewayContract();
-            let tx: any = await contract.withdrawGatewayFees();
+            //let tx: any = await contract.withdrawGatewayFees();
+            let tx = this.baseClass.promisify(cb => contract.withdrawGatewayFees( cb));
             return tx;       
         }  
 
         async setTokenContractAddress(address: string){
             let contract: any = await this.baseClass.getGatewayContract();
-            let result: any = await contract.setTokenContract(address);
+            //let result: any = await contract.setTokenContract(address);
+            let result = this.baseClass.promisify(cb => contract.setTokenContract(address, cb));
             return result;        
         }          
 
         async setPaymentContractAddress(address: string){
             let contract: any = await this.baseClass.getTokenContract();
-            let result: any = await contract.setPaymentGatewayAddress(address);
+            //let result: any = await contract.setPaymentGatewayAddress(address);
+            let result = this.baseClass.promisify(cb => contract.setPaymentGatewayAddress(address, cb));
             return result;
         }          
 

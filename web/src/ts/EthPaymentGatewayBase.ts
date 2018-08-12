@@ -10,7 +10,9 @@ namespace EthPaymentGateway{
         gatewayConfig: GatewayConfigObject;
     
         constructor(config: GatewayConfigObject){
-            this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
+
+            //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
+            this.web3Instance = new Web3(web3.currentProvider);
             this.gatewayConfig = config;
         }     
         
@@ -36,7 +38,8 @@ namespace EthPaymentGateway{
          }         
      
         async getTransactionReceiptFromNetwork(txHash: string){
-            let txReceipt: any = await this.web3Instance.eth.getTransactionReceipt(txHash);
+            //let txReceipt: any = await this.web3Instance.eth.getTransactionReceipt(txHash);
+            let txReceipt = this.promisify(cb => this.web3Instance.eth.getTransactionReceipt(txHash, cb));
             return txReceipt;
         }     
 
@@ -73,8 +76,10 @@ namespace EthPaymentGateway{
         }
     
         async getTokenBalance(address: string){
-            let contract: any = await this.getTokenContract();        
-            let result: number = await contract.balanceOf(address);
+
+            let contract: any = await this.getTokenContract();
+            let result = this.promisify(cb => contract.balanceOf(address, cb))
+            //let result: number = await contract.balanceOf(address);
             return result;
         }      
 
@@ -84,7 +89,8 @@ namespace EthPaymentGateway{
         */
         async withdrawMerchantBalance(merchant: string){
             let contract: any = await this.getGatewayContract();
-            return await contract.withdrawPayment(merchant);
+            //return await contract.withdrawPayment(merchant);
+            return this.promisify(cb => contract.withdrawPayment(merchant, cb));
         }        
 
         
@@ -147,6 +153,7 @@ namespace EthPaymentGateway{
                             }
                         })
             ); 
-        }        
+        }
+
     }
 }
