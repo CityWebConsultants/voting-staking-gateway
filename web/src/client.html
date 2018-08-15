@@ -93,7 +93,7 @@
         else {
           self.walletAddress(account);
           self.gateway.getTokenBalance(account).then(function(returned) {
-            self.tokenBalance(returned.c);
+            self.tokenBalance(returned.c / 1000000);
           });
 
         }
@@ -105,7 +105,7 @@
             self.walletAddress(account);
             console.log("Get balance...");
             let balance = await self.gateway.getTokenBalance(account);
-            self.tokenBalance(balance);
+            self.tokenBalance(balance / 1000000);
             document.getElementById('pay-button').removeAttribute('disabled');
             // console.log(bal);
           }
@@ -126,17 +126,21 @@
           self.tokenBalance('N\\A');
         }
 
+      self.makePayment = async function(){
+        let val = await self.gateway.makePayment(self.tokenPaymentAddress, "0.1", self.tokenPaymentRef);
+      }
 
       self.makePaymentUsingTokens = async function(){
           console.log("pay with tokens...");
-          self.txid(await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress, self.tokenPaymentRef, parseInt(self.noOfTokens)));
+          let tokens = parseFloat(self.noOfTokens) * 1000000;
+          self.txid(await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress, self.tokenPaymentRef, tokens));
           var status = document.getElementById('status-area');
           status.style.display = 'block';
 
           function waitToBeMined() {
             self.gateway.checkTransaction(self.txid() ).then(function(transaction) {
               console.log(transaction);
-              if (typeof transaction.blockNumber !== 'undefined') {
+              if (typeof transaction.blockNumber !== 'undefined' && transaction.blockNumber != null) {
                 window.location = parsed_qs.return + '?txid=' + self.txid() + '&block=' + transaction.blockNumber;
               }
               else {

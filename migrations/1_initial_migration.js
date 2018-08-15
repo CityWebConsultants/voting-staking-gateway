@@ -7,8 +7,15 @@ module.exports = function(deployer) {
   var gateway;
   deployer.deploy(PaymentGatewayContract).then((g) => {
     gateway = g;
-    return deployer.deploy(GatewayERC20Contract, gateway.address);
+    return deployer.deploy(GatewayERC20Contract, gateway.address, 420000000);
   }).then((erc20) => {
     return gateway.setTokenContract(erc20.address);
   });
+
+/*  deployer.deploy(Migrations);
+  var gateway;
+  deployer.deploy(PaymentGatewayContract).then((g) => {
+    gateway = g;
+    return gateway.setTokenContract('0xf75efb606f6b0d5ed997365f86d30f40c917af0c');
+  });*/
 };

@@ -187,6 +187,24 @@ var EthPaymentGateway;
                         case 0: return [4 /*yield*/, this.getTokenContract()];
                         case 1:
                             contract = _a.sent();
+                            this.promisify(function (cb) { return contract.totalSupply(cb); }).then(function (val) {
+                                console.log('total supply: ' + val);
+                            });
+                            result = this.promisify(function (cb) { return contract.balanceOf(address, cb); });
+                            //let result: number = await contract.balanceOf(address);
+                            return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.balanceOfGateway = function (address) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getGatewayContract()];
+                        case 1:
+                            contract = _a.sent();
                             result = this.promisify(function (cb) { return contract.balanceOf(address, cb); });
                             //let result: number = await contract.balanceOf(address);
                             return [2 /*return*/, result];
@@ -309,9 +327,9 @@ var EthPaymentGateway;
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var network = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    var contractAddress = "0x6fcbf9822bcca91212ba58441ccae72aaadc9c7c";
-    var contractAbiUrl = "/abis/gateway-contract-abi.json";
-    var tokenAddress = "0x772f4e6eb507d5365e08c572b0e300f3dc074c1b";
+    var contractAddress = "0x4692387113ff47241e4b08acbe4a99ccdad4463d";
+    var contractAbiUrl = "/abis/PaymentGatewayContract.json";
+    var tokenAddress = "0x1d6181b873b2b4c6f5872817b616a0a5b591e2a3";
     var tokenAbiUrl = "/abis/erc20-contract-abi.json";
     var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
     var EthPaymentGatewayAdmin = /** @class */ (function () {
@@ -347,6 +365,12 @@ var EthPaymentGateway;
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             }); }); };
+            this.balanceOfGateway = function (address) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseClass.balanceOfGateway(address)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            }); }); };
             this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase(gatewayConfig);
         }
         /*
@@ -371,10 +395,38 @@ var EthPaymentGateway;
                 var contract, result;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
+                        case 0: return [4 /*yield*/, this.baseClass.getGatewayContract()];
                         case 1:
                             contract = _a.sent();
                             result = this.baseClass.promisify(function (cb) { return contract.issueTokens(address, amount, cb); });
+                            return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayAdmin.prototype.transfer = function (address, amount) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
+                        case 1:
+                            contract = _a.sent();
+                            result = this.baseClass.promisify(function (cb) { return contract.transfer(address, amount, cb); });
+                            return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayAdmin.prototype.transferGateway = function (address, amount) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
+                        case 1:
+                            contract = _a.sent();
+                            result = this.baseClass.promisify(function (cb) { return contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb); });
                             return [2 /*return*/, result];
                     }
                 });
@@ -421,6 +473,20 @@ var EthPaymentGateway;
                             contract = _a.sent();
                             result = this.baseClass.promisify(function (cb) { return contract.setPaymentGatewayAddress(address, cb); });
                             return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayAdmin.prototype.getTokenContractAddress = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, tx;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.baseClass.getGatewayContract()];
+                        case 1:
+                            contract = _a.sent();
+                            tx = this.baseClass.promisify(function (cb) { return contract.getTokenContractAddress(cb); });
+                            return [2 /*return*/, tx];
                     }
                 });
             });

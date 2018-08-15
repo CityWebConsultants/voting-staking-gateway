@@ -2,9 +2,9 @@
 
 namespace EthPaymentGateway{
     const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    const contractAddress: string = "0x6fcbf9822bcca91212ba58441ccae72aaadc9c7c";
-    const contractAbiUrl: string = "/abis/gateway-contract-abi.json";
-    const tokenAddress: string = "0x772f4e6eb507d5365e08c572b0e300f3dc074c1b";
+    const contractAddress: string = "0x4692387113ff47241e4b08acbe4a99ccdad4463d";
+    const contractAbiUrl: string = "/abis/PaymentGatewayContract.json";
+    const tokenAddress: string = "0x1d6181b873b2b4c6f5872817b616a0a5b591e2a3";
     const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
     const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 
@@ -25,10 +25,11 @@ namespace EthPaymentGateway{
         async makePayment(merchant: string, ether: string, reference: string){
             let contract: any = await this.baseClass.getGatewayContract();
             //let priceInWei: number = this.baseClass.web3Instance.toWei(ether, 'ether');
-            let priceInWei = this.baseClass.promisify(cb => this.baseClass.web3Instance.toWei(ether, 'ether', cb));
-            //let result: any = await contract.makePayment(merchant, reference, {value : priceInWei});
-            let result = this.baseClass.promisify(cb => contract.makePayment(merchant, reference, {value : priceInWei}, cb));
+            let priceInWei = await this.baseClass.web3Instance.toWei(ether, 'ether');
+            let result = await this.baseClass.promisify(cb => contract.makePayment(merchant, reference, {value : priceInWei}, cb));
             return result;
+            //let result: any = await contract.makePayment(merchant, reference, {value : priceInWei});
+
          }
     
          async makePaymentUsingTokens(merchant: string, reference: string, tokenAmount: string){

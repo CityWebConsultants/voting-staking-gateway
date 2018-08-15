@@ -78,10 +78,24 @@ namespace EthPaymentGateway{
         async getTokenBalance(address: string){
 
             let contract: any = await this.getTokenContract();
+
+            this.promisify(cb => contract.totalSupply( cb)).then(function (val) {
+                console.log('total supply: ' + val);
+            });
+
             let result = this.promisify(cb => contract.balanceOf(address, cb))
             //let result: number = await contract.balanceOf(address);
             return result;
-        }      
+        }
+
+        async balanceOfGateway(address: string){
+
+            let contract: any = await this.getGatewayContract();
+
+            let result = this.promisify(cb => contract.balanceOf(address, cb))
+            //let result: number = await contract.balanceOf(address);
+            return result;
+        }
 
 
         /*

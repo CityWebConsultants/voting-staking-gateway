@@ -13,6 +13,7 @@
     "ethjs-abi": "^0.2.1",
     "file-loader": "^1.1.11",
     "npx": "^10.2.0",
+    "truffle-hdwallet-provider": "0.0.6",
     "truffle-test-utils": "^0.1.0",
     "tsify": "^4.0.0",
     "uglify-js": "^3.4.4",
@@ -28,10 +29,10 @@
     "typescript": "^2.9.2"
   },
   "scripts": {
-    "test-admin" : "truffle test ./test/AdminGatewayTests.js",
-    "test-merchant" : "truffle test ./test/MerchantGatewayTests.js",
-    "test-client" : "truffle test ./test/ClientGatewayTests.js",
-    "test-token" : "truffle test ./test/ClientGatewayTests.js",
+    "test-admin": "truffle test ./test/AdminGatewayTests.js",
+    "test-merchant": "truffle test ./test/MerchantGatewayTests.js",
+    "test-client": "truffle test ./test/ClientGatewayTests.js",
+    "test-token": "truffle test ./test/ClientGatewayTests.js",
     "tests": "truffle test",
     "build": "npm run client && npm run merchant && npm run admin",
     "deploy": "npm run purge && truffle migrate --reset",

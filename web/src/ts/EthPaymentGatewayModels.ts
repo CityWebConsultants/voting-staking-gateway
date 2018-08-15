@@ -7,6 +7,7 @@ namespace EthPaymentGateway{
         tokenContractAbiUrl: string;
 
         constructor(network: string, contractAddress: string, contractAbiUrl: string, tokenAddress: string, tokenContractAbiUrl: string){
+
             this.network = network;
             this.contractAddress = contractAddress;
             this.contractAbiUrl = contractAbiUrl;

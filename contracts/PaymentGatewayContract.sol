@@ -53,7 +53,8 @@ contract PaymentGatewayContract is Ownable{
     }
 
     function makePaymentInTokens(address _merchantAddress, string _reference, uint _tokenAmount) 
-        allowedToMakePayment(_merchantAddress, _reference) public{
+        allowedToMakePayment(_merchantAddress, _reference)
+        public{
         require(hasSufficientTokensForTransfer(_tokenAmount));
         tokenContract.gatewayTokenTransfer(msg.sender, _merchantAddress, _tokenAmount);
         emit PaymentMadeInTokensEvent(_merchantAddress, _reference, _tokenAmount);
@@ -129,6 +130,10 @@ contract PaymentGatewayContract is Ownable{
         uint balance = tokenContract.balanceOf(msg.sender);
         return balance >= _amount;
     }
+
+    function balanceOf(address tokenOwner) public view returns (uint balance) {
+            return tokenContract.balanceOf(tokenOwner);
+        }
 
     modifier allowedToMakePayment(address _merchant, string _reference){
         require(!isStringEmpty(_reference));
