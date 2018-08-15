@@ -7,7 +7,7 @@ module.exports = function(deployer) {
   var gateway;
   deployer.deploy(PaymentGatewayContract).then((g) => {
     gateway = g;
-    return deployer.deploy(GatewayERC20Contract, gateway.address, 420000000);
+    return deployer.deploy(GatewayERC20Contract, gateway.address, 420000000, "BUD", "eBudz utility token");
   }).then((erc20) => {
     return gateway.setTokenContract(erc20.address);
   });

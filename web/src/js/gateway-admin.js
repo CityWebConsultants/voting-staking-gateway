@@ -327,9 +327,9 @@ var EthPaymentGateway;
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var network = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    var contractAddress = "0x4692387113ff47241e4b08acbe4a99ccdad4463d";
+    var contractAddress = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
     var contractAbiUrl = "/abis/PaymentGatewayContract.json";
-    var tokenAddress = "0x1d6181b873b2b4c6f5872817b616a0a5b591e2a3";
+    var tokenAddress = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";
     var tokenAbiUrl = "/abis/erc20-contract-abi.json";
     var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
     var EthPaymentGatewayAdmin = /** @class */ (function () {

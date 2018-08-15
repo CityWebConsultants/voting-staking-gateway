@@ -2,9 +2,9 @@
 
 namespace EthPaymentGateway{
     const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    const contractAddress: string = "0x4692387113ff47241e4b08acbe4a99ccdad4463d";
+    const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
     const contractAbiUrl: string = "/abis/PaymentGatewayContract.json";
-    const tokenAddress: string = "0x1d6181b873b2b4c6f5872817b616a0a5b591e2a3";
+    const tokenAddress: string = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";
     const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
 
     const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);

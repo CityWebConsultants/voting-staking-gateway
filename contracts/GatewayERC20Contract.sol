@@ -15,11 +15,11 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
 
     mapping(address => uint) balances;
     
-    constructor(address _gatewayContract, uint256 tokenSupply) public{
-        symbol = "GCoin";
-        name = "Gateway Payment Coin";
+    constructor(address _gatewayContract, uint256 _tokenSupply, string _symbol, string _name) public{
+        symbol = _symbol;
+        name = _name;
         decimals = 6;
-        _totalSupply = tokenSupply * 1000000;
+        _totalSupply = _tokenSupply * 1000000;
         balances[owner] = _totalSupply;
         paymentGatewayAddress = _gatewayContract;
     }
