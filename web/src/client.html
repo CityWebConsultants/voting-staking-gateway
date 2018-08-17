@@ -2,8 +2,8 @@
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
-    <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css" />
+    <meta charset="utf-8"/>
+    <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css"/>
     <script type="text/javascript" src="js/knockout-min.js"></script>
     <script type="text/javascript" src="js/web3.min.js"></script>
     <script type="text/javascript" src="js/gateway-client.js"></script>
@@ -14,172 +14,244 @@
         html, body {
             background: #efefef;
         }
+
         #main-content {
             text-align: center;
-            padding:40px 0;
-            max-width: 800px;
+            padding: 40px 0;
             margin: auto;
         }
+
         #currency {
             text-transform: uppercase;
+        }
+
+        .instructions {
+            text-align: left;
+        }
+        .btn {
+            border-radius:0;
+        }
+        .btn-success {
+            color: #ffffff;
+            background-color: #4b9271;
+            border-color: #4b9271;
+            fill: #ffffff;
         }
     </style>
 </head>
 <body>
 <main id="main-content">
-<div class="container">
-    <h2>TokenPay</h2>
+    <div class="container">
+        <h2>TokenPay</h2>
 
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Make payment</h5>
-            <p>
-                <strong>Pay:</strong> <span data-bind="html: noOfTokens"></span> <span id="currency" data-bind="html: currency"></span>
-            </p>
+        <div class="row">
 
-            <div id="account">
-                <p><strong>Wallet address:</strong> <span data-bind="html: walletAddress"></span></p>
-                <p><strong>Token balance:</strong> <span data-bind="html: tokenBalance"></span></p>
+            <div class="card col-lg-6 instructions">
+                <div class="card-body">
+                    <h5>Payment instructions</h5>
+                    <p>Use this gateway to make payments using Ether of ERC20 tokens as specified by the merchant.</p>
+                    <p>You will require an Ethereum integrated browser or browser plugin such as <a
+                            href="https://github.com/ethereum/mist/releases/">Mist</a> or <a
+                            href="https://metamask.io/">MetaMask</a>.</p>
+                    <p>If the 'Pay' button across is disabled, you do not have an enabled system. Either ensure you are
+                        using a compatible browser and/or ensure you are logged in to your wallet.</p>
+                    <h5>IMPORTANT NOTES:</h5>
+                    <p>Make sure you are logged into the correct wallet, check the wallet ID displayed on this page is
+                        the wallet you want payment to come from.</p>
+                    <p>Ensure you are using the correct Ethereum network. The section above will specify which network
+                        to use, Mainnet for live payments, Rinkeby for test payments. Making payments to the wrong
+                        network can result in lost Ether and/or tokens.</p>
+                    <p>Do not attempt to alter payment amounts, the sum payed will be later checked against the order
+                        total and if the numbers do not match, you may lose the Ether/tokens you have transferred.</p>
+                </div>
             </div>
-            <div class="buttons">
 
-                    <button id="pay-button" type="button" class="btn btn-success" data-bind="event: { click: makePaymentUsingTokens}">Pay</button>  <button type="button" class="btn btn-warning" data-bind="event: { click: cancel}">Cancel</button>
+            <div class="card col-lg-6">
+                <div class="card-body">
+                    <h5 class="card-title">Make payment</h5>
+                    <p>
+                        <strong>Pay:</strong> <span data-bind="html: noOfTokens"></span> <span id="currency"
+                                                                                               data-bind="html: currency"></span>
+                    </p>
 
-            </div>
+                    <div id="account">
+                        <p><strong>Your wallet address:</strong> <span data-bind="html: walletAddress"></span></p>
+                        <p><strong>Token balance:</strong> <span data-bind="html: tokenBalance"></span></p>
+                    </div>
 
-            <div id="status-area" style="display:none;">
-                <div>Transaction id: <span data-bind="html: txid"></span></div>
-                <div id="status-message">
-                    <img style="width:30px" src="/css/lg.pie-chart-loading-gif.gif" /> Please wait while the transaction is processed. You will be redirected automatically.</div>
+                    <div id="network">
+                        <div data-bind="html: network"></div>
+                    </div>
+                    <div class="buttons">
+
+                        <button id="pay-button" type="button" class="btn btn-success"
+                                data-bind="event: { click: makePaymentUsingTokens}">Pay
+                        </button>
+                        <button type="button" class="btn btn-warning" data-bind="event: { click: cancel}">Cancel
+                        </button>
+
+                    </div>
+
+                    <div id="status-area" style="display:none;">
+                        <div>Transaction id: <span data-bind="html: txid"></span></div>
+                        <div id="status-message">
+                            <img style="width:30px" src="/css/lg.pie-chart-loading-gif.gif"/> Please wait while the
+                            transaction is processed. You will be redirected automatically.
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
-
     </div>
-
-</div>
 </main>
 
 <script type="text/javascript">
-    function EthPaymentGatewayClientViewModel(){
-        var self = this;
+  function EthPaymentGatewayClientViewModel() {
+    var self = this;
 
-        var query_string = window.location.search.substring(1);;
-        var parsed_qs = parse_query_string(query_string);
-
-        self.tokenPaymentAddress = parsed_qs.merchant;
-        self.tokenPaymentRef = parsed_qs.ref;
-        self.noOfTokens = parsed_qs.total;
-        self.txid = ko.observable(0);
-        self.walletAddress = ko.observable(0);
-        self.tokenBalance = ko.observable(0);
-        self.currency = parsed_qs.type;
-        self.gateway = new EthPaymentGateway.EthPaymentGatewayClient();
-
-        self.cancel = function() {
-          window.location = parsed_qs.cancel;
-        }
-
-        try {
-          var account = web3.eth.accounts[0];
-        }
-        catch (err ) {
-          disablePay();
-        }
-
-        if (!account) {
-          disablePay();
-        }
-        else {
-          self.walletAddress(account);
-          self.gateway.getTokenBalance(account).then(function(returned) {
-            self.tokenBalance(returned.c / 1000000);
-          });
-
-        }
-
-      var accountInterval = setInterval( async function() {
-        try {
-          if (web3.eth.accounts[0] !== account) {
-            account = web3.eth.accounts[0];
-            self.walletAddress(account);
-            console.log("Get balance...");
-            let balance = await self.gateway.getTokenBalance(account);
-            self.tokenBalance(balance / 1000000);
-            document.getElementById('pay-button').removeAttribute('disabled');
-            // console.log(bal);
-          }
-        }
-        catch (err ) {
-          disablePay();
-        }
-
-        if (!account) {
-          disablePay();
-        }
-
-      }, 100);
-
-        function disablePay() {
-          document.getElementById('pay-button').setAttribute('disabled', 'disabled');
-          self.walletAddress('<div class="alert alert-danger" role="alert">You do not have an active Ethereum account. Do you need to login into MetaMask?</div>');
-          self.tokenBalance('N\\A');
-        }
-
-      self.makePayment = async function(){
-        let val = await self.gateway.makePayment(self.tokenPaymentAddress, "0.1", self.tokenPaymentRef);
-      }
-
-      self.makePaymentUsingTokens = async function(){
-          console.log("pay with tokens...");
-          let tokens = parseFloat(self.noOfTokens) * 1000000;
-          self.txid(await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress, self.tokenPaymentRef, tokens));
-          var status = document.getElementById('status-area');
-          status.style.display = 'block';
-
-          function waitToBeMined() {
-            self.gateway.checkTransaction(self.txid() ).then(function(transaction) {
-              console.log(transaction);
-              if (typeof transaction.blockNumber !== 'undefined' && transaction.blockNumber != null) {
-                window.location = parsed_qs.return + '?txid=' + self.txid() + '&block=' + transaction.blockNumber;
-              }
-              else {
-                setTimeout(waitToBeMined, 1600);
-              }
-            });
-          }
-
-          setTimeout(waitToBeMined, 1600);
-        }
-
-    }
-
-    ko.applyBindings(new EthPaymentGatewayClientViewModel())
-
-    function parse_query_string(query) {
-      var vars = query.split("&");
-      var query_string = {};
-      for (var i = 0; i < vars.length; i++) {
-        var pair = vars[i].split("=");
-        var key = decodeURIComponent(pair[0]);
-        var value = decodeURIComponent(pair[1]);
-        // If first entry with this name
-        if (typeof query_string[key] === "undefined") {
-          query_string[key] = decodeURIComponent(value);
-          // If second entry with this name
-        } else if (typeof query_string[key] === "string") {
-          var arr = [query_string[key], decodeURIComponent(value)];
-          query_string[key] = arr;
-          // If third or later entry with this name
-        } else {
-          query_string[key].push(decodeURIComponent(value));
-        }
-      }
-      return query_string;
-    }
-
-    var query_string = "a=1&b=3&c=m2-m3-m4-m5";
+    var query_string = window.location.search.substring(1);
+    ;
     var parsed_qs = parse_query_string(query_string);
+
+    self.tokenPaymentAddress = parsed_qs.merchant;
+    self.tokenPaymentRef = parsed_qs.ref;
+    self.noOfTokens = parsed_qs.total;
+    self.txid = ko.observable(0);
+    self.walletAddress = ko.observable(0);
+    self.tokenBalance = ko.observable(0);
+    self.currency = parsed_qs.type;
+    self.gateway = new EthPaymentGateway.EthPaymentGatewayClient();
+    self.network = ko.observable(0);
+
+    self.cancel = function () {
+      window.location = parsed_qs.cancel;
+    }
+
+    try {
+      var account = web3.eth.accounts[0];
+      getUserNetwork();
+    }
+    catch (err) {
+      disablePay();
+    }
+
+    if (!account) {
+      disablePay();
+    }
+    else {
+      self.walletAddress(account);
+      self.gateway.getTokenBalance(account).then(function (returned) {
+        var balance = returned / 1000000;
+        self.tokenBalance(balance);
+      });
+
+    }
+
+    var accountInterval = setInterval(async function () {
+      try {
+        if (web3.eth.accounts[0] !== account) {
+          account = web3.eth.accounts[0];
+          self.walletAddress(account);
+          console.log("Get balance...");
+          let balance = await self.gateway.getTokenBalance(account);
+          balance = balance / 1000000;
+          self.tokenBalance(balance);
+          document.getElementById('pay-button').removeAttribute('disabled');
+          // console.log(bal);
+        }
+      }
+      catch (err) {
+        disablePay();
+      }
+
+      if (!account) {
+        disablePay();
+      }
+
+    }, 100);
+
+    function disablePay() {
+      document.getElementById('pay-button').setAttribute('disabled', 'disabled');
+      self.walletAddress('<div class="alert alert-danger" role="alert">You do not have an active Ethereum account. Do you need to login into MetaMask?</div>');
+      self.tokenBalance('N\\A');
+    }
+
+    self.makePayment = async function () {
+      let val = await self.gateway.makePayment(self.tokenPaymentAddress, "0.1", self.tokenPaymentRef);
+    }
+
+    self.makePaymentUsingTokens = async function () {
+      console.log("pay with tokens...");
+      let tokens = parseFloat(self.noOfTokens) * 1000000;
+      self.txid(await self.gateway.makePaymentUsingTokens(self.tokenPaymentAddress, self.tokenPaymentRef, tokens));
+      var status = document.getElementById('status-area');
+      status.style.display = 'block';
+
+      function waitToBeMined() {
+        self.gateway.checkTransaction(self.txid()).then(function (transaction) {
+          console.log(transaction);
+          if (typeof transaction.blockNumber !== 'undefined' && transaction.blockNumber != null) {
+            window.location = parsed_qs.return + '?txid=' + self.txid() + '&block=' + transaction.blockNumber;
+          }
+          else {
+            setTimeout(waitToBeMined, 1600);
+          }
+        });
+      }
+
+      setTimeout(waitToBeMined, 1600);
+    }
+
+    function getUserNetwork() {
+
+      web3.version.getNetwork((err, netId) => {
+
+        if (typeof parsed_qs.mode == 'undefined' && netId == 1) {
+          self.network('<div class="alert alert-success" role="alert">You are using the correct Ethereum Mainnet</div>');
+        }
+        else if (typeof parsed_qs.mode == 'undefined' && netId != 1) {
+          self.network('<div class="alert alert-danger" role="alert">You should be using the Ethereum Mainnet but are not. Ensure you change to Mainnet before making the payment.</div>');
+        }
+        else if (typeof parsed_qs.mode != 'undefined' && parsed_qs.mode == 'test' && netId == 4) {
+          self.network('<div class="alert alert-success" role="alert">You are using the correct Rinkeby network</div>');
+        }
+        else if (typeof parsed_qs.mode != 'undefined' && parsed_qs.mode == 'test' && netId != 4) {
+          self.network('<div class="alert alert-danger" role="alert">You should be using the Rinkeby network but are not. Ensure you change to Rinkeby before making the payment.</div>');
+        }
+      });
+    }
+
+  }
+
+  ko.applyBindings(new EthPaymentGatewayClientViewModel());
+
+  function parse_query_string(query) {
+    var vars = query.split("&");
+    var query_string = {};
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split("=");
+      var key = decodeURIComponent(pair[0]);
+      var value = decodeURIComponent(pair[1]);
+      // If first entry with this name
+      if (typeof query_string[key] === "undefined") {
+        query_string[key] = decodeURIComponent(value);
+        // If second entry with this name
+      } else if (typeof query_string[key] === "string") {
+        var arr = [query_string[key], decodeURIComponent(value)];
+        query_string[key] = arr;
+        // If third or later entry with this name
+      } else {
+        query_string[key].push(decodeURIComponent(value));
+      }
+    }
+    return query_string;
+  }
+
+  var query_string = "a=1&b=3&c=m2-m3-m4-m5";
+  var parsed_qs = parse_query_string(query_string);
 </script>
 </body>
 </html>
