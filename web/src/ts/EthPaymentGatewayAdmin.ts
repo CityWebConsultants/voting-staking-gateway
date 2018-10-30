@@ -1,10 +1,15 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
 
 namespace EthPaymentGateway{
-    const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
+    /*const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
     const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
+    const tokenAddress: string = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";*/
+
+    const network: string = "http://127.0.0.1:7545";
+    const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
+    const tokenAddress: string = "0x70d164aaa79495FA60FdA1eEd7c8fa945F2FbE73";
+
     const contractAbiUrl: string = "/abis/PaymentGatewayContract.json";
-    const tokenAddress: string = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";
     const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
 
     const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);

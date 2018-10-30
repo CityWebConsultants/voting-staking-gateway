@@ -142,6 +142,7 @@
       self.tokenTransRecipientAddress = ko.observable("");
         
         self.gateway = new EthPaymentGateway.EthPaymentGatewayAdmin();
+        //self.gateway = new EthPaymentGateway.EthPaymentGatewayAdmin();
 
         self.getTokenContractAddress = async function() {
           let address = await self.gateway.getTokenContractAddress();
@@ -165,7 +166,7 @@
 
       self.balanceOfGateway = async function(){
         let price = await self.gateway.balanceOfGateway(self.tokenRecipientAddress());
-        self.tokenAmountToIssue(price);
+        self.tokenAmountToIssue(price.toNumber());
       }
 
       self.addMerchant = async function(){
@@ -196,7 +197,7 @@
         self.getBalance = async function(){
             console.log("Get balance...");
             let bal = await self.gateway.getTokenBalance(self.tokenRecipientAddress());
-            console.log(bal);
+            console.log(bal.toNumber());
         }                
     }
 

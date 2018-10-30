@@ -1,22 +1,32 @@
 var GatewayERC20Contract = artifacts.require("GatewayERC20Contract");
 var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
+var PresaleContract = artifacts.require("Presale");
 
-var test_symbol = "GCoin";
-var test_name = "Gateway Payment Coin";
-var test_decimals = 18;
+var test_symbol = "BUD";
+var test_name = "eBudz";
+var test_decimals = 6;
 var test_validAmountOfTokens = 100;
 var test_invalidAmountOfTokens = -1;
 var test_validAmountOfWeiToPay = web3.toWei(10,'ether');
+var totalEthToRaise = 10;
+var saleDurationInMins = 3;
+var tokenCostInEth = 2600000000; // $0.75 = 2600000 wei ?
+var minimumSpend = 340; // $100 = 340 finney ?
 
 contract("GatewayERC20Contract - Test", function(accounts){
     let gatewayContract;
     let tokenContract;
+    let presaleContract;
     let clientAddress = accounts[2];
     let clientAddressSecondary = accounts[3];
+    let saleBeneficiary = accounts[4];
+    let techBeneficiary = accounts[5];
+    let gatewayBeneficiary = accounts[6];
 
     before('setup and deploy gateway contract', async function(){
-        gatewayContract = await PaymentGatewayContract.new(); 
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address);
+        gatewayContract = await PaymentGatewayContract.new(4, gatewayBeneficiary);
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, 420000000, 'BUD', 'eBudz');
+        presaleContract = await PresaleContract.new(tokenContract.address, saleBeneficiary, techBeneficiary, totalEthToRaise, saleDurationInMins, tokenCostInEth,  minimumSpend);
     })    
 
     it("Token Properties - symbol should equal " + test_symbol, async function(){
@@ -27,7 +37,70 @@ contract("GatewayERC20Contract - Test", function(accounts){
     it("Token Properties - name should equal " + test_name, async function(){
         let tokenName = await tokenContract.name();
         assert.equal(tokenName, test_name, "Token name is not as expected")
-    });    
+    });
+
+  it("Presale address", async function(){
+    let tokenAddress = await presaleContract.getTokenContractAddress();
+    assert.equal(tokenAddress, tokenContract.address, "Token address is not as expected")
+  });
+
+  it("Token Functionality - As Owner, given a correct address and amount, should issue correct amount of tokens", async function(){
+    let tokenBalance = 0;
+    try{
+      await tokenContract.transfer(presaleContract.address, 770000000); // 21m + 6 digits
+      let balance = await tokenContract.balanceOf(presaleContract.address);
+      tokenBalance = balance.toNumber();
+    }
+    catch(error){
+      console.log(error);
+    }
+
+    assert.equal(tokenBalance, 770000000, "Did not issue the correct amount of tokens.");
+  });
+
+  it("Buy tokens via presale", async function(){
+
+      let paymentSuccessful = true;
+      try {
+        let result = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
+      }
+      catch (error) {
+          console.log(error);
+        paymentSuccessful = false;
+      }
+
+      // reverting but not
+      assert.equal(paymentSuccessful, true, "Payment unsuccessful")
+
+  });
+
+  it("Buy tokens via presale after limit reached", async function(){
+
+    let paymentSuccessful = true;
+    try {
+      let result = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
+    }
+    catch (error) {
+      console.log(error);
+      paymentSuccessful = false;
+    }
+
+    // reverting but not
+    assert.equal(paymentSuccessful, false, "Second payment successful")
+
+  });
+
+  it("Get presale ETH balance", async function(){
+    let balance = await presaleContract.balance();
+    balance = balance.toNumber();
+    assert.equal(balance, web3.toWei(2, "ether"), "Balance is not equal");
+  });
+
+  it("Get token balance from presale", async function(){
+    let balance = await tokenContract.balanceOf(gatewayBeneficiary);
+    balance = balance.toNumber();
+    assert.equal(balance, parseInt(web3.toWei(2, "ether") / web3.toWei(tokenCostInEth, "wei")) * 2, "Balance is not equal");
+  });
 
     it("Token Properties - decimal should equal " + test_decimals, async function(){
         let decimals = await tokenContract.decimals();
