@@ -7,13 +7,12 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "truffle test (debugable)",
+            "name": "truffle test",
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
             "args": [
                 "test"
             ]
-
         }
     ]
 }
