@@ -7,8 +7,9 @@ var test_validPaymentReference = "ReferenceOne";
 var test_invalidPaymentReference = "";
 var test_numberOfTokensForPayment = 100;
 
-contract('PaymentGatewayContract - Client',  function(accounts){
+contract('Client - PaymentGatewayContract',  function(accounts){
     let gatewayContract;
+    let adminAddress = accounts[0];
     let merchantAddress = accounts[1];  
     let clientAddress = accounts[2];
     let gatewayBeneficiary = accounts[3];
@@ -16,67 +17,42 @@ contract('PaymentGatewayContract - Client',  function(accounts){
     before('setup, deploy contract and add merchant', async function(){
        /* gatewayContract = await PaymentGatewayContract.new();
         tokenContract = await GatewayERC20Contract.new(gatewayContract.address);*/
-      gatewayContract = await PaymentGatewayContract.new(4, gatewayBeneficiary);
-      tokenContract = await GatewayERC20Contract.new(gatewayContract.address, 420000000, 'BUD', 'eBudz');
-        await gatewayContract.addMerchant(merchantAddress);     
+      // 4 what is this number
+        gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, '420000000', 'BUD', 'eBudz');
+        await gatewayContract.addMerchant(merchantAddress);
         await gatewayContract.setTokenContract(tokenContract.address);
-        await tokenContract.transfer(clientAddress, 10);
+        await tokenContract.setTransferStatus(true);
+
+        // So... only the gatewayContract can call the await tokenContract.setTransferStatus(true);
+        // aha -- we have to make sure the accunt has funds to begin with
+       //  await tokenContract.transfer(clientAddress, '1000', {from: adminAddress}); 
     })
-
-  /*  it("Payments - Given a valid merchant and reference, should be able to make payment in Eth ", async function(){
-        let paymentSuccessful = false;
-        try{
-            await gatewayContract.makePayment(merchantAddress,test_validPaymentReference, {value: test_validAmountOfWeiToPay, from: clientAddress} );
-            paymentSuccessful = true;
-        }
-        catch(error){}
-
-        assert.equal(paymentSuccessful, true, "Could not make payment");
-    });*/
-
-   /* it("Payments - Given an invalid merchant and valid reference, should not be able to make payment in Eth ", async function(){
-        let paymentUnsuccessful = false;
-        try{
-            await gatewayContract.makePayment(clientAddress,test_validPaymentReference, {value: test_validAmountOfWeiToPay, from: clientAddress} );
-        }
-        catch(error){
-            paymentUnsuccessful = true;
-        }
-
-        assert.equal(paymentUnsuccessful, true, "Able to make payment to invalid merchant");
-    });    
-*/
-  /*  it("Payments - Given an valid merchant and invalid reference, should not be able to make payment in Eth ", async function(){
-        let paymentUnsuccessful = false;
-        try{
-            await gatewayContract.makePayment(merchantAddress,test_invalidPaymentReference, {value: test_validAmountOfWeiToPay, from: clientAddress} );
-        }
-        catch(error){
-            paymentUnsuccessful = true;
-        }
-
-        assert.equal(paymentUnsuccessful, true, "Able to make payment using invalid reference");
-    });    */
-
+  // @todo wrap this in 
+  // not clear whether this is supposed to fail or....!?
+  // check out the older version and see what it does
   it("Payments with Tokens - Transfer status must be active before users and transfer", async function(){
     let paymentSuccessful = false;
-    try{
-      await tokenContract.transfer(merchantAddress, test_numberOfTokensForPayment).send({from : clientAddress});
-      //await gatewayContract.makePaymentInTokens(merchantAddress,test_validPaymentReference, test_numberOfTokensForPayment, {from: clientAddress} );
+
+    try {
+      const transferredToClient = await tokenContract.transfer(merchantAddress, test_numberOfTokensForPayment, {from: clientAddress});
+      const gatewayPayment = await gatewayContract.makePaymentInTokens(merchantAddress,test_validPaymentReference, test_numberOfTokensForPayment, {from: clientAddress});
       paymentSuccessful = true;
     }
-    catch(error){
-      console.log(error);
+    catch(error) {
+        assert(error.message === 'VM Exception while processing transaction: revert');
     }
 
-    assert.equal(paymentSuccessful, true, "Could not make payment in tokens");
+    assert.equal(paymentSuccessful, false, "Could not make payment in tokens");
   });
 
   it("Payments with Tokens - Given a valid merchant, reference and token amount, should be able to make payment", async function(){
         let paymentSuccessful = false;
-        try{
+        try {
             await tokenContract.transfer(clientAddress, test_numberOfTokensForPayment);
             await gatewayContract.makePaymentInTokens(merchantAddress,test_validPaymentReference, test_numberOfTokensForPayment, {from: clientAddress} );
+            
+            // @todo should also check results and events and things like that
             paymentSuccessful = true;
         }
         catch(error){
@@ -85,14 +61,16 @@ contract('PaymentGatewayContract - Client',  function(accounts){
 
         assert.equal(paymentSuccessful, true, "Could not make payment in tokens");
     });    
+    
 
+    // what makes a reference valid -- just that it should
     it("Payments with Tokens - Given an invalid merchant but valid reference and token amount, should not be able to make payment", async function(){
         let paymentUnsuccessful = false;
-        try{
+        try {
             await tokenContract.transfer(clientAddress, test_numberOfTokensForPayment);
             await gatewayContract.makePaymentInTokens(clientAddress,test_validPaymentReference, test_numberOfTokensForPayment, {from: clientAddress} );
         }
-        catch(error){
+        catch(error) {
             paymentUnsuccessful = true;
         }
 
@@ -101,11 +79,12 @@ contract('PaymentGatewayContract - Client',  function(accounts){
 
     it("Payments with Tokens - Given a valid merchant and token amount but invalid reference, should not be able to make payment", async function(){
         let paymentUnsuccessful = false;
-        try{
+        try {
             await tokenContract.transfer(clientAddress, test_numberOfTokensForPayment);
             await gatewayContract.makePaymentInTokens(merchantAddress,test_invalidPaymentReference, test_numberOfTokensForPayment, {from: clientAddress} );
         }
         catch(error){
+            // we should be making some kind of assertion about our error
             paymentUnsuccessful = true;
         }
 
@@ -126,23 +105,24 @@ contract('PaymentGatewayContract - Client',  function(accounts){
         assert.equal(paymentUnsuccessful, true, "Made payment in tokens despite not having enough");
     });
 
-  it("Payments with Tokens - Ensure merchant receives correct # of tokens", async function(){
+  it("Should ensure merchant receives correct # of tokens", async function(){
     let paymentUnsuccessful = false;
     let currentBalance = 0;
-    try{
+    try {
       currentBalance = await tokenContract.balanceOf(merchantAddress);
     }
-    catch(error){
+    catch(error) {
       console.log(error);
       paymentUnsuccessful = true;
     }
+
     assert.equal(currentBalance.toNumber(), 96, "Incorrect tokens to merchant");
   });
 
   it("Payments with Tokens - Ensure beneficiary receives correct # of tokens", async function(){
     let paymentUnsuccessful = false;
     let currentBalance = 0;
-    try{
+    try {
       currentBalance = await tokenContract.balanceOf(gatewayBeneficiary);
     }
     catch(error){
