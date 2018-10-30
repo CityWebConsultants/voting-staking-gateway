@@ -27,11 +27,18 @@ contract PaymentGatewayContract is Ownable{
         gatewayBalance = 0;
     }
 
-    function setTokenContract(address _tokenContractAddress) public onlyOwner{
+    function setTokenContract(address _tokenContractAddress) 
+    public 
+    onlyOwner
+    {
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
     }
 
-    function getTokenContractAddress() public view returns(address){
+    function getTokenContractAddress() 
+    public 
+    view 
+    returns(address)
+    {
         return tokenContract;
     }
 
@@ -41,7 +48,10 @@ contract PaymentGatewayContract is Ownable{
 //    }
 
 
-    function addMerchant(address _walletAddress) public onlyOwner {
+    function addMerchant(address _walletAddress) 
+    public
+    onlyOwner 
+    {
         require(!isExistingMerchant(_walletAddress));
         Merchant memory newMerchant = Merchant({ balance: 0, created: true});
         merchants[_walletAddress] = newMerchant;
@@ -63,8 +73,9 @@ contract PaymentGatewayContract is Ownable{
 // Is it cheaper to make 2 contract calls here or do the logic in erc20 contract?
 
     function makePaymentInTokens(address _merchantAddress, string _reference, uint _tokenAmount) 
-        allowedToMakePayment(_merchantAddress, _reference)
-        public{
+    public
+    allowedToMakePayment(_merchantAddress, _reference)
+    {
         require(hasSufficientTokensForTransfer(_tokenAmount));
         uint transactionFee = calculateGatewayFee(_tokenAmount); // int ?
         uint merchantFee = SafeMath.sub(_tokenAmount, transactionFee);
@@ -91,7 +102,10 @@ contract PaymentGatewayContract is Ownable{
 //    }
 
     // Fees
-    function setGatewayFee(uint _newFee) onlyOwner public{
+    function setGatewayFee(uint _newFee) 
+    public
+    onlyOwner 
+    {
         require(_newFee < 100);
         gatewayFeePercentage = _newFee;
     }
@@ -114,7 +128,10 @@ contract PaymentGatewayContract is Ownable{
 //    }
 
     // Calculations
-    function calculateGatewayFee(uint _amount) private view returns(uint fee){
+    function calculateGatewayFee(uint _amount) 
+    private 
+    view 
+    returns(uint fee) {
         return SafeMath.mul(_amount, gatewayFeePercentage) / 100;
     }
 
@@ -126,24 +143,35 @@ contract PaymentGatewayContract is Ownable{
 //        return msg.sender == _address;
 //    }
 
-    function isExistingMerchant(address _merchantAddress) public view returns (bool){
+    function isExistingMerchant(address _merchantAddress) 
+    public 
+    view 
+    returns (bool)
+    {
         return merchants[_merchantAddress].created;
     }
 
-    function isStringEqual(string _input_a, string _input_b) private pure returns(bool){
+    function isStringEqual(string _input_a, string _input_b) private pure returns(bool)
+    {
         return keccakHash(_input_a) == keccakHash(_input_b);
     }
 
-    function isStringEmpty(string _input) private pure returns(bool){
+    function isStringEmpty(string _input) 
+    private 
+    pure 
+    returns(bool)
+    {
         return keccakHash(_input) == keccakHash("");
     }
 
 
-    function keccakHash(string _input) private pure returns (bytes32){
+    function keccakHash(string _input) private pure returns (bytes32)
+    {
         return keccak256(abi.encodePacked(_input));
     }
 
-    function hasSufficientTokensForTransfer(uint _amount) private view returns(bool){
+    function hasSufficientTokensForTransfer(uint _amount) private view returns(bool)
+    {
         uint balance = tokenContract.balanceOf(msg.sender);
         return balance >= _amount;
     }
@@ -154,7 +182,8 @@ contract PaymentGatewayContract is Ownable{
 //            return tokenContract.balanceOf(tokenOwner);
 //        }
 
-    modifier allowedToMakePayment(address _merchant, string _reference){
+    modifier allowedToMakePayment(address _merchant, string _reference)
+    {
         require(!isStringEmpty(_reference));
         require(isExistingMerchant(_merchant));
         _;
