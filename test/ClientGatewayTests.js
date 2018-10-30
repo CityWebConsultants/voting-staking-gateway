@@ -22,7 +22,7 @@ contract('Client - PaymentGatewayContract',  function(accounts){
         tokenContract = await GatewayERC20Contract.new(gatewayContract.address);*/
       // 4 what is this number
         gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, totalSupply, symbol, namw);
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, totalSupply, symbol, name);
         await gatewayContract.addMerchant(merchantAddress);
         await gatewayContract.setTokenContract(tokenContract.address);
         await tokenContract.setTransferStatus(true);
