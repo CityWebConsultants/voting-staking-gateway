@@ -9,17 +9,20 @@ var test_numberOfTokensForPayment = 100;
 
 contract('Client - PaymentGatewayContract',  function(accounts){
     let gatewayContract;
-    let adminAddress = accounts[0];
-    let merchantAddress = accounts[1];  
-    let clientAddress = accounts[2];
-    let gatewayBeneficiary = accounts[3];
+    const adminAddress = accounts[0];
+    const merchantAddress = accounts[1];  
+    const clientAddress = accounts[2];
+    const gatewayBeneficiary = accounts[3];
+    const totalSupply = '420000000';
+    const symbol = 'BUD';
+    const name = 'eBudz';
 
     before('setup, deploy contract and add merchant', async function(){
        /* gatewayContract = await PaymentGatewayContract.new();
         tokenContract = await GatewayERC20Contract.new(gatewayContract.address);*/
       // 4 what is this number
         gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, '420000000', 'BUD', 'eBudz');
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, totalSupply, symbol, namw);
         await gatewayContract.addMerchant(merchantAddress);
         await gatewayContract.setTokenContract(tokenContract.address);
         await tokenContract.setTransferStatus(true);

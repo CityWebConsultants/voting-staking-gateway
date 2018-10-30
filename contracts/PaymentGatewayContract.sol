@@ -5,7 +5,7 @@ import "./GatewayERC20Contract.sol";
 
 contract PaymentGatewayContract is Ownable{
     using SafeMath for uint256;
-    uint gatewayFeePercentage;
+    uint256 gatewayFeePercentage;
     uint256 gatewayBalance;
     address beneficiary;
     mapping(address => Merchant) merchants;
@@ -13,29 +13,31 @@ contract PaymentGatewayContract is Ownable{
     GatewayERC20Contract tokenContract;
 
     event AddMerchantEvent(address merchant);
-    event PaymentMadeEvent(address _merchant, string _reference, uint _amount);
+  //  event PaymentMadeEvent(address _merchant, string _reference, uint _amount);
     event PaymentMadeInTokensEvent(address _merchant, string _reference, uint _tokenAmount);
     event WithdrawGatewayFundsEvent(address _walletAddress, uint _amount);
-    event WithdrawPaymentEvent(address _walletAddress, uint _amount);
+   // event WithdrawPaymentEvent(address _walletAddress, uint _amount);
 
 
 // Needs way to forward on in event of new contract
 
-    constructor(uint _gatewayFee, address _beneficiary) public {
+    constructor(uint256 _gatewayFee, address _beneficiary) 
+    public
+    {
         gatewayFeePercentage = _gatewayFee;
         beneficiary = _beneficiary;
         gatewayBalance = 0;
     }
 
     function setTokenContract(address _tokenContractAddress) 
-    public 
+    public
     onlyOwner
     {
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
     }
 
     function getTokenContractAddress() 
-    public 
+    public
     view 
     returns(address)
     {
