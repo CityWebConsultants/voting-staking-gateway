@@ -10,12 +10,21 @@ var test_invalidGatewayFeeAmount = 150;
 contract('PaymentGatewayContract - Admin',  function(accounts){
     let gatewayContract;
     let tokenContract;
-    let merchantAddress = accounts[1];
-    let clientAddress = accounts[2];
+    const merchantAddress = accounts[1];
+    const clientAddress = accounts[2];
+    const gatewayBeneficiary = accounts[3];
+    const totalSupply = '420000000';
+    const symbol = 'BUD';
+    const name = 'eBudz';
+    const fee = '4'
 
     before('setup and deploy gateway contract', async function(){
-        gatewayContract = await PaymentGatewayContract.new(); 
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address);
+        gatewayContract = await PaymentGatewayContract.new(4, gatewayBeneficiary);
+        tokenContract = await GatewayERC20Contract.new(
+            gatewayContract.address, 
+            totalSupply, 
+            symbol, 
+            name);
     })
 
     /*
@@ -23,7 +32,7 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
     */
     it('Gateway Admin - As Owner, should be able to set the token contract address', async function(){    
         let addressSet = false;
-        try{
+        try {
             await gatewayContract.setTokenContract(tokenContract.address);
             addressSet = true;
         }
