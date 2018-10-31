@@ -51,9 +51,12 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
     public 
     returns (bool success) 
     {
-        // rly?, bit clunky -- whats this transger enabled thing?
+        // transferEnabled would be easier to read as a modifier
+        // tbh, it probably shouldn't be here...
+        // Can see why would do that in edge cases but its not how an
+        // Open token should work! (imo)
         require(hasSufficientBalanceForTransfer(msg.sender, tokens));
-        require(transferEnabled());
+        // require(transferEnabled());
         balances[msg.sender] = balances[msg.sender].sub(tokens);
         balances[to] = balances[to].add(tokens);
         emit Transfer(msg.sender, to, tokens);
@@ -98,8 +101,9 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         paymentGatewayAddress = _gatewayContract;
     }
 
+    // Uhm, do people really want their token to be able to be stopped once it has started!?!?!
     function setTransferStatus(bool _status) 
-    public 
+    public
     onlyOwner 
     {
         transferActive = _status;
@@ -116,6 +120,8 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         uint balance = balances[_recipient];
         balances[_recipient] = balance.add(_tokens);
         _totalSupply = _totalSupply.add(_tokens);
+        // balance can be queries -- we only want to say from, to and amount
+        // current balance should be queries elsewhere
         emit IssueTokens(_recipient, _tokens, balance, balances[_recipient], msg.sender);
         return true;
     }

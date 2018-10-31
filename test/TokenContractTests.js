@@ -11,9 +11,11 @@ var test_validAmountOfWeiToPay = web3.toWei(10,'ether');
 var totalEthToRaise = 10;
 var saleDurationInMins = 3;
 var tokenCostInEth = 2600000000; // $0.75 = 2600000 wei ?
+// what is the purpose of the minimum spend
 var minimumSpend = 340; // $100 = 340 finney ?
 
-contract("GatewayERC20Contract - Test", function(accounts){
+// 
+contract("Token Contract & PreSale - Test", function(accounts){
     let gatewayContract;
     let tokenContract;
     let presaleContract;
@@ -171,20 +173,18 @@ contract("GatewayERC20Contract - Test", function(accounts){
         assert.equal(issueTokensUnsuccessful, true, "Able to issue tokens when not owner");
     }); 
 
-    //@todo - fix this...
-   it.skip("Token Administration - given a valid amount to transfer, should be able to transfer tokens", async function(){
+    it("Token Administration - given a valid amount to transfer, should be able to transfer tokens", async function(){
         let tokenTransferSuccessful = false;
-        try{
-            await tokenContract.issueTokens(clientAddress, test_validAmountOfTokens);
-            await tokenContract.transfer(clientAddressSecondary, test_validAmountOfTokens, {from: clientAddress});
-            let balance = await tokenContract.balanceOf(clientAddressSecondary);
-            tokenBalance = balance.c[0];  
-            tokenTransferSuccessful =  tokenBalance ==  test_validAmountOfTokens;
-        }
-        catch(error){}
 
-        assert.equal(tokenTransferSuccessful, true, "Token transfer was unsuccessful");
-   });
+        const issuedTokens = await tokenContract.issueTokens(clientAddress, test_validAmountOfTokens);
+        assert.equal(issuedTokens.logs[0].event, 'IssueTokens', 'Event not fired');
+        
+        const transferredTokens = await tokenContract.transfer(clientAddressSecondary, test_validAmountOfTokens, {from: clientAddress});
+        assert.equal(transferredTokens.logs[0].event, 'Transfer', 'Event not fired');
+
+        let balance = (await tokenContract.balanceOf(clientAddressSecondary)).toString();
+        assert.equal(balance, test_validAmountOfTokens, 'Balance does not match transfer');
+    });
 
    it("Token Administration - given an amount higher than balance to transfer, token transfer should fail", async function(){
         let tokenTransferUnsuccessful = false;

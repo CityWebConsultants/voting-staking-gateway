@@ -14,6 +14,7 @@ contract Presale {
     uint public startTime;
     uint public price;
     uint public minimumSpend;
+    // @todo this should be disambiguated from erc20 token balance of
     mapping(address => uint256) public balanceOf;
     bool fundingGoalReached = false;
     bool crowdsaleClosed = false;
@@ -63,7 +64,10 @@ contract Presale {
      *
      * The function without name is the default function that is called whenever anyone sends funds to a contract
      */
-    function () payable public {
+    function () 
+    public 
+    payable 
+    {
         require(!crowdsaleClosed);
         require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
         uint256 amount = msg.value;
@@ -129,6 +133,7 @@ contract Presale {
     afterDeadline 
     {
         if (!fundingGoalReached) {
+        
             uint256 amount = balanceOf[msg.sender];
 
             if (amount > 0) {
@@ -136,7 +141,7 @@ contract Presale {
                 balanceOf[msg.sender] = 0;
                 emit FundTransfer(msg.sender, amount, false);
             }
-        } //should this be elseif
+        }
 
         if (fundingGoalReached && beneficiary == msg.sender) {
             // Why divided by 3 and 4 
@@ -159,7 +164,16 @@ contract Presale {
     // @todo suggest starting in a block...
     function getRate(uint256 _amount) 
     internal
-    view  returns(uint256) {
+    view  
+    returns(uint256) 
+    {
+        // easier to use an array for this logic... 
+        // divide and multiple 
+        // perhaps we should pass in an array of blocktimes 
+        // double seems a bit nuts -- it's a bit extreme
+        // If this is a presale, then how will the sale be managed...
+        // blocknumber...
+        // pass in two arrays. One containing 
         if (startTime + 1 weeks > now) {
             return _amount * 2; //number of tokens in week 1
         //} else if (startTime + 2 weeks > now) {
