@@ -104,10 +104,15 @@ contract Presale {
         crowdsaleClosed = true;
     }
 
+    // Should disambugaute what value we are retrieved by adding noun to balance
     /**
     * Check balance
     */
-    function balance() public view returns (uint) {
+    function balance() 
+    public 
+    view 
+    returns (uint) 
+    {
         return amountRaised;
     }
 
@@ -125,33 +130,36 @@ contract Presale {
     {
         if (!fundingGoalReached) {
             uint256 amount = balanceOf[msg.sender];
-            // the amoutn will always 
-            // why set and then unset it
+
             if (amount > 0) {
-                if (msg.sender.send(amount)) {
-                    balanceOf[msg.sender] = 0;
-                    emit FundTransfer(msg.sender, amount, false);
+                msg.sender.transfer(amount);
+                balanceOf[msg.sender] = 0;
+                emit FundTransfer(msg.sender, amount, false);
             }
-        }
+        } //should this be elseif
 
         if (fundingGoalReached && beneficiary == msg.sender) {
-            // Hum, whats happening here
-            // use transfer instead of send
-            // @todo use safe math here
-            if (beneficiary.send(amountRaised / 3) && techFund.send(amountRaised / 4)) {
-                emit FundTransfer(beneficiary, amountRaised / 3, false);
-                emit FundTransfer(beneficiary, amountRaised / 4, false);
-            } else {
-                //If we fail to send the funds to beneficiary, unlock funders balance
-                fundingGoalReached = false;
-            }
+            // Why divided by 3 and 4 
+            // these values should be set as constants 
+            // elsewhere or in here
+            beneficiary.transfer(amountRaised / 3);
+            techFund.transfer(amountRaised / 4);
+            emit FundTransfer(beneficiary, amountRaised / 3, false);
+            emit FundTransfer(techFund, amountRaised / 4, false);
+            // } else {
+            //     // why would the transfer fail and why would we unlock it, and how would that unlock it -- it is already defaulted to fales
+            //     //If we fail to send the funds to beneficiary, unlock funders balance
+            //     fundingGoalReached = false;
+            // }
         }
     }
 
+    // What happens if the whole thing is games a bogey?
+
     // @todo suggest starting in a block...
-    function getRate(uint _amount) 
+    function getRate(uint256 _amount) 
     internal
-    view  returns(uint) {
+    view  returns(uint256) {
         if (startTime + 1 weeks > now) {
             return _amount * 2; //number of tokens in week 1
         //} else if (startTime + 2 weeks > now) {
@@ -161,5 +169,5 @@ contract Presale {
         } else {
             return _amount + ((_amount / 10) * 3);
         }
-      }
+    }
 }
