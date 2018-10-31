@@ -62,20 +62,12 @@ contract("Token Contract & PreSale - Test", function(accounts){
 
 
   // @todo fix and factor this in to presale tests
-  it.skip("Buy tokens via presale", async function(){
-
-      let paymentSuccessful = true;
-      try {
-        let result = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
-      }
-      catch (error) {
-          console.log(error);
-        paymentSuccessful = false;
-      }
-
-      // reverting but not
-      assert.equal(paymentSuccessful, true, "Payment unsuccessful")
-
+  it("Buy tokens via presale", async () => {
+        let sentTransaction = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
+        const beneficiaryBalance = (await tokenContract.balanceOf(gatewayBeneficiary)).toString();
+        // @todo quick fix hack --- should calculate what that values should be
+        // and interrogate logs bloom
+        assert.equal(beneficiaryBalance, '769230769', 'Balance does not match expected amount');
   });
 
   it.skip("Buy tokens via presale after limit reached", async function(){
