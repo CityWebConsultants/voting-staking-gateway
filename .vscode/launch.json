@@ -7,11 +7,21 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "truffle test",
+            "name": "truffle test all",
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
             "args": [
                 "test"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "truffle test file",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/node_modules/truffle-core/cli.js",
+            "args": [
+                "test", "${file}", "--network", "development"
             ]
         }
     ]
