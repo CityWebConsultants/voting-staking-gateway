@@ -1,3 +1,5 @@
+const { assertRevert } = require('./helpers/assertRevert');
+
 const ERC20Contract = artifacts.require('ERC20');
 let ERC20Instance;
 
