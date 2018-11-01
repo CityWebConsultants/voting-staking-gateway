@@ -20,6 +20,7 @@ contract PaymentGatewayContract is Ownable{
 
 
 // Needs way to forward on in event of new contract
+// How do you mean?
 
     constructor(uint256 _gatewayFee, address _beneficiary) 
     public
@@ -29,8 +30,14 @@ contract PaymentGatewayContract is Ownable{
         gatewayBalance = 0;
     }
 
+    function () 
+    public 
+    payable {
+        revert("Bounce Eth"); 
+    } 
+
     function setTokenContract(address _tokenContractAddress) 
-    public
+    public 
     onlyOwner
     {
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
@@ -60,17 +67,6 @@ contract PaymentGatewayContract is Ownable{
         emit AddMerchantEvent(_walletAddress);
     }
 
-// Can possibly remove
-//    function makePayment(address _merchantAddress, string _reference) payable allowedToMakePayment(_merchantAddress, _reference) public{
-//        uint gatewayFee = calculateGatewayFee(msg.value);
-//        gatewayBalance = SafeMath.add(gatewayBalance, gatewayFee);
-
-//        uint merchantPayment = SafeMath.sub(msg.value, gatewayFee);
-//        addPaymentToMerchantBalance(_merchantAddress, merchantPayment);
-
-//        emit PaymentMadeEvent(_merchantAddress, _reference, msg.value);
-//    }
-
 // needs to take gateway fee percentage
 // Is it cheaper to make 2 contract calls here or do the logic in erc20 contract?
 
@@ -79,9 +75,9 @@ contract PaymentGatewayContract is Ownable{
     allowedToMakePayment(_merchantAddress, _reference)
     {
         require(hasSufficientTokensForTransfer(_tokenAmount));
-        uint transactionFee = calculateGatewayFee(_tokenAmount); // int ?
-        uint merchantFee = SafeMath.sub(_tokenAmount, transactionFee);
-        uint ownerFee = transactionFee;
+        uint256 transactionFee = calculateGatewayFee(_tokenAmount); // int ?
+        uint256 merchantFee = SafeMath.sub(_tokenAmount, transactionFee);
+        uint256 ownerFee = transactionFee;
 
         tokenContract.gatewayTokenTransfer(msg.sender, _merchantAddress, merchantFee );
         emit PaymentMadeInTokensEvent(_merchantAddress, _reference, merchantFee);
@@ -89,19 +85,6 @@ contract PaymentGatewayContract is Ownable{
         tokenContract.gatewayTokenTransfer(msg.sender, beneficiary, ownerFee );
         emit PaymentMadeInTokensEvent(beneficiary, _reference, ownerFee); // how to alter reference string?
     }
-
-//    function addPaymentToMerchantBalance(address _merchantAddress, uint256 _paymentAmount) private {
-//        uint256 currentBalance = merchants[_merchantAddress].balance;
-//        merchants[_merchantAddress].balance = SafeMath.add(currentBalance, _paymentAmount);
-//    }
-
-//    function withdrawPayment(address _merchantAddress) public{
-//        require(permittedToAccessAccount(_merchantAddress));
-//        uint merchBalance = merchants[_merchantAddress].balance;
-//        _merchantAddress.transfer(merchBalance);
-//        merchants[_merchantAddress].balance = 0;
-//        emit WithdrawPaymentEvent(_merchantAddress, merchBalance);
-//    }
 
     // Fees
     function setGatewayFee(uint _newFee) 
@@ -111,23 +94,6 @@ contract PaymentGatewayContract is Ownable{
         require(_newFee < 100);
         gatewayFeePercentage = _newFee;
     }
-
-//    function withdrawGatewayFees() onlyOwner public{
-//        owner.transfer(gatewayBalance);
-//        emit WithdrawGatewayFundsEvent(owner, gatewayBalance);
-//        gatewayBalance = 0;
-//    }
-
-    // Read only functions
-//    function getMerchantBalance(address _merchantAddress) public view returns(address, uint){
-//        require(permittedToAccessAccount(_merchantAddress));
-//        Merchant memory merchant = merchants[_merchantAddress];
-//        return (_merchantAddress, merchant.balance);
-//    }
-
-//    function getGatewayBalance() public onlyOwner view returns(uint){
-//        return gatewayBalance;
-//    }
 
     // Calculations
     function calculateGatewayFee(uint _amount) 
