@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 import "./ownership/Ownable.sol";
 import "./math/SafeMath.sol";
 import "./token/ERC20Interface.sol";
@@ -7,11 +7,16 @@ import "./token/ERC20Interface.sol";
 contract GatewayERC20Contract is ERC20Interface, Ownable{
     using SafeMath for uint256;
 
+    // be explicit about public and private
+    // try and separate concerns erc 20 and such
+    // fix tests
+
     address paymentGatewayAddress;
     string public symbol;
     string public  name;
     uint256 public decimals;
     uint256 _totalSupply;
+    // is this basically for pausing?
     bool transferActive;
 
     mapping(address => uint) balances;
@@ -23,18 +28,30 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         _totalSupply = _tokenSupply * 1000000;
         balances[owner] = _totalSupply;
         paymentGatewayAddress = _gatewayContract;
-        transferActive = false;
+        transferActive = true; // so how are we supposed to issue tokens... this is awful
     }
 
-    function totalSupply() public view returns (uint) {
+    function totalSupply() 
+    public 
+    view 
+    returns (uint) 
+    {
         return _totalSupply.sub(balances[owner]);
     }    
 
-    function balanceOf(address tokenOwner) public view returns (uint balance) {
+    function balanceOf(address tokenOwner) 
+    public 
+    view 
+    returns (uint balance) 
+    {
         return balances[tokenOwner];
     }
 
-    function transfer(address to, uint tokens) public returns (bool success) {
+    // this does not check who is calling 
+    function transfer(address to, uint tokens) 
+    public 
+    returns (bool success) 
+    {
         require(hasSufficientBalanceForTransfer(msg.sender, tokens));
         require(transferEnabled());
         balances[msg.sender] = balances[msg.sender].sub(tokens);
@@ -62,29 +79,49 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
     //}
 
     function () public payable {
-        revert();
+        revert("Bounce Eth");
     }
 
-    function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyOwner returns (bool success) {
+    function transferAnyERC20Token(address tokenAddress, uint tokens) 
+    public 
+    onlyOwner 
+    returns (bool success) 
+    {
         return ERC20Interface(tokenAddress).transfer(owner, tokens);
     }
 
 
-    function setPaymentGatewayAddress(address _gatewayContract) public onlyOwner{
+    function setPaymentGatewayAddress(address _gatewayContract) 
+    public 
+    onlyOwner 
+    {
         paymentGatewayAddress = _gatewayContract;
     }
 
-    function setTransferStatus(bool _status) public onlyOwner{
+    // Uhm, do people really want their token to be able to be stopped once it has started!?!?!
+    function setTransferStatus(bool _status) 
+    public
+    onlyOwner 
+    {
         transferActive = _status;
-     }
+    }
 
 // this seems to be creating extra tokens on top of inital supply?
 // should this not be transfer() ?
 // does the gateway contract need to issue tokens?
-    function issueTokens(address _recipient, uint _tokens) public canIssueTokens returns(bool){
+
+// why are we transferring tokens when we have token issance
+//
+    function issueTokens(address _recipient, uint _tokens) 
+    public 
+    canIssueTokens 
+    returns(bool) 
+    {
         uint balance = balances[_recipient];
         balances[_recipient] = balance.add(_tokens);
         _totalSupply = _totalSupply.add(_tokens);
+        // balance can be queries -- we only want to say from, to and amount
+        // current balance should be queries elsewhere
         emit IssueTokens(_recipient, _tokens, balance, balances[_recipient], msg.sender);
         return true;
     }
@@ -98,6 +135,10 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         return true;
     }
 
+    // would be better to give perm to mint 
+    // from the tokenSale...
+    // Rather than stop when all the tokens are sold
+    // or mebs not if thats the clients preference
     modifier canIssueTokens(){
         //require(owner == msg.sender || msg.sender == paymentGatewayAddress);
         require(owner == msg.sender);
@@ -109,12 +150,20 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         _;
     }
 
-    function hasSufficientBalanceForTransfer(address _sender, uint _amount) private view returns(bool){
+    function hasSufficientBalanceForTransfer(address _sender, uint _amount) 
+    private 
+    view 
+    returns(bool)
+    {
         uint balance = balances[_sender];
         return balance >= _amount;
     }
 
-    function transferEnabled() private view returns(bool){
+    function transferEnabled() 
+    private 
+    view 
+    returns(bool) 
+    {
         return msg.sender == owner || transferActive;
     }
 }

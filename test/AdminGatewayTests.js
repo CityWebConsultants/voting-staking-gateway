@@ -10,20 +10,29 @@ var test_invalidGatewayFeeAmount = 150;
 contract('PaymentGatewayContract - Admin',  function(accounts){
     let gatewayContract;
     let tokenContract;
-    let merchantAddress = accounts[1];
-    let clientAddress = accounts[2];
+    const merchantAddress = accounts[1];
+    const clientAddress = accounts[2];
+    const gatewayBeneficiary = accounts[3];
+    const totalSupply = '420000000';
+    const symbol = 'BUD';
+    const name = 'eBudz';
+    const fee = '4'
 
-    before('setup and deploy gateway contract', async function(){
-        gatewayContract = await PaymentGatewayContract.new(); 
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address);
+    before('setup and deploy gateway contract', async () => {
+        gatewayContract = await PaymentGatewayContract.new(fee, gatewayBeneficiary);
+        tokenContract = await GatewayERC20Contract.new(
+            gatewayContract.address, 
+            totalSupply, 
+            symbol, 
+            name);
     })
 
     /*
         Gateway Admin
     */
-    it('Gateway Admin - As Owner, should be able to set the token contract address', async function(){    
+    it('Gateway Admin - As Owner, should be able to set the token contract address', async () => {    
         let addressSet = false;
-        try{
+        try {
             await gatewayContract.setTokenContract(tokenContract.address);
             addressSet = true;
         }
@@ -33,9 +42,9 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
     });
 
     it('Gateway Admin - As NOT Owner, should not be able to set the token contract address', async function(){    
-        let tokenContractAddress = await gatewayContract.getTokenContractAddress();
+        let tokenContractAddress = gatewayContract.address;
         let failedSettingAddress = false;
-        try{
+        try {
             await gatewayContract.setTokenContract(tokenContractAddress, {from: clientAddress});
         }
         catch(error){
@@ -45,9 +54,10 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
         assert.equal(failedSettingAddress, true, "Able to set contract address from non owner account");
     });  
 
-    it('Gateway Admin - As Owner, should be able to set the gateway fees', async function(){    
+    it('Gateway Admin - As Owner, should be able to set the gateway fees', async function(){  
+        // @todo try / catch is not used so bin it  
         let feesSet = false;
-        try{
+        try {
             await gatewayContract.setGatewayFee(test_validGatewayFeeAmount);
             feesSet = true;
         }
@@ -58,7 +68,7 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
 
     it('Gateway Admin - As NOT Owner, should not be able to set the gateway fees', async function(){    
         let feeSetFail = false;
-        try{
+        try {
             await gatewayContract.setGatewayFee(test_validGatewayFeeAmount, {from: clientAddress});
         }
         catch(error){
@@ -79,53 +89,6 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
 
         assert.equal(feeSetFail, true, "Able to set gateway fee above permitted limit");
     });    
-
-    it('Gateway Admin - As Owner, should be able withdraw gateway fees', async function(){    
-        let withdrawalSuccessful = false;
-        try{
-            await gatewayContract.withdrawGatewayFees();
-            withdrawalSuccessful = true;
-        }
-        catch(error){}
-
-        assert.equal(withdrawalSuccessful, true, "Couldn't withdraw gateway fees");
-    });    
-
-    it('Gateway Admin - As NOT Owner, should not be able withdraw gateway fees', async function(){    
-        let withdrawalUnsuccessful = false;
-        try{
-            await gatewayContract.withdrawGatewayFees({from: clientAddress});
-        }
-        catch(error){
-            withdrawalUnsuccessful = true;
-        }
-
-        assert.equal(withdrawalUnsuccessful, true, "Able to withdraw gateway fees as non owner");
-    });  
-
-    it('Gateway Admin - As Owner, should be able to get gateway balance', async function(){    
-        let balanceCheckSucessful = false;
-        try{
-            let balance = await gatewayContract.getGatewayBalance();
-            balanceCheckSucessful = balance > -1;
-        }
-        catch(error){}
-
-        assert.equal(balanceCheckSucessful, true, "Not able to check gateway balance as owner");
-    });      
-
-    it('Gateway Admin - As NOT Owner, should not be able to get gateway balance', async function(){    
-        let balanceCheckUnsucessful = false;
-        try{
-            await gatewayContract.getGatewayBalance({from: clientAddress});
-        }
-        catch(error){
-            balanceCheckUnsucessful = true;
-        }
-
-        assert.equal(balanceCheckUnsucessful, true, "Able to check gateway balance as non owner");
-    });      
-
 
     /*
         Merchant Admin
@@ -164,17 +127,6 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
         }
 
         assert.equal(addedMerchantUnsuccessful, true, "Added merchant when not owner");
-    });    
-
-    it("Merchant Admin - As Owner, should be able to withdraw merchant payments", async function(){
-        let withdrawalSuccessful = false;
-        try{
-            await gatewayContract.withdrawPayment(merchantAddress);
-            withdrawalSuccessful = true;
-        }
-        catch(error){}
-
-        assert.equal(withdrawalSuccessful, true, "Withdraw merchant funds as contract owner unsuccessful");
     });
 
     it("Merchant Admin - As NOT Owner or Merchant, should be not able to withdraw merchant payments", async function(){
@@ -188,48 +140,11 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
 
         assert.equal(withdrawalUnsuccessful, true, "Withdraw merchant funds using random account possible");
     });    
-
-    it("Merchant Admin - As Owner, should be able to check merchant balance", async function(){
-        let balanceCheckSucessful = false;
-        try{
-            await gatewayContract.getMerchantBalance(merchantAddress);
-            balanceCheckSucessful = true;
-        }
-        catch(error){ }
-
-        assert.equal(balanceCheckSucessful, true, "Not able to check balance of merchant when owner");
-    });  
-
-    it("Merchant Admin - As NOT Owner or Merchant, should not be able to check merchant balance", async function(){
-        let balanceCheckUnsucessful = false;
-        try{
-            await gatewayContract.getMerchantBalance(merchantAddress, {from:clientAddress});
-        }
-        catch(error){
-            balanceCheckUnsucessful = true
-         }
-
-        assert.equal(balanceCheckUnsucessful, true, "Able to check balance of merchant when not owner or merchant");
-    });      
-
-
+    
     /*
         Token Functionality
     */
-    it("Token Functionality - As Owner, given a correct address and amount, should issue correct amount of tokens", async function(){
-        let tokenBalance = 0;
-        try{
-            await gatewayContract.issueTokens(clientAddress, test_validAmountOfTokens);
-            let balance = await tokenContract.balanceOf(clientAddress);
-            tokenBalance = balance.c[0];
-        }
-        catch(error){
-            console.log(error);
-         }
-
-        assert.equal(tokenBalance, test_validAmountOfTokens, "Did not issue the correct amount of tokens.");
-    });
-
+    // @todo have a look at token issuance and see if this should go or not
     it("Token Functionality - As Owner, given an incorrect address and correct amount, should not issue tokens", async function(){
         let tokenBalance = 0;
         try{

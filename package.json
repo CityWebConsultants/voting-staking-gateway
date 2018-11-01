@@ -13,6 +13,7 @@
     "ethjs-abi": "^0.2.1",
     "file-loader": "^1.1.11",
     "npx": "^10.2.0",
+    "truffle-core": "^4.1.14",
     "truffle-hdwallet-provider": "0.0.6",
     "truffle-test-utils": "^0.1.0",
     "tsify": "^4.0.0",

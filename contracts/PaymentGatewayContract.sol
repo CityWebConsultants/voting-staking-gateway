@@ -5,7 +5,7 @@ import "./GatewayERC20Contract.sol";
 
 contract PaymentGatewayContract is Ownable{
     using SafeMath for uint256;
-    uint gatewayFeePercentage;
+    uint256 gatewayFeePercentage;
     uint256 gatewayBalance;
     address beneficiary;
     mapping(address => Merchant) merchants;
@@ -13,16 +13,18 @@ contract PaymentGatewayContract is Ownable{
     GatewayERC20Contract tokenContract;
 
     event AddMerchantEvent(address merchant);
-   // event PaymentMadeEvent(address _merchant, string _reference, uint _amount);
+  //  event PaymentMadeEvent(address _merchant, string _reference, uint _amount);
     event PaymentMadeInTokensEvent(address _merchant, string _reference, uint _tokenAmount);
     event WithdrawGatewayFundsEvent(address _walletAddress, uint _amount);
-    event WithdrawPaymentEvent(address _walletAddress, uint _amount);
+   // event WithdrawPaymentEvent(address _walletAddress, uint _amount);
 
 
 // Needs way to forward on in event of new contract
 // How do you mean?
 
-    constructor(uint _gatewayFee, address _beneficiary) public {
+    constructor(uint256 _gatewayFee, address _beneficiary) 
+    public
+    {
         gatewayFeePercentage = _gatewayFee;
         beneficiary = _beneficiary;
         gatewayBalance = 0;
@@ -34,11 +36,18 @@ contract PaymentGatewayContract is Ownable{
         revert("Bounce Eth"); 
     } 
 
-    function setTokenContract(address _tokenContractAddress) public onlyOwner{
+    function setTokenContract(address _tokenContractAddress) 
+    public 
+    onlyOwner
+    {
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
     }
 
-    function getTokenContractAddress() public view returns(address){
+    function getTokenContractAddress() 
+    public
+    view 
+    returns(address)
+    {
         return tokenContract;
     }
 
@@ -48,7 +57,10 @@ contract PaymentGatewayContract is Ownable{
 //    }
 
 
-    function addMerchant(address _walletAddress) public onlyOwner {
+    function addMerchant(address _walletAddress) 
+    public
+    onlyOwner 
+    {
         require(!isExistingMerchant(_walletAddress));
         Merchant memory newMerchant = Merchant({ balance: 0, created: true});
         merchants[_walletAddress] = newMerchant;
@@ -58,9 +70,10 @@ contract PaymentGatewayContract is Ownable{
 // needs to take gateway fee percentage
 // Is it cheaper to make 2 contract calls here or do the logic in erc20 contract?
 
-    function makePaymentInTokens(address _merchantAddress, string _reference, uint256 _tokenAmount) 
-        allowedToMakePayment(_merchantAddress, _reference)
-        public{
+    function makePaymentInTokens(address _merchantAddress, string _reference, uint _tokenAmount) 
+    public
+    allowedToMakePayment(_merchantAddress, _reference)
+    {
         require(hasSufficientTokensForTransfer(_tokenAmount));
         uint256 transactionFee = calculateGatewayFee(_tokenAmount); // int ?
         uint256 merchantFee = SafeMath.sub(_tokenAmount, transactionFee);
@@ -74,39 +87,71 @@ contract PaymentGatewayContract is Ownable{
     }
 
     // Fees
-    function setGatewayFee(uint _newFee) onlyOwner public{
+    function setGatewayFee(uint _newFee) 
+    public
+    onlyOwner 
+    {
         require(_newFee < 100);
         gatewayFeePercentage = _newFee;
     }
 
     // Calculations
-    function calculateGatewayFee(uint _amount) private view returns(uint fee){
+    function calculateGatewayFee(uint _amount) 
+    private 
+    view 
+    returns(uint fee) {
         return SafeMath.mul(_amount, gatewayFeePercentage) / 100;
     }
 
-    function isExistingMerchant(address _merchantAddress) public view returns (bool){
+    // Require functions
+//    function permittedToAccessAccount(address _address) private view returns (bool valid){
+//        if(msg.sender == owner){
+//            return true;
+//        }
+//        return msg.sender == _address;
+//    }
+
+    function isExistingMerchant(address _merchantAddress) 
+    public 
+    view 
+    returns (bool)
+    {
         return merchants[_merchantAddress].created;
     }
 
-    function isStringEqual(string _input_a, string _input_b) private pure returns(bool){
+    function isStringEqual(string _input_a, string _input_b) private pure returns(bool)
+    {
         return keccakHash(_input_a) == keccakHash(_input_b);
     }
 
-    function isStringEmpty(string _input) private pure returns(bool){
+    function isStringEmpty(string _input) 
+    private 
+    pure 
+    returns(bool)
+    {
         return keccakHash(_input) == keccakHash("");
     }
 
 
-    function keccakHash(string _input) private pure returns (bytes32){
+    function keccakHash(string _input) private pure returns (bytes32)
+    {
         return keccak256(abi.encodePacked(_input));
     }
 
-    function hasSufficientTokensForTransfer(uint _amount) private view returns(bool){
+    function hasSufficientTokensForTransfer(uint _amount) private view returns(bool)
+    {
         uint balance = tokenContract.balanceOf(msg.sender);
         return balance >= _amount;
     }
 
-    modifier allowedToMakePayment(address _merchant, string _reference){
+// is this required as this can be used directly on erc20 contract ?
+
+//    function balanceOf(address tokenOwner) public view returns (uint balance) {
+//            return tokenContract.balanceOf(tokenOwner);
+//        }
+
+    modifier allowedToMakePayment(address _merchant, string _reference)
+    {
         require(!isStringEmpty(_reference));
         require(isExistingMerchant(_merchant));
         _;

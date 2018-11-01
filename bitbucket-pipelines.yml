@@ -1,4 +1,4 @@
-# This is a sample build configuration for JavaScript.
+# Smart contract testing
 # Check our guides at https://confluence.atlassian.com/x/14UWN for more examples.
 # Only use spaces to indent your .yml configuration.
 # -----
@@ -14,5 +14,5 @@ pipelines:
           - npm install
           - npm install -g truffle
           - npm install -g ganache-cli
-          - ganache-cli -p 7545 &
+          - ganache-cli --port=7545 --blockTime=1 2>&1 > ganache-output.log &
           - truffle test --network=development
