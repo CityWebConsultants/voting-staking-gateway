@@ -4,18 +4,20 @@ var PresaleContract = artifacts.require("Presale");
 
 var test_symbol = "BUD";
 var test_name = "eBudz";
-var test_decimals = 6;
+var decimals = 6;
 var test_validAmountOfTokens = 100;
-var test_invalidAmountOfTokens = -1;
-var test_validAmountOfWeiToPay = web3.toWei(10,'ether');
-var totalEthToRaise = 10;
-var saleDurationInMins = 3;
-var tokenCostInEth = 2600000000; // $0.75 = 2600000 wei ?
+var invalidAmountOfTokens = -1;
+var validAmountOfWeiToPay = web3.toWei(10,'ether');
+var fundingGoal = 10;
+var saleDurationInMins = 20;
+// should there also be a sale start
+// uhm, thats in weiu
+var tokenCostInWei = 2600000000; // $0.75 = 2600000 wei ?
 // what is the purpose of the minimum spend
-var minimumSpend = 340; // $100 = 340 finney ?
+var minimumSpend = 340; // $100 = 340 finney ? // how do we know this is finney
 
 // 
-contract("Token Contract & PreSale - Test", function(accounts){
+contract("Token Contract - Test", function(accounts){
     let gatewayContract;
     let tokenContract;
     let presaleContract;
@@ -25,12 +27,16 @@ contract("Token Contract & PreSale - Test", function(accounts){
     let techBeneficiary = accounts[5];
     let gatewayBeneficiary = accounts[6];
 
-    before('setup and deploy gateway contract', async function(){
+    // Aha -- couldn't understand why was not being reset everytime -- 
+    // cos it wasn't coded that way.... doh!...
+    // Don't need to care about that cont
+    beforeEach('setup and deploy gateway contract', async function() {
         gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
         tokenContract = await GatewayERC20Contract.new(gatewayContract.address, '420000000', 'BUD', 'eBudz');
-        presaleContract = await PresaleContract.new(tokenContract.address, saleBeneficiary, techBeneficiary, totalEthToRaise, saleDurationInMins, tokenCostInEth,  minimumSpend);
+        presaleContract = await PresaleContract.new(tokenContract.address, saleBeneficiary, techBeneficiary, fundingGoal, saleDurationInMins, tokenCostInWei, minimumSpend);
     })    
 
+    // ah... so it was calling transfer on the 
     it("Token Properties - symbol should equal " + test_symbol, async function(){
         let tokenSymbol = await tokenContract.symbol();
         assert.equal(tokenSymbol, test_symbol, "Token symbol is not as expected")
@@ -41,67 +47,24 @@ contract("Token Contract & PreSale - Test", function(accounts){
         assert.equal(tokenName, test_name, "Token name is not as expected")
     });
 
-  it("Presale address", async function(){
-    let tokenAddress = await presaleContract.getTokenContractAddress();
-    assert.equal(tokenAddress, tokenContract.address, "Token address is not as expected")
-  });
+    // Oh, we pass in to presale contract.... So what happens then when there is no burnaddress
+    it("Token Functionality - As Owner, given a correct address and amount, should issue correct amount of tokens", async function(){
+        let tokenBalance = 0;
+        try {
+            await tokenContract.transfer(presaleContract.address, 770000000); // 21m + 6 digits
+            let balance = await tokenContract.balanceOf(presaleContract.address);
+            tokenBalance = balance.toNumber();
+        }
+        catch(error){
+            console.log(error);
+        }
 
-  it("Token Functionality - As Owner, given a correct address and amount, should issue correct amount of tokens", async function(){
-    let tokenBalance = 0;
-    try{
-      await tokenContract.transfer(presaleContract.address, 770000000); // 21m + 6 digits
-      let balance = await tokenContract.balanceOf(presaleContract.address);
-      tokenBalance = balance.toNumber();
-    }
-    catch(error){
-      console.log(error);
-    }
+        assert.equal(tokenBalance, 770000000, "Did not issue the correct amount of tokens.");
+    });
 
-    assert.equal(tokenBalance, 770000000, "Did not issue the correct amount of tokens.");
-  });
-
-
-  // @todo fix and factor this in to presale tests
-  it("Buy tokens via presale", async () => {
-        let sentTransaction = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
-        const beneficiaryBalance = (await tokenContract.balanceOf(gatewayBeneficiary)).toString();
-        // @todo quick fix hack --- should calculate what that values should be
-        // and interrogate logs bloom
-        assert.equal(beneficiaryBalance, '769230769', 'Balance does not match expected amount');
-  });
-
-  it.skip("Buy tokens via presale after limit reached", async function(){
-
-    let paymentSuccessful = true;
-    try {
-      let result = await presaleContract.sendTransaction({from: gatewayBeneficiary, value: web3.toWei(1, "ether")});
-    }
-    catch (error) {
-      console.log(error);
-      paymentSuccessful = false;
-    }
-
-    // reverting but not
-    assert.equal(paymentSuccessful, false, "Second payment successful")
-
-  });
-
-  // @todo fix this
-  it.skip("Get presale ETH balance", async function(){
-    let balance = await presaleContract.balance();
-    balance = balance.toNumber();
-    assert.equal(balance, web3.toWei(2, "ether"), "Balance is not equal");
-  });
-
-  it.skip("Get token balance from presale", async function(){
-    let balance = await tokenContract.balanceOf(gatewayBeneficiary);
-    balance = balance.toNumber();
-    assert.equal(balance, parseInt(web3.toWei(2, "ether") / web3.toWei(tokenCostInEth, "wei")) * 2, "Balance is not equal");
-  });
-
-    it("Token Properties - decimal should equal " + test_decimals, async function(){
+    it("Token Properties - decimal should equal " + decimals, async function(){
         let decimals = await tokenContract.decimals();
-        assert.equal(decimals, test_decimals, "Token decimals is not as expected")
+        assert.equal(decimals, decimals, "Token decimals is not as expected")
     });      
 
     it("Token Admin - given a valid address, should be able to set gateway contract address", async function(){
@@ -144,13 +107,13 @@ contract("Token Contract & PreSale - Test", function(accounts){
     it("Token Issuance - As Owner, given a correct address and invalid token amount, should fail issue", async function(){
         let tokenIssueFail = false;
         try{
-            await tokenContract.issueTokens(clientAddress, test_invalidAmountOfTokens);
+            await tokenContract.issueTokens(clientAddress, invalidAmountOfTokens);
         }
         catch(error){
             tokenIssueFail = true;
         }
 
-        assert.equal(tokenIssueFail, true, "Issued tokens with when given an invalid amount ("+test_invalidAmountOfTokens+")");
+        assert.equal(tokenIssueFail, true, "Issued tokens with when given an invalid amount ("+invalidAmountOfTokens+")");
     });
 
     it("Token Issuance - As NOT Owner, given a correct address and amount, should not issue tokens", async function(){
@@ -195,7 +158,7 @@ contract("Token Contract & PreSale - Test", function(accounts){
     it("Contract - should not be payable", async function(){
         let contractPaymentFailed = false;
         try{
-            await tokenContract.sendTransaction({value:test_validAmountOfWeiToPay});            
+            await tokenContract.sendTransaction({value:validAmountOfWeiToPay});            
         }
         catch(error){
             contractPaymentFailed = true;

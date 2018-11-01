@@ -36,19 +36,18 @@ contract Presale {
         address addressOfTokenUsedAsReward,
         address ifSuccessfulSendTo,
         address ifSuccessfulSendToTech,
-        uint fundingGoalInEthers,
-        uint durationInMinutes,
-        uint etherCostOfEachToken,
-        uint _minimumSpend
+        uint256 fundingGoalInEthers,
+        uint256 durationInMinutes,
+        uint256 etherCostOfEachToken,
+        uint256 _minimumSpend
     ) public {
         tokenContract = GatewayERC20Contract(addressOfTokenUsedAsReward);
         startTime = now;
         beneficiary = ifSuccessfulSendTo;
         techFund = ifSuccessfulSendToTech;
-        fundingGoal = fundingGoalInEthers * 1 ether;
-        deadline = now + durationInMinutes * 1 minutes; // consider using blocktime
-        price = etherCostOfEachToken * 1 wei;
-        minimumSpend = _minimumSpend * 1 finney;
+        deadline = now + durationInMinutes * 1 minutes; // consider using blocktime // should also set a start time
+        price = etherCostOfEachToken * 1 wei; // uhm!?
+        minimumSpend = _minimumSpend * 1 finney; // uhm, why don't we just use wei? this make
     }
 
     function getTokenContractAddress() 
@@ -68,9 +67,9 @@ contract Presale {
     public 
     payable 
     {
-        require(!crowdsaleClosed);
-        require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
-        uint256 amount = msg.value;
+        // require(!crowdsaleClosed);
+        // require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
+        uint256 amount = msg.value; 
         balanceOf[msg.sender] += amount;
         amountRaised += amount;
         
@@ -78,18 +77,16 @@ contract Presale {
         // should this also include the amount a user has already desposited?
         uint256 discount = getRate(amount);
         // should be using safe math here and assign variable before use (imo)
+        // is it because not have permission to do this?
+        // so are these actually minted first!!!???
         tokenContract.transfer(msg.sender, discount / price);
-
-        //tokenContract.transfer(msg.sender, amount / price);
         emit FundTransfer(msg.sender, discount, true);
     }
 
     modifier afterDeadline() 
     {
-        if (block.timestamp >= deadline) {
-            _;  
-        }
-        
+        require(block.timestamp <= deadline);
+        _;
     }
 
     /**
@@ -97,10 +94,12 @@ contract Presale {
      *
      * Checks if the goal or time limit has been reached and ends the campaign
      */
-    function checkGoalReached() public afterDeadline {
-
+    function checkGoalReached() 
+    public 
+    afterDeadline 
+    {
         uint balance = tokenContract.balanceOf(address(this));
-        // ? huh ?
+        // huh???? wtf!!! what are the circumstances this is supposed to reflect
         if (balance <= 0){
             fundingGoalReached = true;
             emit GoalReached(beneficiary, amountRaised);

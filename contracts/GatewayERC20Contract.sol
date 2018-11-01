@@ -28,7 +28,7 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         _totalSupply = _tokenSupply * 1000000;
         balances[owner] = _totalSupply;
         paymentGatewayAddress = _gatewayContract;
-        transferActive = false;
+        transferActive = true; // so how are we supposed to issue tokens... this is awful
     }
 
     function totalSupply() 
@@ -47,16 +47,13 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         return balances[tokenOwner];
     }
 
+    // this does not check who is calling 
     function transfer(address to, uint tokens) 
     public 
     returns (bool success) 
     {
-        // transferEnabled would be easier to read as a modifier
-        // tbh, it probably shouldn't be here...
-        // Can see why would do that in edge cases but its not how an
-        // Open token should work! (imo)
         require(hasSufficientBalanceForTransfer(msg.sender, tokens));
-        // require(transferEnabled());
+        require(transferEnabled());
         balances[msg.sender] = balances[msg.sender].sub(tokens);
         balances[to] = balances[to].add(tokens);
         emit Transfer(msg.sender, to, tokens);
@@ -112,6 +109,9 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
 // this seems to be creating extra tokens on top of inital supply?
 // should this not be transfer() ?
 // does the gateway contract need to issue tokens?
+
+// why are we transferring tokens when we have token issance
+//
     function issueTokens(address _recipient, uint _tokens) 
     public 
     canIssueTokens 
@@ -135,6 +135,10 @@ contract GatewayERC20Contract is ERC20Interface, Ownable{
         return true;
     }
 
+    // would be better to give perm to mint 
+    // from the tokenSale...
+    // Rather than stop when all the tokens are sold
+    // or mebs not if thats the clients preference
     modifier canIssueTokens(){
         //require(owner == msg.sender || msg.sender == paymentGatewayAddress);
         require(owner == msg.sender);
