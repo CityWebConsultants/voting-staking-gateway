@@ -36,7 +36,7 @@ contract Presale {
         address addressOfTokenUsedAsReward,
         address ifSuccessfulSendTo,
         address ifSuccessfulSendToTech,
-        uint256 fundingGoalInEthers,
+        uint256 fundingGoalInEthers, // no longer used
         uint256 durationInMinutes,
         uint256 etherCostOfEachToken,
         uint256 _minimumSpend
@@ -146,7 +146,7 @@ contract Presale {
             // Why divided by 3 and 4 
             // these values should be set as constants 
             // elsewhere or in here
-            beneficiary.transfer(amountRaised / 3);
+            beneficiary.transfer(amountRaised / 4 * 3);
             techFund.transfer(amountRaised / 4);
             emit FundTransfer(beneficiary, amountRaised / 3, false);
             emit FundTransfer(techFund, amountRaised / 4, false);
@@ -158,13 +158,11 @@ contract Presale {
         }
     }
 
-    // What happens if the whole thing is games a bogey?
-
-    // @todo suggest starting in a block...
+    // @todo get deets
     function getRate(uint256 _amount) 
     internal
     view  
-    returns(uint256) 
+    returns(uint256)
     {
         // easier to use an array for this logic... 
         // divide and multiple 
