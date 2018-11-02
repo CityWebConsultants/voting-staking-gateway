@@ -62,3 +62,6 @@ typings/
 
 # Truffle build files
 build/
+
+# TS build files
+web/src/ts/*.js
