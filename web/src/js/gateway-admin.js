@@ -77,7 +77,7 @@ var EthPaymentGateway;
     var EthPaymentGatewayBase = /** @class */ (function () {
         function EthPaymentGatewayBase(config) {
             //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
-            this.web3Instance = new Web3(web3.currentProvider);
+            this.web3Instance = new Web3(Web3.currentProvider);
             this.gatewayConfig = config;
         }
         /*
