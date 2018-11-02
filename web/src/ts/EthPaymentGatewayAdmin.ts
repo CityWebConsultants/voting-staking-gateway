@@ -48,8 +48,8 @@ namespace EthPaymentGateway{
 
         async transferGateway(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            //let result: any = await contract.issueTokens(address, amount);
-            let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
+            let result: any = await contract.issueTokens(address, amount);
+            //let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
             return result;
         }
 
