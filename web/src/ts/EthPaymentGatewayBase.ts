@@ -14,8 +14,8 @@ namespace EthPaymentGateway{
             //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
             this.web3Instance = new Web3(Web3.currentProvider);
             this.gatewayConfig = config;
-        }     
-        
+        }    
+    
         /*
             Read or retrieve data functions
         */

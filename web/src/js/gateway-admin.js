@@ -41,6 +41,7 @@ var EthPaymentGateway;
             this.contractAddress = contractAddress;
             this.contractAbiUrl = contractAbiUrl;
             this.tokenAddress = tokenAddress;
+            // Should we really be routing html in this context --- re 
             this.tokenContractAbiUrl = tokenContractAbiUrl;
         }
         return GatewayConfigObject;
@@ -57,7 +58,7 @@ var EthPaymentGateway;
         }
         return { merchant: paymentEvent.args._merchant,
             reference: paymentEvent.args._reference,
-            amountInWei: paymentEvent.args._amount.c[0] };
+            amountInWei: paymentEvent.args._amount.c[0] }; // !!!! afaict this won't scale to big numbers... need to use big number
     }
     EthPaymentGateway.paymentStatus = paymentStatus;
     function withdrawalRecord(merchantWithdrawalEvent) {
@@ -324,6 +325,7 @@ var EthPaymentGateway;
     EthPaymentGateway.EthPaymentGatewayBase = EthPaymentGatewayBase;
 })(EthPaymentGateway || (EthPaymentGateway = {}));
 ///<reference path="EthPaymentGatewayBase.ts"/>
+// why do we use this reference thingy here? does deleting from ts folder affect compilation
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     /*const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
@@ -332,6 +334,7 @@ var EthPaymentGateway;
     var network = "http://127.0.0.1:7545";
     var contractAddress = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
     var tokenAddress = "0x70d164aaa79495FA60FdA1eEd7c8fa945F2FbE73";
+    // @todo copy in latest when building
     var contractAbiUrl = "/abis/PaymentGatewayContract.json";
     var tokenAbiUrl = "/abis/erc20-contract-abi.json";
     var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
@@ -429,7 +432,10 @@ var EthPaymentGateway;
                         case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
                         case 1:
                             contract = _a.sent();
-                            result = this.baseClass.promisify(function (cb) { return contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb); });
+                            return [4 /*yield*/, contract.issueTokens(address, amount)];
+                        case 2:
+                            result = _a.sent();
+                            //let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
                             return [2 /*return*/, result];
                     }
                 });

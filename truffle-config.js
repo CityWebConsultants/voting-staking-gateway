@@ -8,7 +8,7 @@ module.exports = {
     development: {
       host: "127.0.0.1",
       port: 7545,
-      network_id: "*", 
+      network_id: "5777",  //should be set and not just any... perhaps call it ganache rather than development
       gas: 3000000
     },
     rinkeby: {

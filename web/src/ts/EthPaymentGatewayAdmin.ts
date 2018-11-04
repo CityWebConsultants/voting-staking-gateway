@@ -1,5 +1,5 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
-
+// why do we use this reference thingy here? does deleting from ts folder affect compilation
 namespace EthPaymentGateway{
     /*const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
     const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
@@ -9,6 +9,7 @@ namespace EthPaymentGateway{
     const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
     const tokenAddress: string = "0x70d164aaa79495FA60FdA1eEd7c8fa945F2FbE73";
 
+    // @todo copy in latest when building
     const contractAbiUrl: string = "/abis/PaymentGatewayContract.json";
     const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
 

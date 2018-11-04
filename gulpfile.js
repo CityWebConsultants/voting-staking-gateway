@@ -44,7 +44,6 @@ gulp.task('admin', (cb) => {
 });
 
 gulp.task('copyArtifacts', () => {
-    gulp.src(
-    ['build/contracts/PaymentGatewayContract.json', 'build/contracts/GatewayERC20Contract.json'])
+    gulp.src(['build/contracts/PaymentGatewayContract.json', 'build/contracts/GatewayERC20Contract.json'])
     .pipe(copy('web/src/abis',  { prefix: 2 }))
 })

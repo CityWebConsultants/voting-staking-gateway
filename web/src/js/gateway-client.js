@@ -41,6 +41,7 @@ var EthPaymentGateway;
             this.contractAddress = contractAddress;
             this.contractAbiUrl = contractAbiUrl;
             this.tokenAddress = tokenAddress;
+            // Should we really be routing html in this context --- re 
             this.tokenContractAbiUrl = tokenContractAbiUrl;
         }
         return GatewayConfigObject;
@@ -57,7 +58,7 @@ var EthPaymentGateway;
         }
         return { merchant: paymentEvent.args._merchant,
             reference: paymentEvent.args._reference,
-            amountInWei: paymentEvent.args._amount.c[0] };
+            amountInWei: paymentEvent.args._amount.c[0] }; // !!!! afaict this won't scale to big numbers... need to use big number
     }
     EthPaymentGateway.paymentStatus = paymentStatus;
     function withdrawalRecord(merchantWithdrawalEvent) {
