@@ -1,12 +1,61 @@
 require('dotenv').config()
-import {networks} from '../../../truffle-config.js'
+// import {networks} from '../../../truffle-config.js'
+
+// @todo make this more flexible
+// options to derive from latest settings in truffle
+// defaults etc...
+// For the moment we just want
+namespace EthPaymentGatewayConfig{
+// amend this to get latest truffle values if a network name is passed
+    export const config =  {
+        networkId: process.env.NETWORKID,
+        networkName: process.env.NETWORKNAME,
+        ethNodeUrl: process.env.ETHNODEURL,
+        ethNodeWsUrl: process.env.ETHNODEWSURL,
+        gasPrice: process.env.GASPRICE,
+        gas: process.env.GAS,
+        seed: process.env.SEED,
+        owner: process.env.CONTRACTOWNER,
+        tokenContractAddress: process.env.TOKENCONTRACTADDRESS,
+        merchantContractAddress: process.env.MERCHANTCONTRACTADDRESS,
+        presaleContractAddress: process.env.PRESALECONTRACTADDRESS
+    }
+//export {config}
+}
+
+
+// const config = () => {
+//     return {
+//         networkId: process.env.NETWORKID,
+//         networkName: process.env.NETWORKNAME,
+//         ethNodeUrl: process.env.ETHNODEURL,
+//         ethNodeWsUrl: process.env.ETHNODEWSURL,
+//         gasPrice: process.env.GASPRICE,
+//         gas: process.env.GAS,
+//         seed: process.env.SEED,
+//         owner: process.env.CONTRACTOWNER,
+//         tokenContractAddress: process.env.TOKENCONTRACTADDRESS,
+//         merchantContractAddress: process.env.MERCHANTCONTRACTADDRESS,
+//         presaleContractAddress: process.env.PRESALECONTRACTADDRESS
+//     }
+// }
+
+// export {config}
+
+
+/*
 const tokenArtifacts =  require('../../../build/contracts/PaymentGatewayContract.json')
 const merchantArtifacts = require('../../../build/contracts/GatewayERC20Contract.json')
 const presaleArtifacts = require('../../../build/contracts/PreSale.json')
 
 const contractNames = ['someName', 'someName', 'someName'];
+*/
 // so the artifacts don't actually help that much...
-
+// tidy this up and make it nice....
+// kind of wishing i hadn't started refactoring this
+// but toally ridiculous having to redo everytime
+// is there any good reason to keep 15 work mnemonic
+/*
 export class ConfigFactory {
 
     getConfig() {
@@ -15,14 +64,19 @@ export class ConfigFactory {
         }
     }
 
-
+*/
     // so perhaps it would be better to write a script 
     // how can we have two sets of env vars that say the same thing
     // can have defaults
     //
 
+    // if network name is passed we grab that data from truffle 
+    // ie if its just been deployed
+    // else we populate it from environment vars!!!?
+    // that should do the job
+    /*
     getTruffleConfig(networkName?: string) {
-        // this bit is untested
+
         return {
             networkName: networkName,
             networkId: networks[networkName].network_id,
@@ -35,18 +89,30 @@ export class ConfigFactory {
             // have to get contract addresses from the 
         }
     }
+    */
 
 
     // right now, all we need is a single export default
 
     // really only need a single config function...
-    getEnvConfig() {
-        return {
-            networkId: process.env.FOO
-
-        }
-    }
-  }
+    // getEnvConfig() {
+    //     return {
+    //         networkId: process.env.NETWORKID,
+    //         networkName: process.env.NETWORKNAME,
+    //         ethNodeUrl: process.env.ETHNODEURL,
+    //         ethNodeWsUrl: process.env.ETHNODEWSURL,
+    //         gasPrice: process.env.GASPRICE,
+    //         gas: process.env.GAS,
+    //         seed: process.env.SEED,
+    //         owner: process.env.CONTRACTOWNER,
+    //         tokenContractAddress: process.env.TOKENCONTRACTADDRESS,
+    //         merchantContractAddress: process.env.MERCHANTCONTRACTADDRESS,
+    //         presaleContractAddress: process.env.PRESALECONTRACTADDRESS
+    //     }
+    // }
+/*  
+}
+*/
   
 
     // hmmmmmmmmmmm.... just write it out and see what happens

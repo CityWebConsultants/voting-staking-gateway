@@ -1,11 +1,14 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
 
+require('dotenv').config()
+
 namespace EthPaymentGateway{
-    const network = "http://localhost:7545";
-    const contractAddress = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
-    const contractAbiUrl = "http://127.0.0.1/src/gateway-contract-abi.json";
-    const tokenAddress = "0xe186255319a4c5354e57ae553811498a5129e790";
-    const tokenAbiUrl = "http://127.0.0.1/src/erc20-contract-abi.json";
+
+    const network = process.env.ETHNODEURL || ""
+    const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
 
     const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 

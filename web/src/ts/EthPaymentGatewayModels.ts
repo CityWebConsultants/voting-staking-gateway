@@ -5,7 +5,8 @@ namespace EthPaymentGateway{
         contractAbiUrl: string;
         tokenAddress: string;
         tokenContractAbiUrl: string;
-
+        // we should be passing in a fully formed object instead of passing in lots of individual vars...
+        // this should be done along the lines of dependency injection
         constructor(network: string, contractAddress: string, contractAbiUrl: string, tokenAddress: string, tokenContractAbiUrl: string){
 
             this.network = network;
