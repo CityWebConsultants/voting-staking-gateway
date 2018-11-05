@@ -1,7 +1,5 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
 
-require('dotenv').config()
-
 namespace EthPaymentGateway{
 
     // const network = process.env.ETHNODEURL || ""
@@ -17,7 +15,7 @@ namespace EthPaymentGateway{
         merchant: string;
 
         constructor(merchant: string){
-            this.baseClass = new EthPaymentGatewayBase(gatewayConfig);
+            this.baseClass = new EthPaymentGatewayBase();
             this.merchant = merchant;
         }
 

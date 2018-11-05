@@ -1,9 +1,9 @@
 namespace EthPaymentGateway{
     export class GatewayConfigObject{
         readonly network: string = 'https://localhost:7545';
-        readonly contractAddress: string = '0x';
+        readonly contractAddress: string = '0xb469690cc97d84bf98098262fbe9a0f3e21fc7fc';
         readonly contractAbiUrl: string = 'abis/GatewayERC20Contract.json';
-        readonly tokenAddress: string = '0x'
+        readonly tokenAddress: string = '0x8c951fe19dbf212ae4c57198891ad9dd5f446d1c'
         readonly tokenContractAbiUrl: string = 'abis/PaymentGatewayContract.json';
     }
 
