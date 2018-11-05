@@ -1,6 +1,6 @@
-
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonic = "hollow reduce afford gaze blast oak entire essence fantasy man industry donkey six left avocado";
+let HDWalletProvider = require("truffle-hdwallet-provider");
+let mnemonic = 'peanut grocery material tenant soccer love stereo trial leader mask sunny great'
+// let mnemonic = "hollow reduce afford gaze blast oak entire essence fantasy man industry donkey six left avocado";
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
