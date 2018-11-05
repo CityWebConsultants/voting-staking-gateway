@@ -39,7 +39,7 @@
     "tests": "truffle test",
     "build": "npm run client && npm run merchant && npm run admin & npm run copy-artifacts",
     "deploy": "npm run purge && truffle migrate --reset",
-    "purge": "rm build/contracts/*.json -f",
+    "purge": "rm -f build/contracts/*.json",
     "client": "gulp client",
     "admin": "gulp admin",
     "merchant": "gulp merchant",
