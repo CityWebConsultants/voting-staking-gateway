@@ -2,12 +2,12 @@
 
 namespace EthPaymentGateway{
 
-    const network = process.env.ETHNODEURL || ""
-    const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
-    const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
-    const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
-    const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
-    const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    // const network = process.env.ETHNODEURL || ""
+    // const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    // const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    // const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    // const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
+    // const gatewayConfig = new GatewayConfigObject();
 
     export class EthPaymentGatewayClient{
 
@@ -15,7 +15,7 @@ namespace EthPaymentGateway{
         merchant: string;
     
         constructor(merchant: string){
-            this.baseClass = new EthPaymentGatewayBase(gatewayConfig);
+            this.baseClass = new EthPaymentGatewayBase();
             this.merchant = merchant;
         }
 

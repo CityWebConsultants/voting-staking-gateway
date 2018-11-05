@@ -1,21 +1,10 @@
 namespace EthPaymentGateway{
     export class GatewayConfigObject{
-        network: string;
-        contractAddress: string;
-        contractAbiUrl: string;
-        tokenAddress: string;
-        tokenContractAbiUrl: string;
-        // we should be passing in a fully formed object instead of passing in lots of individual vars...
-        // this should be done along the lines of dependency injection
-        constructor(network: string, contractAddress: string, contractAbiUrl: string, tokenAddress: string, tokenContractAbiUrl: string){
-
-            this.network = network;
-            this.contractAddress = contractAddress;
-            this.contractAbiUrl = contractAbiUrl;
-            this.tokenAddress = tokenAddress;
-            // Should we really be routing html in this context --- re 
-            this.tokenContractAbiUrl = tokenContractAbiUrl;            
-        }
+        readonly network: string = 'https://localhost:7545';
+        readonly contractAddress: string = '0x';
+        readonly contractAbiUrl: string = 'abis/GatewayERC20Contract.json';
+        readonly tokenAddress: string = '0x'
+        readonly tokenContractAbiUrl: string = 'abis/PaymentGatewayContract.json';
     }
 
     export var EventType: any = {

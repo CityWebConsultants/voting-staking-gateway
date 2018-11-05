@@ -4,13 +4,13 @@ require('dotenv').config()
 
 namespace EthPaymentGateway{
 
-    const network = process.env.ETHNODEURL || ""
-    const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
-    const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
-    const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
-    const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
+    // const network = process.env.ETHNODEURL || ""
+    // const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    // const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    // const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    // const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
 
-    const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    const gatewayConfig = new GatewayConfigObject();
 
     export class EthPaymentGatewayMerchant{
         baseClass: EthPaymentGatewayBase;
