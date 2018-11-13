@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity 0.4.24;
 // Adapted from Harbour prohect Stakebank https://github.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
 // declare interface for erc20 token
 // we should NOT talk to the voting contract
@@ -7,6 +7,10 @@ pragma solidity ^0.4.24;
 // need to add additional 
 // perhaps use different than lockable .... because we need time lock
 // @todo grab tests and adapt https://github.com/HarbourProject/stakebank/blob/development/test/TestStakeBank.js
+// If this uses block numbers
+// using block numbers is the properly accurate way to do things
+// make sure there is no conflict between how we are doing things here and how they are done elsewhere ie preSale...
+// @todo refactor to put lifecycle inside of tokens
 
 import "../lifecycle/Lockable.sol";
 import "../ownership/Ownable.sol";
@@ -30,9 +34,10 @@ contract Staking is StakingInterface, Lockable {
     Checkpoint[] public stakeHistory;
 
     mapping (address => Checkpoint[]) public stakesFor;
+    //@todo point this toward the staking contract
 
     /// @param _token Token that can be staked.
-    function Staking(ERC20 _token) public {
+    constructor(ERC20 _token) public {
         require(address(_token) != 0x0, "Empty address!");
         token = _token;
     }
@@ -55,7 +60,7 @@ contract Staking is StakingInterface, Lockable {
 
         require(token.transferFrom(msg.sender, address(this), amount));
 
-        Staked(user, amount, totalStakedFor(user), data);
+        emit Staked(user, amount, totalStakedFor(user), data);
     }
 
     /// @notice Unstakes a certain amount of tokens.
@@ -68,7 +73,13 @@ contract Staking is StakingInterface, Lockable {
         updateCheckpointAtNow(stakeHistory, amount, true);
 
         require(token.transfer(msg.sender, amount), "Unable to transfer tokens");
-        Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+        // This assumes we can unstake at any point and thus do not have tokens added in advance
+        // So, we need to add tokens from somewhere to this amount
+        // a lot of question marks so can't do that just now.
+        // Add a way to differentiate between different stakes
+        // Should do here, or should override the functions here depending
+        // on what is happening...
     }
 
     /// @notice Returns total tokens staked for address.
@@ -151,6 +162,9 @@ contract Staking is StakingInterface, Lockable {
         }
     }
 
+    // Perhaps adapt to unix time?
+    // we should measure this in blocks rather than 
+    // 
     function stakedAt(Checkpoint[] storage history, uint256 blockNumber) internal view returns (uint256) {
         uint256 length = history.length;
 
