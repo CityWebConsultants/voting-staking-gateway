@@ -39,9 +39,9 @@ contract Staking is StakingInterface, Lockable {
 
     ERC20 public token;
 
-    Checkpoint[] public stakeHistory;
+    //Checkpoint[] public stakeHistory;
     
-    mapping (address => stakeItem[]) public stakesFor;
+    mapping (address => StakeItem[]) public stakesFor;
 
     /// @param _token Token that can be staked.
     constructor(ERC20 _token) public {
@@ -61,14 +61,14 @@ contract Staking is StakingInterface, Lockable {
     /// @param amount Amount of tokens to stake.
     /// @param data Data field used for signalling in more complex staking applications.
     function stakeFor(address _user, uint256 _amount, bytes _data) public onlyWhenUnlocked {
-
+        // check required number of tokens exist to fulfill
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
         
         uint256 stakeUntil = toUInt256(_data); // derive block height height from bytes --- block height
 
         stakesFor[_user].push({stakedAt: block.height, _amount: getRate(stakeUntil), stakedUntil: stakeUntil});
-        updateCheckpointAtNow(stakeHistory, _amount, false);
-
+        // updateCheckpointAtNow(stakeHistory, _amount, false);
+        // so when we measure this waht if it takes a while for a block to get mined?
         uint256 until = 1000000;
 
         emit Staked(_user, _amount, totalStakedFor(_user), _data);
@@ -143,13 +143,7 @@ contract Staking is StakingInterface, Lockable {
     /// @param addr Address to check.
     /// @return amount of tokens staked.
     function totalStakedFor(address addr) public view returns (uint256) {
-        Checkpoint[] storage stakes = stakesFor[addr];
 
-        if (stakes.length == 0) {
-            return 0;
-        }
-
-        return stakes[stakes.length-1].amount;
     }
 
     /// @notice Returns total tokens staked.
@@ -161,7 +155,7 @@ contract Staking is StakingInterface, Lockable {
     /// @notice Returns if history related functions are implemented.
     /// @return Bool whether history is implemented.
     function supportsHistory() public pure returns (bool) {
-        return true;
+        return false;
     }
     
     /// @notice Returns the token address.
@@ -170,33 +164,33 @@ contract Staking is StakingInterface, Lockable {
         return token;
     }
 
-    /// @notice Returns last block address staked at.
-    /// @param addr Address to check.
-    /// @return block number of last stake.
-    function lastStakedFor(address addr) public view returns (uint256) {
-        Checkpoint[] storage stakes = stakesFor[addr];
+    // /// @notice Returns last block address staked at.
+    // /// @param addr Address to check.
+    // /// @return block number of last stake.
+    // function lastStakedFor(address addr) public view returns (uint256) {
+    //     Checkpoint[] storage stakes = stakesFor[addr];
 
-        if (stakes.length == 0) {
-            return 0;
-        }
+    //     if (stakes.length == 0) {
+    //         return 0;
+    //     }
 
-        return stakes[stakes.length-1].at;
-    }
+    //     return stakes[stakes.length-1].at;
+    // }
 
-    /// @notice Returns total amount of tokens staked at block for address.
-    /// @param addr Address to check.
-    /// @param blockNumber Block number to check.
-    /// @return amount of tokens staked.
-    function totalStakedForAt(address addr, uint256 blockNumber) public view returns (uint256) {
-        return stakedAt(stakesFor[addr], blockNumber);
-    }
+    // /// @notice Returns total amount of tokens staked at block for address.
+    // /// @param addr Address to check.
+    // /// @param blockNumber Block number to check.
+    // /// @return amount of tokens staked.
+    // function totalStakedForAt(address addr, uint256 blockNumber) public view returns (uint256) {
+    //     return stakedAt(stakesFor[addr], blockNumber);
+    // }
 
-    /// @notice Returns the total tokens staked at block.
-    /// @param blockNumber Block number to check.
-    /// @return amount of tokens staked.
-    function totalStakedAt(uint256 blockNumber) public view returns (uint256) {
-        return stakedAt(stakeHistory, blockNumber);
-    }
+    // /// @notice Returns the total tokens staked at block.
+    // /// @param blockNumber Block number to check.
+    // /// @return amount of tokens staked.
+    // function totalStakedAt(uint256 blockNumber) public view returns (uint256) {
+    //     return stakedAt(stakeHistory, blockNumber);
+    // }
 
     function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake, uint256 until) internal {
 
@@ -245,7 +239,7 @@ contract Staking is StakingInterface, Lockable {
         }
 
         return history[min].amount;
-    }
+    }   
 
     // feels like an uncessary burden on the user...
     // 3 months
@@ -277,27 +271,29 @@ contract Staking is StakingInterface, Lockable {
     private
     returns(uint256 amountUnstaked) 
     {
-        // actually --- we need to put storage here
-        // we're making changes
-        // each tranche deserves and event...
-        //withdrawStake(address user, uint256 _amount)
-        require(availableToUnstake(user) >= _amount, "Not enough funds available");
-        // we do twice the work... meh!!!
+        // bytes array containing. 
+        // require(availableToUnstake(user) >= _amount, "Attempted to unstake more tokens than available.");
+
         StakeItem[] storage stakes = stakesFor[_user];
-        uint256 length = stakesFor[_user].length;
+        uint256 length = stakes.length;
         uint256 toWithdraw = _amount;
 
-        for (uint256 i = 0; i < length-1; i++) {
-            if (toWithdraw > 0 && stakes[i].amount >= toWithdraw) {
-                stakes[i].amount -= toWithdraw;
-                toWithdraw = 0;
-            } else if (toWithdraw > 0 && stakes[i].amount > 0) {
-                stakes[i].amount -= stakes[i].amount;
-                toWithdraw -= stakes[i].amount;
+        for (uint256 i = 0; i < length; i++) {
+            if (toWithdraw > 0 && stakes[i].stakeUntil >= block.height) {
+                if (stakes[i].amount >= toWithdraw) {
+                    stakes[i].amount -= toWithdraw;
+                    toWithdraw = 0;
+                } else if (stakes[i].amount > 0) {
+                    stakes[i].amount = 0;
+                    toWithdraw -= stakes[i].amount;
+                }
             }
         }
-
-        return (amount - toWithdraw);
+        
+        // There's draons here
+        require(amount == toWithdraw, "Not enough funds to withdraw");
+        // Should we allow a request for less than to be withdrawn -- should enforce onlt 
+        return amount;
     }
 
    // function reduceStakeBalance()
