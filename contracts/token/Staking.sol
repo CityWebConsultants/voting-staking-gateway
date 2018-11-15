@@ -1,5 +1,5 @@
 pragma solidity 0.4.24;
-// Adapted from Harbour prohect Stakebank https://github.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
+// Adapted from Harbour prohect Stakebank https://github§§§.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
 // declare interface for erc20 token
 // we should NOT talk to the voting contract
 // perhaphs include lifecycle lockable?
@@ -22,19 +22,26 @@ contract Staking is StakingInterface, Lockable {
 
     using SafeMath for uint256;
 
+   // uint256 totalStaked;
+
+    // Used for history
     struct Checkpoint {
         uint256 at;
         uint256 amount;
     }
 
-    // Is it better just to use the interface for erc20?
-    ERC20 public token;
-    // Capture length of staking
-    // How do we set checkpoint
-    Checkpoint[] public stakeHistory;
+    // Used for accounting
+    struct stakeItem {
+        uint256 stakedAt; // timestamp, date of deposit
+        uint256 stakeUntil; // timestamp, date of deposit
+        uint256 amount; // current balance in this tranche...
+    }
 
-    mapping (address => Checkpoint[]) public stakesFor;
-    //@todo point this toward the staking contract
+    ERC20 public token;
+
+    Checkpoint[] public stakeHistory;
+    
+    mapping (address => stakeItem[]) public stakesFor;
 
     /// @param _token Token that can be staked.
     constructor(ERC20 _token) public {
@@ -55,10 +62,14 @@ contract Staking is StakingInterface, Lockable {
     /// @param data Data field used for signalling in more complex staking applications.
     function stakeFor(address user, uint256 amount, bytes data) public onlyWhenUnlocked {
         // when we calculate -- need to consider different tranches of locked tokens!
-        updateCheckpointAtNow(stakesFor[user], amount, false);
-        updateCheckpointAtNow(stakeHistory, amount, false);
+        // cast data to uint8
+        require(token.transferFrom(msg.sender, address(this), amount), "Unable to transfer tokens");
+        
+        //@todo calculate this
+        uint256 until = 1000000;
 
-        require(token.transferFrom(msg.sender, address(this), amount));
+        // updateCheckpointAtNow(stakesFor[user], amount, false);
+        // updateCheckpointAtNow(stakeHistory, amount, false);
 
         emit Staked(user, amount, totalStakedFor(user), data);
     }
@@ -68,10 +79,14 @@ contract Staking is StakingInterface, Lockable {
     /// @param data Data field used for signalling in more complex staking applications.
     function unstake(uint256 amount, bytes data) public {
         require(totalStakedFor(msg.sender) >= amount, "Attemping to unstake more than staked");
+        
 
-        updateCheckpointAtNow(stakesFor[msg.sender], amount, true);
-        updateCheckpointAtNow(stakeHistory, amount, true);
 
+        // require(block.number >= lastStaked[msg.sender].add(10), "Attempting withdraw more than staked");
+
+        //updateCheckpointAtNow(stakesFor[msg.sender], amount, true, 0);
+        updateCheckpointAtNow(stakeHistory, amount, true, 0);
+        
         require(token.transfer(msg.sender, amount), "Unable to transfer tokens");
         emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
         // This assumes we can unstake at any point and thus do not have tokens added in advance
@@ -141,16 +156,16 @@ contract Staking is StakingInterface, Lockable {
         return stakedAt(stakeHistory, blockNumber);
     }
 
-    function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake) internal {
+    function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake, uint256 until) internal {
 
         uint256 length = history.length;
         if (length == 0) {
-            history.push(Checkpoint({at: block.number, amount: amount}));
+            history.push(Checkpoint({at: block.number, until:until, amount: amount}));
             return;
         }
 
         if (history[length-1].at < block.number) {
-            history.push(Checkpoint({at: block.number, amount: history[length-1].amount}));
+            history.push(Checkpoint({at: block.number, until: until, amount: history[length-1].amount}));
         }
 
         Checkpoint storage checkpoint = history[length];
@@ -185,8 +200,44 @@ contract Staking is StakingInterface, Lockable {
             } else {
                 max = mid-1;
             }
-        }
+        }   
 
         return history[min].amount;
+    }
+
+    function getRate (uint8 monthsToStake) 
+    public 
+    pure 
+    returns (uint256) {
+        if (monthsToStake == 0) {
+            return 0;
+        }
+        if (monthsToStake == 6) {
+            return 20;
+        }
+        if (monthsToStake == 9) {
+            return 30;
+        }
+        if (monthsToStake == 9) {
+            return 30;
+        }
+    }
+
+    function calculateUnstakeTime(uint8 months)
+    public
+    pure
+    returns(uint256 unstakeAtTimestamp) 
+    {
+        uint256 unixMonth = 2592000000;
+        return months * unixMonth;
+    }
+
+    // timestamp
+    function estimateBlockDistance(uint256 length)
+    public
+    pure
+    returns(uint256 blockDistance)
+    {
+        return 14000 * length;
     }
 }

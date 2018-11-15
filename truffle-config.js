@@ -8,8 +8,9 @@ module.exports = {
     development: {
       host: "127.0.0.1",
       port: 7545,
-      network_id: "5777",  //should be set and not just any... perhaps call it ganache rather than development
-      gas: 3000000
+      network_id: "5777",
+      gas: 3000000,
+      from: '0x3fabe74712f7cbaed335ba7b60c3493fc16c7bdb'
     },
     rinkeby: {
       provider: function() {

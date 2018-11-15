@@ -1,4 +1,7 @@
 pragma solidity 0.4.24;
+//@todo get this working piece by piece...
+//use it on remix -- but need web for that... at least see if it compiles.
+
 // Adapted from Harbour prohect Stakebank https://github§§§.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
 // declare interface for erc20 token
 // we should NOT talk to the voting contract
@@ -11,6 +14,8 @@ pragma solidity 0.4.24;
 // using block numbers is the properly accurate way to do things
 // make sure there is no conflict between how we are doing things here and how they are done elsewhere ie preSale...
 // @todo refactor to put lifecycle inside of tokens
+// could still take a single byte in months... and apply like this...
+//
 
 import "../lifecycle/Lockable.sol";
 import "../ownership/Ownable.sol";
@@ -25,13 +30,17 @@ contract Staking is StakingInterface, Lockable {
    // uint256 totalStaked;
 
     // Used for history
-    struct Checkpoint {
-        uint256 at;
-        uint256 amount;
-    }
+    // struct Checkpoint {
+    //     uint256 at;
+    //     uint256 amount;
+    // }
+    // All of the history can be established from history
+    // so we don't really need it. We just need running totals...
+    // as long as it is captured in events -- it can be reconstructed, we dotn have to use it here
+
 
     // Used for accounting
-    struct StakeItem {
+    struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
         uint256 stakeUntil; // timestamp, date of deposit
         uint256 amount; // current balance in this tranche...
@@ -39,9 +48,10 @@ contract Staking is StakingInterface, Lockable {
 
     ERC20 public token;
 
+    // we should also keep a stake history? read what the form on it should be
     //Checkpoint[] public stakeHistory;
     
-    mapping (address => StakeItem[]) public stakesFor;
+    mapping (address => StakeEntry[]) public stakesFor;
 
     /// @param _token Token that can be staked.
     constructor(ERC20 _token) public {
@@ -66,17 +76,28 @@ contract Staking is StakingInterface, Lockable {
         
         uint256 stakeUntil = toUInt256(_data); // derive block height height from bytes --- block height
 
-        stakesFor[_user].push({stakedAt: block.height, _amount: getRate(stakeUntil), stakedUntil: stakeUntil});
+        uint256 rate = getRate(stakeUntil);
+        uint256 amount = _amount + (_amount / rate * 100);
+
+        // had to change initialisation =of this object because passsing in an object literal has issues.
+       // this is poor tho, so should figure out what the problem was and go back... 
+        StakeEntry memory stakeItem;
+        stakeItem.stakedAt = block.number;
+        stakeItem.amount = amount; 
+        stakeItem.stakeUntil = stakeUntil;
+    
+        stakesFor[_user].push(stakeItem);
+       
+       // stakesFor[_user].push({stakedAt: block.number, amount: amount, stakedUntil: stakeUntil});
+        totalStaked += amount;
         // updateCheckpointAtNow(stakeHistory, _amount, false);
         // so when we measure this waht if it takes a while for a block to get mined?
-        uint256 until = 1000000;
+        // uint256 until = 1000000;
 
         emit Staked(_user, _amount, totalStakedFor(_user), _data);
     }
 
     // really should be able to cast this... what is the xor solution...
-
-
     function toUInt256(bytes _bytes) 
     private
     pure
@@ -84,9 +105,8 @@ contract Staking is StakingInterface, Lockable {
         return (sliceUint(_bytes, 0));
     }
 
-    // we are not collecting values here
-    // we should demand it exactly matches the correct length
-    // but need to experiment to get it to work
+    // @todo tighten up the assembly so we can rely on only a uint - nothing more and nothing less...
+
     function sliceUint(bytes bs, uint start)
     internal pure
     returns (uint)
@@ -99,58 +119,38 @@ contract Staking is StakingInterface, Lockable {
         return x;
     }
 
-
-    // could trat them as separate steaks so the first one found that was more than 0
-    // but what if non zero
-    // single digits is  enough to identify...
-
-
-
-
-
     /// @notice Unstakes a certain amount of tokens.
     /// @param amount Amount of tokens to unstake.
     /// @param data Data field used for signalling in more complex staking applications.
-    function unstake(uint256 _amount, bytes _data) public {
-        require(availableToWithdraw(_amount) > _amount, "Not enough funds");
-        
-        uint256 withdrawn = withdrawStake(msg.sender, _amount);
-        require(withdrawn == _amount, "Cannot withdraw that amount"); // 8-?
-        updateCheckpointAtNow(stakeHistory, amount, true);
-        require(token.transfer(msg.sender, amount), "Unable to transfer tokens");
+    function unstake(uint256 _amount, bytes _data) 
+    public 
+    {
+        // is it extreme to put these 3 requires in this way?
+        require((availableToUnstake(msg.sender) > _amount), "Not enough funds");
+        require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
+        require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
 
-        emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), _data);
-
-        // do we need to reduce the values 
-        // yes because we have pockets of data left over
-        //require(totalStakedFor(msg.sender) >= amount, "Attemping to unstake more than staked");
-        // require(block.number >= lastStaked[msg.sender].add(10), "Attempting withdraw more than staked");
-
-        //updateCheckpointAtNow(stakesFor[msg.sender], amount, true, 0);
-
-        
-       // require(token.transfer(msg.sender, amount), "Unable to transfer tokens");
-     
-        // This assumes we can unstake at any point and thus do not have tokens added in advance
-        // So, we need to add tokens from somewhere to this amount
-        // a lot of question marks so can't do that just now.
-        // Add a way to differentiate between different stakes
-        // Should do here, or should override the functions here depending
-        // on what is happening...
+        totalStaked -= _amount;
+        emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
     }
 
     /// @notice Returns total tokens staked for address.
     /// @param addr Address to check.
     /// @return amount of tokens staked.
-    function totalStakedFor(address addr) public view returns (uint256) {
-
+    function totalStakedFor(address _addr) public view returns (uint256) {
+        StakeEntry[] storage stakes = stakesFor[_addr];
+        uint256 amountStaked;
+        for (uint256 i = 0; i < stakes.length; i++) {
+            amountStaked += stakes[i].amount;
+        }
+        return amountStaked;
     }
 
     /// @notice Returns total tokens staked.
     /// @return amount of tokens staked.
-    function totalStaked() public view returns (uint256) {
-        return totalStakedAt(block.number);
-    }
+    // function totalStaked() public view returns (uint256) {
+    //     return totalStakedAt(block.number);
+    // }    
 
     /// @notice Returns if history related functions are implemented.
     /// @return Bool whether history is implemented.
@@ -189,74 +189,76 @@ contract Staking is StakingInterface, Lockable {
     // /// @param blockNumber Block number to check.
     // /// @return amount of tokens staked.
     // function totalStakedAt(uint256 blockNumber) public view returns (uint256) {
-    //     return stakedAt(stakeHistory, blockNumber);
+    //     // uhm.....
+    //     // return stakedAt(stakeHistory, blockNumber);
+    //     return 1;
     // }
 
-    function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake, uint256 until) internal {
+    // function updateCheckpointAtNow(Checkpoint[] storage history, uint256 amount, bool isUnstake, uint256 until) internal {
 
-        uint256 length = history.length;
-        if (length == 0) {
-            history.push(Checkpoint({at: block.number, until:until, amount: amount}));
-            return;
-        }
+    //     uint256 length = history.length;
+    //     if (length == 0) {
+    //         history.push(Checkpoint({at: block.number, until:until, amount: amount}));
+    //         return;
+    //     }
 
-        if (history[length-1].at < block.number) {
-            history.push(Checkpoint({at: block.number, until: until, amount: history[length-1].amount}));
-        }
+    //     if (history[length-1].at < block.number) {
+    //         history.push(Checkpoint({at: block.number, until: until, amount: history[length-1].amount}));
+    //     }
 
-        Checkpoint storage checkpoint = history[length];
+    //     Checkpoint storage checkpoint = history[length];
 
-        if (isUnstake) {
-            checkpoint.amount = checkpoint.amount.sub(amount);
-        } else {
-            checkpoint.amount = checkpoint.amount.add(amount);
-        }
-    }
+    //     if (isUnstake) {
+    //         checkpoint.amount = checkpoint.amount.sub(amount);
+    //     } else {
+    //         checkpoint.amount = checkpoint.amount.add(amount);
+    //     }
+    // }
 
     // Perhaps adapt to unix time?
     // we should measure this in blocks rather than 
     // 
-    function stakedAt(Checkpoint[] storage history, uint256 blockNumber) internal view returns (uint256) {
-        uint256 length = history.length;
+    // function stakedAt(Checkpoint[] storage history, uint256 blockNumber) internal view returns (uint256) {
+    //     uint256 length = history.length;
 
-        if (length == 0 || blockNumber < history[0].at) {
-            return 0;
-        }
+    //     if (length == 0 || blockNumber < history[0].at) {
+    //         return 0;
+    //     }
 
-        if (blockNumber >= history[length-1].at) {
-            return history[length-1].amount;
-        }
+    //     if (blockNumber >= history[length-1].at) {
+    //         return history[length-1].amount;
+    //     }
 
-        uint min = 0;
-        uint max = length-1;
-        while (max > min) {
-            uint mid = (max + min + 1) / 2;
-            if (history[mid].at <= blockNumber) {
-                min = mid;
-            } else {
-                max = mid-1;
-            }
-        }
+    //     uint min = 0;
+    //     uint max = length-1;
+    //     while (max > min) {
+    //         uint mid = (max + min + 1) / 2;
+    //         if (history[mid].at <= blockNumber) {
+    //             min = mid;
+    //         } else {
+    //             max = mid-1;
+    //         }
+    //     }
 
-        return history[min].amount;
-    }   
+    //     return history[min].amount;
+    // }   
 
     // feels like an uncessary burden on the user...
     // 3 months
     // would have to withdraw and restake 
-    function availableToUnstake(address user)
+    function availableToUnstake(address _user)
     public
     view 
     returns (uint256)
     {
         uint256 available;
-        StakeItem[] memory stakes = stakesFor[_user];
+        StakeEntry[] memory stakes = stakesFor[_user];
         uint256 length = stakesFor[_user].length;
         // @todo -- use Safe Math
         // Iterate over each and establish value
         for (uint i = 0; i < length-1; i++) {
-            if (stakes[i].stakeUntil >= block.height) {
-                available += stakes.amount;
+            if (stakes[i].stakeUntil >= block.number) {
+                available += stakes[i].amount;
             }
         }
 
@@ -267,19 +269,19 @@ contract Staking is StakingInterface, Lockable {
     // wasting resource by iterating twice....
     // daily report...
 
-    function withdrawStake(address user, uint256 _amount)
+    function withdrawStake(address _user, uint256 _amount)
     private
-    returns(uint256 amountUnstaked) 
+    returns(bool)
     {
         // bytes array containing. 
-        // require(availableToUnstake(user) >= _amount, "Attempted to unstake more tokens than available.");
+        require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
 
-        StakeItem[] storage stakes = stakesFor[_user];
+        StakeEntry[] storage stakes = stakesFor[_user];
         uint256 length = stakes.length;
         uint256 toWithdraw = _amount;
 
         for (uint256 i = 0; i < length; i++) {
-            if (toWithdraw > 0 && stakes[i].stakeUntil >= block.height) {
+            if (toWithdraw > 0 && stakes[i].stakeUntil >= block.number) {
                 if (stakes[i].amount >= toWithdraw) {
                     stakes[i].amount -= toWithdraw;
                     toWithdraw = 0;
@@ -290,15 +292,16 @@ contract Staking is StakingInterface, Lockable {
             }
         }
         
-        // There's draons here
-        require(amount == toWithdraw, "Not enough funds to withdraw");
-        // Should we allow a request for less than to be withdrawn -- should enforce onlt 
-        return amount;
+        // Don't trusy own logic, so if something fucks up, roll it all back.
+        require(_amount == toWithdraw, "Not enough funds to withdraw");
+        return true;
+        // We should fire an event here
     }
 
    // function reduceStakeBalance()
 
-    function getRate (uint8 monthsToStake) 
+    // change this to blockheight calculations
+    function getRate (uint256 monthsToStake) 
     public 
     pure 
     returns (uint256) {

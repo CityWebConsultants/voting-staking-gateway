@@ -1,8 +1,10 @@
 pragma solidity ^0.4.24;
 
 // ERC900 https://github.com/ethereum/EIPs/issues/900
-// should default to public but specifying to silencing linter
+
 contract StakingInterface {
+    // Making two changes
+    uint256 public totalStaked;
 
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
@@ -11,7 +13,8 @@ contract StakingInterface {
     function stakeFor(address user, uint256 amount, bytes data) public;
     function unstake(uint256 amount, bytes data) public;
     function totalStakedFor(address addr) public view returns (uint256);
-    function totalStaked() public view returns (uint256);
+    // Implemented as public variable
+    //function totalStaked() public view returns (uint256);
     function token() public view returns (address);
     function supportsHistory() public pure returns (bool);
 
