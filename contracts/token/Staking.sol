@@ -21,15 +21,16 @@ pragma solidity 0.4.24;
 // @todo refactor to put lifecycle inside of tokens
 // could still take a single byte in months... and apply like this...
 //
+// @todo at no point do we lock -- when no funds left do not allow anyone to join...  
 
 import "../lifecycle/Lockable.sol";
 import "../ownership/Ownable.sol";
-import "./ERC20.sol";
+import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
 import "../math/SafeMath.sol";
 
-contract Staking is StakingInterface, Lockable {
-
+contract Staking is StakingInterface/*, Lockable */{
+    //@todo use safe math
     using SafeMath for uint256;
 
     struct StakeEntry {
@@ -38,12 +39,12 @@ contract Staking is StakingInterface, Lockable {
         uint256 amount; // current balance in this tranche...
     }
 
-    ERC20 public token;
+    ERC20Interface public token;
     
     mapping (address => StakeEntry[]) public stakesFor;
 
     /// @param _token Token that can be staked.
-    constructor(ERC20 _token) public {
+    constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
         token = _token;
     }
@@ -59,33 +60,35 @@ contract Staking is StakingInterface, Lockable {
     /// @param _user Address of the user to stake for.
     /// @param _amount Amount of tokens to stake.
     /// @param _data Data field used for signalling in more complex staking applications.
-    function stakeFor(address _user, uint256 _amount, bytes _data) public onlyWhenUnlocked {
+    function stakeFor(address _user, uint256 _amount, bytes _data) public /* onlyWhenUnlocked*/ {
         // check required number of tokens exist to fulfill
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
-        /*
+        
         uint256 stakeUntil = toUint256(_data); // derive block height height from bytes --- block height
 
         uint256 rate = 10; // <--- put this back getRate(stakeUntil);
-        uint256 amount = _amount + (_amount / rate * 100);
- 
+        // we have to calculate block height here
+        // and also add safemath
+        uint256 amount = _amount + (_amount * rate / 100);
+
         StakeEntry memory stakeItem;
+
         stakeItem.stakedAt = block.number;
         stakeItem.amount = amount; 
         stakeItem.stakeUntil = stakeUntil;
-    
+        // because no first item, will not poush.
         stakesFor[_user].push(stakeItem);
        
-        // stakesFor[_user].push({stakedAt: block.number, amount: amount, stakedUntil: stakeUntil});
+        // stakesFor[_user].push({stakedAt: block.number, amount: amount, stakeUntil: stakeUntil});
         totalStaked += amount;
 
         emit Staked(_user, _amount, totalStakedFor(_user), _data);
-        */
     }
 
         // really should be able to cast this... what is the xor solution...
     function toUint256(bytes _bytes)
-    private
-    view
+    internal
+    pure
     returns (uint256 timestamp){
         // Little endian so have to pass in 0x00..........001 for 1
         return (sliceUint(_bytes, 0x0));
@@ -96,10 +99,12 @@ contract Staking is StakingInterface, Lockable {
     internal 
     pure
     returns (uint)
-    {
-        require(_bs.length >= _start + 32, "slicing out of range");
+    {   
+        // may need this to be exactly 32bytes so we must have a full number
+        // this may be more flixible but more error prone
+        // require(_bs.length <= _start + 32, "slicing out of range");
         uint256 x;
-        assembly {
+        assembly { // solium-disable-line security/no-inline-assembly
             x := mload(add(_bs, add(0x20, _start)))
         }
         return x;
@@ -129,15 +134,15 @@ contract Staking is StakingInterface, Lockable {
     }
 
     */
-/*
+
     /// @notice Unstakes a certain amount of tokens.
-    /// @param amount Amount of tokens to unstake.
-    /// @param data Data field used for signalling in more complex staking applications.
+    /// @param _amount Amount of tokens to unstake.
+    /// @param _data Data field used for signalling in more complex staking applications.
     function unstake(uint256 _amount, bytes _data) 
     public 
     {
         // is it extreme to put these 3 requires in this way?
-        require((availableToUnstake(msg.sender) > _amount), "Not enough funds");
+        // @todorequire((availableToUnstake(msg.sender) >= _amount), "Not enough funds");
         require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
         require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
 
@@ -146,7 +151,7 @@ contract Staking is StakingInterface, Lockable {
     }
 
     /// @notice Returns total tokens staked for address.
-    /// @param addr Address to check.
+    /// @param _addr Address to check.
     /// @return amount of tokens staked.
     function totalStakedFor(address _addr) public view returns (uint256) {
         StakeEntry[] storage stakes = stakesFor[_addr];
@@ -157,8 +162,8 @@ contract Staking is StakingInterface, Lockable {
         return amountStaked;
     }
 
-    /// @notice Returns total tokens staked.
-    /// @return amount of tokens staked.
+    // @notice Returns total tokens staked.
+    // @return amount of tokens staked.
     // function totalStaked() public view returns (uint256) {
     //     return totalStakedAt(block.number);
     // }    
@@ -175,9 +180,9 @@ contract Staking is StakingInterface, Lockable {
         return token;
     }
 
-    // /// @notice Returns last block address staked at.
-    // /// @param addr Address to check.
-    // /// @return block number of last stake.
+    // // @notice Returns last block address staked at.
+    // // @param addr Address to check.
+    // // @return block number of last stake.
     // function lastStakedFor(address addr) public view returns (uint256) {
     //     Checkpoint[] storage stakes = stakesFor[addr];
 
@@ -188,17 +193,17 @@ contract Staking is StakingInterface, Lockable {
     //     return stakes[stakes.length-1].at;
     // }
 
-    // /// @notice Returns total amount of tokens staked at block for address.
-    // /// @param addr Address to check.
-    // /// @param blockNumber Block number to check.
-    // /// @return amount of tokens staked.
+    // // @notice Returns total amount of tokens staked at block for address.
+    // // @param addr Address to check.
+    // // @param blockNumber Block number to check.
+    // // @return amount of tokens staked.
     // function totalStakedForAt(address addr, uint256 blockNumber) public view returns (uint256) {
     //     return stakedAt(stakesFor[addr], blockNumber);
     // }
 
-    // /// @notice Returns the total tokens staked at block.
-    // /// @param blockNumber Block number to check.
-    // /// @return amount of tokens staked.
+    // // @notice Returns the total tokens staked at block.
+    // // @param blockNumber Block number to check.
+    // // @return amount of tokens staked.
     // function totalStakedAt(uint256 blockNumber) public view returns (uint256) {
     //     // uhm.....
     //     // return stakedAt(stakeHistory, blockNumber);
@@ -283,12 +288,15 @@ contract Staking is StakingInterface, Lockable {
     returns(bool)
     {
         // bytes array containing. 
-        require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
+        // @todo require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
 
         StakeEntry[] storage stakes = stakesFor[_user];
         uint256 length = stakes.length;
         uint256 toWithdraw = _amount;
-
+        // This is kninda horrible but this is the way it has to work....
+        // Assemnly is an issue...
+        // get it working as is and then introduce something else...
+        // how are we going to handle overflows
         for (uint256 i = 0; i < length; i++) {
             if (toWithdraw > 0 && stakes[i].stakeUntil >= block.number) {
                 if (stakes[i].amount >= toWithdraw) {
@@ -302,11 +310,11 @@ contract Staking is StakingInterface, Lockable {
         }
         
         // Don't trusy own logic, so if something fucks up, roll it all back.
-        require(_amount == toWithdraw, "Not enough funds to withdraw");
+        // @todo require(_amount == toWithdraw, "Not enough funds to withdraw");
         return true;
         // We should fire an event here
     }
-
+/*
    // function reduceStakeBalance()
 
     // change this to blockheight calculations
