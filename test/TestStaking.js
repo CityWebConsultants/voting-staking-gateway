@@ -93,7 +93,7 @@ contract('Staking', function (accounts) {
         const tokenBalanceAfter = await token.balanceOf.call(alice)
         const bankTokenBalanceAfter = await token.balanceOf.call(bank.address);
         const foo = 0;
-        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(initialBankBalance).minus(bonus))
+        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(initialBankBalance).minus(bonus));
     })
 
     it("Should not retrieve tokens before target block", async () => {
@@ -112,10 +112,9 @@ contract('Staking', function (accounts) {
         try {
             const unstaked = await bank.unstake(totalStaked, '0x0');
         } catch(e) {
-            console.log(e);
+            error = e;
         }
-        utils.ensureException(error)
-        // add assertion here
+        utils.ensureException(error);
     })
 
     it("Should not allow staking when inadequate funds in contract to pay out", async() => {

@@ -19,7 +19,18 @@ function advanceBlock() {
     })
 }
 
-// @todo function to incerase time
+async function increaseTime(integer) {
+
+    await web3.currentProvider.send({
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [integer],
+        id: 0,
+    }, () => {});
+
+    // Need to advance a block for changes to affect
+    advanceBlock();
+}
 
 async function advanceToBlock(number) {
     if (web3.eth.blockNumber > number) {
