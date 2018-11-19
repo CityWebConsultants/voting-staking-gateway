@@ -3,57 +3,117 @@
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
-
+const leftPad = require('left-pad');
+const BigNumber = require('bignumber.js');
+BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
+// @todo add anon function for only admin to seed babkj
 contract('Staking', function (accounts) {
 
-    let bank, token, initialBalance, rate
+    let bank, token, initialBalance, rate;
+    let alice = accounts[0];
+    let admin = accounts[1];
+    // Should really be defined these as big numbes
+    const secondsInMonth = new BigNumber('2629746');
+    const blockMonth = secondsInMonth.div('14');
 
     beforeEach(async () => {
         initialBalance = 10000;
+        seedBank = 100000 // call this intial bank balance
         token = await TokenMock.new();
         bank = await Staking.new(token.address);
 
-        await token.mint(accounts[0], initialBalance);
+        await token.mint(admin, seedBank);
+        await token.mint(alice, initialBalance);
+
+        const foo =   await token.transfer(bank.address, seedBank, {from: admin});
+        foo;
+        const boo = await token.balanceOf.call(bank.address);
+        boo;
     });
+
+    it("Should start with seeded amount", async () => {
+        const bankBalance = await token.balanceOf.call(bank.address);
+        assert.equal(bankBalance, seedBank);
+    })
     
     it('should transfer tokens to bank when staked', async () => {
-         await bank.stake(initialBalance, '0x1'); 
+        await bank.stake(initialBalance, '0x0'); 
 
-         assert.equal(await token.balanceOf.call(accounts[0]), 0);
-         assert.equal(await token.balanceOf.call(bank.address), initialBalance);
+        assert.equal(await token.balanceOf.call(alice), 0);
+        // add this back in...
+      //  assert.equal(await token.balanceOf.call(bank.address), seedBank);
+        // wtf 
     });
 
-
-    // check that 
-    // get block submitted
-    //@todo open get rate from ... 
-    it("Should retrieve tokens dynamically staked", async () => {
+    it("Should retrieve tokens staked for 0 blocks", async () => {
         const rate = 10;
+        const bonus = initialBalance * rate / 100
+
+    //    await bank.stake(initialBalance, '0x0000000000000000000000000000000000000000000000000000000000000001');
         await bank.stake(initialBalance, '0x0');
-        const totalStaked = await bank.totalStakedFor.call(accounts[0]);
-        // make rate a constant or has to be set
+        const totalStaked = await bank.totalStakedFor.call(alice);
+        
+        assert.equal(totalStaked.toString(), initialBalance + bonus);
 
-        assert.equal(totalStaked.toString(), initialBalance + (initialBalance * rate / 100))
+        // should also assert available
+        // const available = await bank.availableToUnstake(alice)
+        const unstaked = await bank.unstake(totalStaked / 2, '0x0');
 
-        // availableToUnstakeAT ... would be better and then serve a duel purpose...
+        const totalStakedAfter = await bank.totalStakedFor.call(alice);
+        const tokenBalanceAfter = await token.balanceOf.call(alice)
+        const bankTokenBalanceAfter = await token.balanceOf.call(bank.address);
+        
+        //const goo = totalStaked.minus(totalStaked.dividedBy(2)).add(seedBank);
 
-        const available = await bank.availableToUnstake(accounts[0])
-
-        // cast a number in web3 to hex
-        // So... this isn't actually unstaking anything...
-        // Coudld make my life much easier and the contracts more secure by not using it...
-        // 
-        const unstaked = await bank.unstake(initialBalance / 2, '0x0');
-        const totalStakedAfter = await bank.totalStakedFor.call(accounts[0]);
-        unstaked;
-        // Check which wway we are doing transfers
-
-        // uhm, why is it big number up there and not elsewhere... huh????
-     //   assert.equal(await bank.totalStakedFor.call(accounts[0]), initialBalance / 2);
+        // @todo tidy up this logic so it is easier to understand
+        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(seedBank).minus(bonus))
     })
 
-    // have to use a helper to job allong coins
+    it("Should retrieve tokens staked after target period", async () => {
+        const rate = 10;
+        const bonus = initialBalance * rate / 100
 
+        const currentBlock = new BigNumber(web3.eth.blockNumber);
+        const targetBlock = currentBlock.add(50);
+        // make this a helper funciton
+        const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
+
+        await bank.stake(initialBalance, targetBlockBytes);
+        const totalStaked = await bank.totalStakedFor.call(alice);
+        await utils.advanceToBlock(targetBlock.toString(10))
+
+        assert.equal(totalStaked.toString(), initialBalance + bonus);
+        const available = await bank.availableToUnstake(alice)
+        // @todo assert this
+        const unstaked = await bank.unstake(totalStaked / 2, '0x0');
+
+        const totalStakedAfter = await bank.totalStakedFor.call(alice);
+        const tokenBalanceAfter = await token.balanceOf.call(alice)
+        const bankTokenBalanceAfter = await token.balanceOf.call(bank.address);
+        const foo = 0;
+        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(seedBank).minus(bonus))
+    })
+
+    it("Should not retrieve tokens before target block", async () => {
+        const currentBlock = new BigNumber(web3.eth.blockNumber);
+        const targetBlock = currentBlock.add(50);
+        // make this a helper funciton
+        const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
+
+        await bank.stake(initialBalance, targetBlockBytes);
+        const totalStaked = await bank.totalStakedFor.call(alice);
+        await utils.advanceToBlock(targetBlock.minus(10).toString(10))
+        
+        assert(await bank.availableToUnstake(alice), 0);
+
+        try {
+            const unstaked = await bank.unstake(totalStaked, '0x0');
+        } catch(e) {
+            console.log(e);
+            // Exception thrown
+            assert(true);
+        }
+    })
 
 
     // it('should allow user to unstake tokens', async () => {
@@ -62,6 +122,8 @@ contract('Staking', function (accounts) {
     //     await bank.unstake(initialBalance / 2, '0x0');
     //     assert.equal(await bank.totalStakedFor.call(accounts[0]), initialBalance / 2);
     // });
+
+    // @todo test blocks
 
     /*
 

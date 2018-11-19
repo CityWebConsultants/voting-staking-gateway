@@ -1,9 +1,11 @@
 pragma solidity 0.4.24;
+//@todo add docBlocks where none
 // pragma experimental "ABIEncoderV2";
 //@todo get this working piece by piece...
 //use it on remix -- but need web for that... at least see if it compiles.
 
 // 0x0000000000000000000000000000000000000000000000000000000000000001
+// @todo and safety function to transfer back out tokens thar should n't be here!!!!
 
 
 
@@ -72,7 +74,7 @@ contract Staking is StakingInterface/*, Lockable */{
         uint256 amount = _amount + (_amount * rate / 100);
 
         StakeEntry memory stakeItem;
-
+        // @todo initialise this in an object
         stakeItem.stakedAt = block.number;
         stakeItem.amount = amount; 
         stakeItem.stakeUntil = stakeUntil;
@@ -85,30 +87,170 @@ contract Staking is StakingInterface/*, Lockable */{
         emit Staked(_user, _amount, totalStakedFor(_user), _data);
     }
 
-        // really should be able to cast this... what is the xor solution...
     function toUint256(bytes _bytes)
     internal
     pure
-    returns (uint256 timestamp){
+    returns (uint256 blockHeight) {
         // Little endian so have to pass in 0x00..........001 for 1
-        return (sliceUint(_bytes, 0x0));
-    }
-
-    // add some docs here...
-    function sliceUint(bytes _bs, uint256 _start)
-    internal 
-    pure
-    returns (uint)
-    {   
-        // may need this to be exactly 32bytes so we must have a full number
-        // this may be more flixible but more error prone
-        // require(_bs.length <= _start + 32, "slicing out of range");
+        require(_bytes.length <= 32, "slicing out of range");
         uint256 x;
         assembly { // solium-disable-line security/no-inline-assembly
-            x := mload(add(_bs, add(0x20, _start)))
+            x := mload(add(_bytes, 0x20))
         }
         return x;
     }
+
+    /// @notice Unstakes a certain amount of tokens.
+    /// @param _amount Amount of tokens to unstake.
+    /// @param _data Data field used for signalling in more complex staking applications.
+    function unstake(uint256 _amount, bytes _data) 
+    public 
+    {
+        require(withdrawStake(msg.sender, _amount), "Unable to withdraw that amount");
+        require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
+
+        totalStaked -= _amount;
+
+        emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
+    }
+
+    /// @notice Returns total tokens staked for address.
+    /// @param _addr Address to check.
+    /// @return amount of tokens staked.
+    function totalStakedFor(address _addr) public view returns (uint256) {
+        StakeEntry[] memory stakes = stakesFor[_addr];
+        uint256 amountStaked;
+        for (uint256 i = 0; i < stakes.length; i++) {
+            amountStaked += stakes[i].amount;
+        }
+        return amountStaked;
+    }
+
+    // @notice Returns total tokens staked.
+    // @return amount of tokens staked.
+    // function totalStaked() public view returns (uint256) {
+    //     return totalStakedAt(block.number);
+    // }    
+
+    /// @notice Returns if history related functions are implemented.
+    /// @return Bool whether history is implemented.
+    function supportsHistory() public pure returns (bool) {
+        return false;
+    }
+    
+    /// @notice Returns the token address.
+    /// @return Address of token.
+    function token() public view returns (address) {
+        return token;
+    }
+
+    // feels like an uncessary burden on the user...
+    // 3 months
+    // would have to withdraw and restake 
+    function availableToUnstake(address _user)
+    public
+    view 
+    returns (uint256)
+    {
+        uint256 available;
+        StakeEntry[] memory stakes = stakesFor[_user];
+
+        // @todo -- use Safe Math
+        // Iterate over each and establish value
+        for (uint256 i = 0; i < stakes.length; i++) {
+            if (stakes[i].stakeUntil <= block.number) {
+                available += stakes[i].amount;
+            }
+        }
+
+        return available;
+    }
+    
+    // @todo should consider some kind of iterator - we have a lot of repition
+    // We should rename this is as it does not actually withdrw stake...
+    function withdrawStake(address _user, uint256 _amount)
+    private
+    returns(bool)
+    {
+        // bytes array containing. 
+        // @todo require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
+        require(_amount > 0, "Amount must be greater than 0");
+        StakeEntry[] storage stakes = stakesFor[_user];
+        uint256 toWithdraw = _amount;
+        uint256 withdrawn = 0;
+
+        for (uint256 i = 0; i < stakes.length; i++) {
+            if (stakes[i].stakeUntil <= block.number) {
+                if (stakes[i].amount >= toWithdraw) {
+                    withdrawn = stakes[i].amount -= toWithdraw; // reduce stake and withdraw 
+                    // stakes[i].amount -= toWithdraw; // might have to make this an explicit array...
+                    toWithdraw -= withdrawn;
+                }
+            }
+        }
+
+        return (toWithdraw == 0 && withdrawn == _amount);
+        //return true;
+        // if (toWithdraw == 0) {
+        //     return true;
+        // }
+        // require --- haven't been able to withdraw full amount
+        // if (toWithdraw == 0) {
+        //     return true;
+        // } else {
+        //     return false;
+        // }
+    }
+
+/*
+    function withdrawAllAvailable() {
+
+    }
+*/
+
+
+/*
+   // function reduceStakeBalance()
+
+    // change this to blockheight calculations
+    function getRate (uint256 monthsToStake) 
+    public 
+    pure 
+    returns (uint256) {
+        if (monthsToStake == 0) {
+            return 0;
+        }
+        if (monthsToStake == 6) {
+            return 20;
+        }
+        if (monthsToStake == 9) {
+            return 30;
+        }
+        if (monthsToStake == 9) {
+            return 30;
+        }
+    }
+
+    function calculateUnstakeTime(uint8 months)
+    public
+    pure
+    returns(uint256 unstakeAtTimestamp) 
+    {
+        uint256 unixMonth = 2592000000;
+        return months * unixMonth;
+    }
+
+    // timestamp
+    function estimateBlockDistance(uint256 length)
+    public
+    pure
+    returns(uint256 blockDistance)
+    {
+        return 14000 * length;
+    }
+
+    **/
+}
 
 /*
     // really should be able to cast this... what is the xor solution...
@@ -135,52 +277,7 @@ contract Staking is StakingInterface/*, Lockable */{
 
     */
 
-    /// @notice Unstakes a certain amount of tokens.
-    /// @param _amount Amount of tokens to unstake.
-    /// @param _data Data field used for signalling in more complex staking applications.
-    function unstake(uint256 _amount, bytes _data) 
-    public 
-    {
-        // is it extreme to put these 3 requires in this way?
-        // @todorequire((availableToUnstake(msg.sender) >= _amount), "Not enough funds");
-        require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
-        require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
-
-        totalStaked -= _amount;
-        emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
-    }
-
-    /// @notice Returns total tokens staked for address.
-    /// @param _addr Address to check.
-    /// @return amount of tokens staked.
-    function totalStakedFor(address _addr) public view returns (uint256) {
-        StakeEntry[] storage stakes = stakesFor[_addr];
-        uint256 amountStaked;
-        for (uint256 i = 0; i < stakes.length; i++) {
-            amountStaked += stakes[i].amount;
-        }
-        return amountStaked;
-    }
-
-    // @notice Returns total tokens staked.
-    // @return amount of tokens staked.
-    // function totalStaked() public view returns (uint256) {
-    //     return totalStakedAt(block.number);
-    // }    
-
-    /// @notice Returns if history related functions are implemented.
-    /// @return Bool whether history is implemented.
-    function supportsHistory() public pure returns (bool) {
-        return false;
-    }
-    
-    /// @notice Returns the token address.
-    /// @return Address of token.
-    function token() public view returns (address) {
-        return token;
-    }
-
-    // // @notice Returns last block address staked at.
+        // // @notice Returns last block address staked at.
     // // @param addr Address to check.
     // // @return block number of last stake.
     // function lastStakedFor(address addr) public view returns (uint256) {
@@ -258,101 +355,3 @@ contract Staking is StakingInterface/*, Lockable */{
 
     //     return history[min].amount;
     // }   
-
-    // feels like an uncessary burden on the user...
-    // 3 months
-    // would have to withdraw and restake 
-    function availableToUnstake(address _user)
-    public
-    view 
-    returns (uint256)
-    {
-        uint256 available;
-        StakeEntry[] memory stakes = stakesFor[_user];
-        uint256 length = stakesFor[_user].length;
-        // @todo -- use Safe Math
-        // Iterate over each and establish value
-        for (uint i = 0; i < length-1; i++) {
-            if (stakes[i].stakeUntil >= block.number) {
-                available += stakes[i].amount;
-            }
-        }
-
-        return available;
-    }
-    
-    // @todo should consider some kind of iterator - we have a lot of repition
-    // We should rename this is as it does not actually withdrw stake...
-    function withdrawStake(address _user, uint256 _amount)
-    private
-    returns(bool)
-    {
-        // bytes array containing. 
-        // @todo require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
-
-        StakeEntry[] storage stakes = stakesFor[_user];
-        uint256 length = stakes.length;
-        uint256 toWithdraw = _amount;
-        // This is kninda horrible but this is the way it has to work....
-        // Assemnly is an issue...
-        // get it working as is and then introduce something else...
-        // how are we going to handle overflows
-        for (uint256 i = 0; i < length; i++) {
-            if (toWithdraw > 0 && stakes[i].stakeUntil >= block.number) {
-                if (stakes[i].amount >= toWithdraw) {
-                    stakes[i].amount -= toWithdraw;
-                    toWithdraw = 0;
-                } else if (stakes[i].amount > 0) {
-                    stakes[i].amount = 0;
-                    toWithdraw -= stakes[i].amount;
-                }
-            }
-        }
-        
-        // Don't trusy own logic, so if something fucks up, roll it all back.
-        // @todo require(_amount == toWithdraw, "Not enough funds to withdraw");
-        return true;
-        // We should fire an event here
-    }
-/*
-   // function reduceStakeBalance()
-
-    // change this to blockheight calculations
-    function getRate (uint256 monthsToStake) 
-    public 
-    pure 
-    returns (uint256) {
-        if (monthsToStake == 0) {
-            return 0;
-        }
-        if (monthsToStake == 6) {
-            return 20;
-        }
-        if (monthsToStake == 9) {
-            return 30;
-        }
-        if (monthsToStake == 9) {
-            return 30;
-        }
-    }
-
-    function calculateUnstakeTime(uint8 months)
-    public
-    pure
-    returns(uint256 unstakeAtTimestamp) 
-    {
-        uint256 unixMonth = 2592000000;
-        return months * unixMonth;
-    }
-
-    // timestamp
-    function estimateBlockDistance(uint256 length)
-    public
-    pure
-    returns(uint256 blockDistance)
-    {
-        return 14000 * length;
-    }
-
-    **/
-}

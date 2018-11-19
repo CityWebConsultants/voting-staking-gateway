@@ -29,7 +29,15 @@ async function advanceToBlock(number) {
     }
 }
 
+// Find and add percentage to value
+function addPercent(value, rate) {
+    return (value + (value * rate / 100))
+}
+
+// Something for calculating numbers and padding
+
 module.exports = {
     advanceToBlock: advanceToBlock,
     ensureException: ensureException,
+    addPercent: addPercent
 };
