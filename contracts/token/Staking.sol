@@ -42,9 +42,10 @@ contract Staking is StakingInterface/*, Lockable */{
     }
 
     ERC20Interface public token;
-    
+
     mapping (address => StakeEntry[]) public stakesFor;
 
+    // add a parameter for number of bonus tokens...
     /// @param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
@@ -63,25 +64,33 @@ contract Staking is StakingInterface/*, Lockable */{
     /// @param _amount Amount of tokens to stake.
     /// @param _data Data field used for signalling in more complex staking applications.
     function stakeFor(address _user, uint256 _amount, bytes _data) public /* onlyWhenUnlocked*/ {
+        // @todo ensure there are enough funds that a user can withdraw full amount
         // check required number of tokens exist to fulfill
-        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
-        
-        uint256 stakeUntil = toUint256(_data); // derive block height height from bytes --- block height
-
+        // make sure there are enough tokens for this user to stake
+        uint256 stakeUntil = toUint256(_data);
         uint256 rate = 10; // <--- put this back getRate(stakeUntil);
-        // we have to calculate block height here
-        // and also add safemath
         uint256 amount = _amount + (_amount * rate / 100);
 
+        require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
+        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
+        
+        // derive block height height from bytes --- block height
+
+        // we have to calculate block height here
+        // and also add safemath
+        // maybe do away with locking...
+        // should this have an expiration time
+        // perhaps admin should be able to delete the contract when all the funds are gone
+        // hmmmmmmm
+
         StakeEntry memory stakeItem;
-        // @todo initialise this in an object
+
         stakeItem.stakedAt = block.number;
-        stakeItem.amount = amount; 
+        stakeItem.amount = amount;
         stakeItem.stakeUntil = stakeUntil;
-        // because no first item, will not poush.
+
         stakesFor[_user].push(stakeItem);
-       
-        // stakesFor[_user].push({stakedAt: block.number, amount: amount, stakeUntil: stakeUntil});
+
         totalStaked += amount;
 
         emit Staked(_user, _amount, totalStakedFor(_user), _data);
@@ -91,7 +100,6 @@ contract Staking is StakingInterface/*, Lockable */{
     internal
     pure
     returns (uint256 blockHeight) {
-        // Little endian so have to pass in 0x00..........001 for 1
         require(_bytes.length <= 32, "slicing out of range");
         uint256 x;
         assembly { // solium-disable-line security/no-inline-assembly
@@ -130,7 +138,7 @@ contract Staking is StakingInterface/*, Lockable */{
     // @return amount of tokens staked.
     // function totalStaked() public view returns (uint256) {
     //     return totalStakedAt(block.number);
-    // }    
+    // }
 
     /// @notice Returns if history related functions are implemented.
     /// @return Bool whether history is implemented.
@@ -182,25 +190,55 @@ contract Staking is StakingInterface/*, Lockable */{
         for (uint256 i = 0; i < stakes.length; i++) {
             if (stakes[i].stakeUntil <= block.number) {
                 if (stakes[i].amount >= toWithdraw) {
+                    // easy for there to be a bug here
+                    // it's unclear what is happening here
+                    // need to change logic...
                     withdrawn = stakes[i].amount -= toWithdraw; // reduce stake and withdraw 
-                    // stakes[i].amount -= toWithdraw; // might have to make this an explicit array...
+                    // stakes[i].amount -= toWithdraw; 
                     toWithdraw -= withdrawn;
                 }
             }
         }
 
         return (toWithdraw == 0 && withdrawn == _amount);
-        //return true;
-        // if (toWithdraw == 0) {
-        //     return true;
-        // }
-        // require --- haven't been able to withdraw full amount
-        // if (toWithdraw == 0) {
-        //     return true;
-        // } else {
-        //     return false;
-        // }
     }
+
+    // test to assert constants
+    function getRate (uint256 blocksToStake) 
+    public 
+    pure
+    returns (uint256 rate) {
+        // seconds in month / blocktime === 2629746 / 15;
+        uint256 blocksInMonth = 175316;
+
+        require(blocksToStake < blocksInMonth * 25, "Cannot stake for this long");
+
+        if (blocksToStake == 0) {
+            return 0;
+        }
+
+        // Just because of the way things work -- can't get code coverage...
+        if (blocksToStake >= 6 * blocksInMonth && blocksToStake < 9 * blocksInMonth) {
+            return 20;
+        }
+
+        if (blocksToStake >= 9 * blocksInMonth && blocksToStake < 12 * blocksInMonth) {
+            return 30;
+        }
+
+        if (blocksToStake >= 12 * blocksInMonth && blocksToStake < 18 * blocksInMonth) {
+            return 50;
+        }
+
+        if (blocksToStake >= 18 * blocksInMonth && blocksToStake < 24 * blocksInMonth) {
+            return 75;
+        }
+
+        if (blocksToStake >= 24 * blocksInMonth && blocksToStake < 25 * blocksInMonth) {
+            return 100;
+        }
+    }
+
 
 /*
     function withdrawAllAvailable() {
@@ -213,23 +251,7 @@ contract Staking is StakingInterface/*, Lockable */{
    // function reduceStakeBalance()
 
     // change this to blockheight calculations
-    function getRate (uint256 monthsToStake) 
-    public 
-    pure 
-    returns (uint256) {
-        if (monthsToStake == 0) {
-            return 0;
-        }
-        if (monthsToStake == 6) {
-            return 20;
-        }
-        if (monthsToStake == 9) {
-            return 30;
-        }
-        if (monthsToStake == 9) {
-            return 30;
-        }
-    }
+
 
     function calculateUnstakeTime(uint8 months)
     public

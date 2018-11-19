@@ -19,6 +19,8 @@ function advanceBlock() {
     })
 }
 
+// @todo function to incerase time
+
 async function advanceToBlock(number) {
     if (web3.eth.blockNumber > number) {
         throw Error(`block number ${number} is in the past (current is ${web3.eth.blockNumber})`)
