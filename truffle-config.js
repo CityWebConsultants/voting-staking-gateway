@@ -10,7 +10,7 @@ module.exports = {
       port: 7545,
       network_id: "5777",
       gas: 3000000,
-      from: '0x3fabe74712f7cbaed335ba7b60c3493fc16c7bdb'
+   //   from: '0x3fabe74712f7cbaed335ba7b60c3493fc16c7bdb'
     },
     rinkeby: {
       provider: function() {
