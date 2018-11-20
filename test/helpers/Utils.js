@@ -29,8 +29,8 @@ async function increaseTime(integer) {
         gas: 30000
     })  
 
-    // // Advance to next block for changes to affect
-    // await advanceBlock();
+    // Advance to next block for changes to affect
+    await advanceBlock();
 }
 
 async function advanceToBlock(number) {
