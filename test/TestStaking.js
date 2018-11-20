@@ -5,9 +5,10 @@ const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
 const leftPad = require('left-pad');
 const BigNumber = require('bignumber.js');
-BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
+BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4) 
 // @todo add anon function for only admin to seed babkj
 // swtich over to using fixed times
+// @todo tidy up comparisons so we dont have bignumber and tostring everywhere
 
 contract('Staking', function (accounts) {
 
@@ -15,13 +16,15 @@ contract('Staking', function (accounts) {
     let alice = accounts[0];
     let admin = accounts[1];
     let bob = accounts[2];
-    // Should really be defined these as big numbes
-    const secondsInMonth = new BigNumber('2629746');
-    const blockMonth = secondsInMonth.div('14');
+
+    // Time in seconds
+    const month = new BigNumber('2629746');
+    const day = new BigNumber('86400');
 
     beforeEach(async () => {
         initialBalance = 10000;
-        initialBankBalance = 100000 // call this intial bank balance
+        initialBankBalance = 100000; // call this intial bank balance
+        rate = 10; // default rate for 6 months stake
         token = await TokenMock.new();
         bank = await Staking.new(token.address);
 
@@ -33,20 +36,51 @@ contract('Staking', function (accounts) {
         await token.balanceOf.call(bank.address);
     });
 
+    it("Should do nothing", async () => {
+        assert(true);
+    });
+    
+    // init
+    
     it("Should start with seeded amount", async () => {
         const bankBalance = await token.balanceOf.call(bank.address);
         assert.equal(bankBalance, initialBankBalance);
     })
-    
-    it('should transfer tokens to bank when staked', async () => {
-        await bank.stake(initialBalance, '0x0'); 
 
-        assert.equal(await token.balanceOf.call(alice), 0);
-        // add this back in...
-      //  assert.equal(await token.balanceOf.call(bank.address), initialBankBalance);
-        // wtf 
+    // Staking
+
+    it('Should transfer tokens to bank when staked', async () => {
+        // fix this --- is a bit broken --- take a break....
+        await bank.stake(initialBalance, month.plus(day), 1, {from: alice});
+        // @todo we should handle cases where what id we stake for 
+
+        const aliceBalance = await token.balanceOf.call(alice);
+        const bankBalance = await token.balanceOf.call(bank.address);
+
+        assert.equal(aliceBalance.toString(), 0);
+        assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
+
     });
 
+    it("Should fire event when staked", async () => {
+        // actually we don't really need timestamps to be big numbers
+        const stakeDuration = month.plus(day);
+        const staked = await bank.stake(initialBalance, stakeDuration, 1, {from: alice});
+        
+        const logs = staked.logs[0];
+        const blockTime = new BigNumber(web3.eth.getBlock(staked.receipt.blockNumber).timestamp)
+        
+        assert.equal(logs.event,'Staked');
+        assert.equal(logs.args.amount.toString(), initialBalance);
+        assert.equal(logs.args.includesBonus, true);
+        assert.equal(logs.args.stakeUntil.toString(), blockTime.plus(stakeDuration).toString());
+    })
+
+
+
+
+
+/*
     it("Should retrieve tokens staked for 0 blocks", async () => {
         const rate = 10;
         const bonus = initialBalance * rate / 100
@@ -132,6 +166,12 @@ contract('Staking', function (accounts) {
 
         utils.ensureException(error)
     })
+
+
+*/
+
+
+    ///////////////////////////////////////////////////////////////////////
 
     // @todo test for passing in more tokens than can handle
     

@@ -28,8 +28,8 @@ async function increaseTime(integer) {
         id: 0,
     }, () => {});
 
-    // Need to advance a block for changes to affect
-    advanceBlock();
+    // Advance to next block for changes to affect
+    await advanceBlock();
 }
 
 async function advanceToBlock(number) {
@@ -52,5 +52,6 @@ function addPercent(value, rate) {
 module.exports = {
     advanceToBlock: advanceToBlock,
     ensureException: ensureException,
-    addPercent: addPercent
+    addPercent: addPercent,
+    increaseTime: increaseTime
 };

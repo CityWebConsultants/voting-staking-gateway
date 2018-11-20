@@ -6,8 +6,7 @@ pragma solidity 0.4.24;
 
 // 0x0000000000000000000000000000000000000000000000000000000000000001
 // @todo and safety function to transfer back out tokens thar should n't be here!!!!
-
-
+// @todo add safemath
 
 // Adapted from Harbour prohect Stakebank https://github§§§.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
 // declare interface for erc20 token
@@ -22,7 +21,8 @@ pragma solidity 0.4.24;
 // make sure there is no conflict between how we are doing things here and how they are done elsewhere ie preSale...
 // @todo refactor to put lifecycle inside of tokens
 // could still take a single byte in months... and apply like this...
-//
+// @todo rememebr to reject other tokens
+// must limit transfers directly when not goig through api... can we?
 // @todo at no point do we lock -- when no funds left do not allow anyone to join...  
 
 import "../lifecycle/Lockable.sol";
@@ -50,52 +50,62 @@ contract Staking is StakingInterface/*, Lockable */{
     constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
         token = _token;
+        // @todo consider destruction
+        // @todo consider owner
     }
  
     /// @notice Stakes a certain amount of tokens.
-    /// @param amount Amount of tokens to stake.
-    /// @param data Data field used for signalling in more complex staking applications.
-    function stake(uint256 amount, bytes data) public {
-        stakeFor(msg.sender, amount, data);
+    /// @param _amount Amount of tokens to stake.
+    /// @param _time Length of time in seconds to take for.
+    /// @param _claimBonus Whether a bonus should be applied.
+    function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
+        stakeFor(msg.sender, _amount, _time, _claimBonus);
     }
+
+    // should change all to claim bonus
 
     /// @notice Stakes a certain amount of tokens for another user.
     /// @param _user Address of the user to stake for.
     /// @param _amount Amount of tokens to stake.
-    /// @param _data Data field used for signalling in more complex staking applications.
-    function stakeFor(address _user, uint256 _amount, bytes _data) public /* onlyWhenUnlocked*/ {
+    /// @param _time Length of time in seconds to take for.
+    /// @param _claimBonus Whether a bonus should be applied.
+    function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) 
+    public /* onlyWhenUnlocked*/ 
+    {
         // @todo ensure there are enough funds that a user can withdraw full amount
         // check required number of tokens exist to fulfill
         // make sure there are enough tokens for this user to stake
-        uint256 stakeUntil = toUint256(_data);
-        uint256 rate = 10; // <--- put this back getRate(stakeUntil);
-        uint256 amount = _amount + (_amount * rate / 100);
+        uint256 stakeUntil = block.timestamp + _time; //solium-disable-line security/no-block-members
+         // rename this to avoid similarity to _amount
+        // Update event to include if a bonus has been applied -- and possibly timestamp
+        // that way could recreate all that has happened from receipts
+        // unstaking we only need to know the amoun that was unstaked....
+
+        uint256 rate = getRate(_time);
+        uint256 amount;
+        if (_claimBonus == true) {
+            amount = _amount + (_amount * rate / 100);
+        } else {
+            amount = _amount;
+        }
 
         require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
-        
-        // derive block height height from bytes --- block height
-
-        // we have to calculate block height here
-        // and also add safemath
-        // maybe do away with locking...
-        // should this have an expiration time
-        // perhaps admin should be able to delete the contract when all the funds are gone
-        // hmmmmmmm
-
+    
         StakeEntry memory stakeItem;
 
-        stakeItem.stakedAt = block.number;
+        // can we pass this as an object rather than adding properties separately
+        stakeItem.stakedAt = block.timestamp; //solium-disable-line security/no-block-members
         stakeItem.amount = amount;
         stakeItem.stakeUntil = stakeUntil;
 
         stakesFor[_user].push(stakeItem);
 
         totalStaked += amount;
-
-        emit Staked(_user, _amount, totalStakedFor(_user), _data);
+        // deposited... bonus... available to withdraw
+        emit Staked(_user, _amount, stakeUntil, _claimBonus);
     }
-
+/*
     function toUint256(bytes _bytes)
     internal
     pure
@@ -107,11 +117,11 @@ contract Staking is StakingInterface/*, Lockable */{
         }
         return x;
     }
+    */
 
     /// @notice Unstakes a certain amount of tokens.
     /// @param _amount Amount of tokens to unstake.
-    /// @param _data Data field used for signalling in more complex staking applications.
-    function unstake(uint256 _amount, bytes _data) 
+    function unstake(uint256 _amount) 
     public 
     {
         require(withdrawStake(msg.sender, _amount), "Unable to withdraw that amount");
@@ -119,7 +129,9 @@ contract Staking is StakingInterface/*, Lockable */{
 
         totalStaked -= _amount;
 
-        emit Unstaked(msg.sender, _amount, totalStakedFor(msg.sender), _data);
+        // if we implememt totalStakeFor then we really don't need to add it to an event
+        // we only need to know it happened
+        emit Unstaked(msg.sender, _amount);
     }
 
     /// @notice Returns total tokens staked for address.
@@ -139,22 +151,25 @@ contract Staking is StakingInterface/*, Lockable */{
     // function totalStaked() public view returns (uint256) {
     //     return totalStakedAt(block.number);
     // }
-
+/*
     /// @notice Returns if history related functions are implemented.
     /// @return Bool whether history is implemented.
     function supportsHistory() public pure returns (bool) {
         return false;
     }
-    
+    */
     /// @notice Returns the token address.
     /// @return Address of token.
-    function token() public view returns (address) {
+    function token() 
+    public 
+    view 
+    returns (address) 
+    {
         return token;
     }
 
-    // feels like an uncessary burden on the user...
-    // 3 months
-    // would have to withdraw and restake 
+
+    // this should call available to unstake at but pass in latest
     function availableToUnstake(address _user)
     public
     view 
@@ -165,17 +180,28 @@ contract Staking is StakingInterface/*, Lockable */{
 
         // @todo -- use Safe Math
         // Iterate over each and establish value
+        // could there be any issue arising form less than or equal to 
+        // perhaps should be just be less than
         for (uint256 i = 0; i < stakes.length; i++) {
-            if (stakes[i].stakeUntil <= block.number) {
+            if (stakes[i].stakeUntil <= block.timestamp) {
                 available += stakes[i].amount;
             }
         }
 
         return available;
     }
-    
-    // @todo should consider some kind of iterator - we have a lot of repition
-    // We should rename this is as it does not actually withdrw stake...
+
+    // perhaps could just be same as above but wrap a param
+    // @todo add this back in later
+/*
+    function availableToUnstakeAt(address _user, uint256 _time) 
+    public 
+    view
+    returns (uint256 amount) 
+    {
+        return 1;
+    }
+  */  
     function withdrawStake(address _user, uint256 _amount)
     private
     returns(bool)
@@ -188,11 +214,9 @@ contract Staking is StakingInterface/*, Lockable */{
         uint256 withdrawn = 0;
 
         for (uint256 i = 0; i < stakes.length; i++) {
-            if (stakes[i].stakeUntil <= block.number) {
+            if (stakes[i].stakeUntil <= now) {
                 if (stakes[i].amount >= toWithdraw) {
-                    // easy for there to be a bug here
-                    // it's unclear what is happening here
-                    // need to change logic...
+                    // @todo fix this
                     withdrawn = stakes[i].amount -= toWithdraw; // reduce stake and withdraw 
                     // stakes[i].amount -= toWithdraw; 
                     toWithdraw -= withdrawn;
@@ -204,42 +228,39 @@ contract Staking is StakingInterface/*, Lockable */{
     }
 
     // test to assert constants
-    function getRate (uint256 blocksToStake) 
+    function getRate (uint256 _timeLength) 
     public 
     pure
     returns (uint256 rate) {
-        // seconds in month / blocktime === 2629746 / 15;
-        uint256 blocksInMonth = 175316;
 
-        require(blocksToStake < blocksInMonth * 25, "Cannot stake for this long");
+        uint256  secondsInMonth = 2629746; // should this be seconds or milliseconds?
 
-        if (blocksToStake == 0) {
+        require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");
+
+        if (_timeLength == 0) {
             return 0;
         }
-
-        // Just because of the way things work -- can't get code coverage...
-        if (blocksToStake >= 6 * blocksInMonth && blocksToStake < 9 * blocksInMonth) {
+        
+        if (_timeLength >= 6 * secondsInMonth && _timeLength < 9 * secondsInMonth) {
             return 20;
         }
 
-        if (blocksToStake >= 9 * blocksInMonth && blocksToStake < 12 * blocksInMonth) {
+        if (_timeLength >= 9 * secondsInMonth && _timeLength < 12 * secondsInMonth) {
             return 30;
         }
 
-        if (blocksToStake >= 12 * blocksInMonth && blocksToStake < 18 * blocksInMonth) {
+        if (_timeLength >= 12 * secondsInMonth && _timeLength < 18 * secondsInMonth) {
             return 50;
         }
 
-        if (blocksToStake >= 18 * blocksInMonth && blocksToStake < 24 * blocksInMonth) {
+        if (_timeLength >= 18 * secondsInMonth && _timeLength < 24 * secondsInMonth) {
             return 75;
         }
 
-        if (blocksToStake >= 24 * blocksInMonth && blocksToStake < 25 * blocksInMonth) {
+        if (_timeLength >= 24 * secondsInMonth && _timeLength < 25 * secondsInMonth) {
             return 100;
         }
     }
-
-
 /*
     function withdrawAllAvailable() {
 
