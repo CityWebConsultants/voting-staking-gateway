@@ -40,7 +40,7 @@ contract('Staking', function (accounts) {
         await token.balanceOf.call(bank.address);
     });
 
-    it("Should do nothing", async () => {
+    it.skip("Should do nothing", async () => {
         assert(true);
     });
     

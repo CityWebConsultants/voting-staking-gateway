@@ -200,8 +200,6 @@ contract Staking is StakingInterface/*, Lockable */{
         uint256 toWithdraw = _amount;
         uint256 withdrawn = 0;
         
-        // this doesn't cover what happens when a portion is smaller than the amount and then must be taken from the next
-        // available tranche....
         for (uint256 i = 0; i < stakes.length; i++) {
             if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 if (stakes[i].amount >= toWithdraw) {
