@@ -68,6 +68,7 @@ contract('Staking', function (accounts) {
         // Hmmmm, when we create different states then make stuff harder to test by creating more paths
     })
 
+    // Should perhaps test events as a separate thing...
     // To what extent should we test individual parts of events separate from transactions
     it("Should fire event when staked", async () => {
         // actually we don't really need timestamps to be big numbers
@@ -83,7 +84,7 @@ contract('Staking', function (accounts) {
         assert.equal(logs.args.stakeUntil.toString(), blockTime.plus(stakeDuration).toString());
     })
 
-    it("Should retrieve tokens without time lock", async () => {
+    it("Should unstake tokens with no time lock", async () => {
         const stakeDuration = 0;
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
         const unstaked = await bank.unstake(initialBalance, {from: alice});
@@ -93,7 +94,7 @@ contract('Staking', function (accounts) {
         assert(aliceBalance.toString(), '10000')
     })
 
-    it("Should not retrieve tokens before time lock", async () => {
+    it("Should not retrieve tokens before whilst time locked", async () => {
         const stakeDuration = month.times('6');
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
 
@@ -108,7 +109,15 @@ contract('Staking', function (accounts) {
     })
 
     it("Should retrieve tokens with time lock", async () => {
+        const stakeDuration = month.times('6');
+        const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
+        // How -- check which network we are on
 
+        const unstakeAt = stakeDuration.plus(day).toNumber(); ///.plus(Math.floor(Date.now() / 1000)).toString();
+        await utils.increaseTime(unstakeAt);
+        const unstaked = await bank.unstake(initialBalance, {from: alice});
+
+        assert(unstaked.logs[0].event === 'Unstaked');
     })
 
     it("Should not retrieve tokens before end of timelock", async () => {
@@ -118,6 +127,12 @@ contract('Staking', function (accounts) {
     it("Should not unstake for wrong user", async () => {
 
     })
+
+    // testing return values
+    // test batching of amounts
+    
+
+    // it("Should not not s")
 
     // It should be checking the amounts and cutoffs are being applied correctly
     // It should check the aggregate totals are correct

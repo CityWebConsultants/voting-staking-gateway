@@ -20,16 +20,17 @@ function advanceBlock() {
 }
 
 async function increaseTime(integer) {
-
+    console.log(integer)
     await web3.currentProvider.send({
-        jsonrpc: '2.0',
-        method: 'evm_increaseTime',
+        jsonrpc: "2.0", 
+        method: "evm_increaseTime", 
         params: [integer],
         id: 0,
-    }, () => {});
+        gas: 30000
+    })  
 
-    // Advance to next block for changes to affect
-    await advanceBlock();
+    // // Advance to next block for changes to affect
+    // await advanceBlock();
 }
 
 async function advanceToBlock(number) {
