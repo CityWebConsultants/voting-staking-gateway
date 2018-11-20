@@ -1,3 +1,7 @@
+// @todo setup tests so we can also run against rinkeby -- maybe have to use some mocks for getrate and blocktimeings
+
+
+
 // var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
 // var GatewayERC20Contract = artifacts.require("GatewayERC20Contract");
 const Staking = artifacts.require('Staking.sol');
@@ -49,23 +53,26 @@ contract('Staking', function (accounts) {
 
     // Staking
 
-    it('Should transfer tokens to bank when staked', async () => {
+    it('Should transfer tokens when staking', async () => {
         // fix this --- is a bit broken --- take a break....
-        await bank.stake(initialBalance, month.plus(day), 1, {from: alice});
+        await bank.stake(initialBalance, month.plus(day), true, {from: alice});
         // @todo we should handle cases where what id we stake for 
-
         const aliceBalance = await token.balanceOf.call(alice);
         const bankBalance = await token.balanceOf.call(bank.address);
 
         assert.equal(aliceBalance.toString(), 0);
         assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
-
     });
 
+    it("Should transfer tokens to bank with no bonus for one year", async () => {
+        // Hmmmm, when we create different states then make stuff harder to test by creating more paths
+    })
+
+    // To what extent should we test individual parts of events separate from transactions
     it("Should fire event when staked", async () => {
         // actually we don't really need timestamps to be big numbers
         const stakeDuration = month.plus(day);
-        const staked = await bank.stake(initialBalance, stakeDuration, 1, {from: alice});
+        const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
         
         const logs = staked.logs[0];
         const blockTime = new BigNumber(web3.eth.getBlock(staked.receipt.blockNumber).timestamp)
@@ -76,8 +83,45 @@ contract('Staking', function (accounts) {
         assert.equal(logs.args.stakeUntil.toString(), blockTime.plus(stakeDuration).toString());
     })
 
+    it("Should retrieve tokens without time lock", async () => {
+        const stakeDuration = 0;
+        const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
+        const unstaked = await bank.unstake(initialBalance, {from: alice});
 
+        // we should also assert the event ocurred here
+        const aliceBalance = await token.balanceOf.call(alice);
+        assert(aliceBalance.toString(), '10000')
+    })
 
+    it("Should not retrieve tokens before time lock", async () => {
+        const stakeDuration = month.times('6');
+        const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
+
+        let error;
+        try {
+            const unstaked = await bank.unstake(initialBalance, {from: alice});
+        } catch (e) {
+            error = e;
+        }
+
+        utils.ensureException(error);
+    })
+
+    it("Should retrieve tokens with time lock", async () => {
+
+    })
+
+    it("Should not retrieve tokens before end of timelock", async () => {
+
+    })
+
+    it("Should not unstake for wrong user", async () => {
+
+    })
+
+    // It should be checking the amounts and cutoffs are being applied correctly
+    // It should check the aggregate totals are correct
+    // It should check what happens when end conditions are reached
 
 
 /*

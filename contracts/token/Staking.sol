@@ -80,7 +80,7 @@ contract Staking is StakingInterface/*, Lockable */{
         // Update event to include if a bonus has been applied -- and possibly timestamp
         // that way could recreate all that has happened from receipts
         // unstaking we only need to know the amoun that was unstaked....
-
+        // am sure this can be tidied up..
         uint256 rate = getRate(_time);
         uint256 amount;
         if (_claimBonus == true) {
@@ -105,19 +105,6 @@ contract Staking is StakingInterface/*, Lockable */{
         // deposited... bonus... available to withdraw
         emit Staked(_user, _amount, stakeUntil, _claimBonus);
     }
-/*
-    function toUint256(bytes _bytes)
-    internal
-    pure
-    returns (uint256 blockHeight) {
-        require(_bytes.length <= 32, "slicing out of range");
-        uint256 x;
-        assembly { // solium-disable-line security/no-inline-assembly
-            x := mload(add(_bytes, 0x20))
-        }
-        return x;
-    }
-    */
 
     /// @notice Unstakes a certain amount of tokens.
     /// @param _amount Amount of tokens to unstake.
@@ -212,14 +199,20 @@ contract Staking is StakingInterface/*, Lockable */{
         StakeEntry[] storage stakes = stakesFor[_user];
         uint256 toWithdraw = _amount;
         uint256 withdrawn = 0;
-
+        
+        // this doesn't cover what happens when a portion is smaller than the amount and then must be taken from the next
+        // available tranche....
         for (uint256 i = 0; i < stakes.length; i++) {
-            if (stakes[i].stakeUntil <= now) {
+            if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 if (stakes[i].amount >= toWithdraw) {
-                    // @todo fix this
-                    withdrawn = stakes[i].amount -= toWithdraw; // reduce stake and withdraw 
-                    // stakes[i].amount -= toWithdraw; 
-                    toWithdraw -= withdrawn;
+                    stakes[i].amount -= toWithdraw;
+                    withdrawn = toWithdraw;
+                    toWithdraw = 0;
+                }
+                else if (stakes[i].amount > 0 && stakes[i].amount < toWithdraw) {
+                    withdrawn = stakes[i].amount;
+                    stakes[i].amount = 0;
+                    toWithdraw = toWithdraw - withdrawn;
                 }
             }
         }
@@ -266,7 +259,19 @@ contract Staking is StakingInterface/*, Lockable */{
 
     }
 */
-
+/*
+    function toUint256(bytes _bytes)
+    internal
+    pure
+    returns (uint256 blockHeight) {
+        require(_bytes.length <= 32, "slicing out of range");
+        uint256 x;
+        assembly { // solium-disable-line security/no-inline-assembly
+            x := mload(add(_bytes, 0x20))
+        }
+        return x;
+    }
+    */
 
 /*
    // function reduceStakeBalance()

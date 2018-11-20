@@ -17,7 +17,7 @@ contract StakingInterface {
     function unstake(uint256 amount) public;
     function totalStakedFor(address addr) public view returns (uint256);
     function getRate(uint256 time) public pure returns (uint256);
-
+    
     function token() public view returns (address);
 
    //  function lastStakedFor(address addr) public view returns (uint256);
