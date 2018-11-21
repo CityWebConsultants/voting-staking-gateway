@@ -13,6 +13,8 @@ BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
 // @todo add anon function for only admin to seed babkj
 // swtich over to using fixed times
 // @todo tidy up comparisons so we dont have bignumber and tostring everywhere
+// @todo add approve for ... can we do approve and call
+// 3 x tx to 
 
 contract('Staking', function (accounts) {
 
@@ -21,7 +23,7 @@ contract('Staking', function (accounts) {
     let admin = accounts[1];
     let bob = accounts[2];
 
-    // Time in seconds
+    const second = new BigNumber('1');
     const month = new BigNumber('2629746');
     const day = new BigNumber('86400');
 
@@ -53,7 +55,7 @@ contract('Staking', function (accounts) {
 
     // Staking
 
-    it('Should transfer tokens when staking', async () => {
+    it('Should transfer tokens to stake', async () => {
         // fix this --- is a bit broken --- take a break....
         await bank.stake(initialBalance, month.plus(day), true, {from: alice});
         // @todo we should handle cases where what id we stake for 
@@ -64,7 +66,7 @@ contract('Staking', function (accounts) {
         assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
     });
 
-    it("Should transfer tokens to bank with no bonus for one year", async () => {
+    it("Should transfer tokens to stake with no bonus", async () => {
         // Hmmmm, when we create different states then make stuff harder to test by creating more paths
     })
 
@@ -80,8 +82,8 @@ contract('Staking', function (accounts) {
         
         assert.equal(logs.event,'Staked');
         assert.equal(logs.args.amount.toString(), initialBalance);
-        assert.equal(logs.args.includesBonus, true);
-        assert.equal(logs.args.stakeUntil.toString(), blockTime.plus(stakeDuration).toString());
+        assert.equal(logs.args.hasBonus, true);
+        assert.equal(logs.args.stakeUntil.toString(), (blockTime.plus(stakeDuration)).toString());
     })
 
     it("Should unstake tokens with no time lock", async () => {
@@ -94,13 +96,16 @@ contract('Staking', function (accounts) {
         assert(aliceBalance.toString(), '10000')
     })
 
+
+    // WTF!!!! Why is this failing!!!!!!!!!!!!!!!
     it("Should not retrieve tokens before whilst time locked", async () => {
-        const stakeDuration = month.times('6');
-        const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
+        const stakeDuration = month.times('6').plus(day).toString();
+        const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
+
 
         let error;
         try {
-            const unstaked = await bank.unstake(initialBalance, {from: alice});
+            const bug = await bank.unstake(initialBalance, {from: alice});
         } catch (e) {
             error = e;
         }
@@ -108,7 +113,8 @@ contract('Staking', function (accounts) {
         utils.ensureException(error);
     })
 
-    it("Should retrieve tokens with time lock", async () => {
+    // perhaps should do one min befoe and one min after 
+    it("Should retrieve tokens after time lock", async () => {
         const stakeDuration = month.times('6');
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
         // How -- check which network we are on
@@ -117,15 +123,24 @@ contract('Staking', function (accounts) {
         await utils.increaseTime(unstakeAt);
         const unstaked = await bank.unstake(initialBalance, {from: alice});
 
+        // check balance before and after 
+        // Is it better to test it here or give events their own 
         assert(unstaked.logs[0].event === 'Unstaked');
-    })
-
-    it("Should not retrieve tokens before end of timelock", async () => {
-
     })
 
     it("Should not unstake for wrong user", async () => {
 
+    })
+
+    it("Should fire event when unstaked", async () => {
+        // Any number less than now should be immediately unstakable
+        await bank.stake(initialBalance, 0, false, {from: alice});
+        await utils.increaseTime(second.toNumber());
+        const unstaked = await bank.unstake(initialBalance, {from: alice});
+        const logs = unstaked.logs[0];
+        assert.equal(logs.event, 'Unstaked');
+        assert.equal(logs.args.amount.toString(),  initialBalance);
+        assert.equal(logs.args.user, alice);
     })
 
     // testing return values

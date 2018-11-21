@@ -1,39 +1,17 @@
 pragma solidity 0.4.24;
 //@todo add docBlocks where none
-// pragma experimental "ABIEncoderV2";
-//@todo get this working piece by piece...
-//use it on remix -- but need web for that... at least see if it compiles.
-
-// 0x0000000000000000000000000000000000000000000000000000000000000001
-// @todo and safety function to transfer back out tokens thar should n't be here!!!!
 // @todo add safemath
-
-// Adapted from Harbour prohect Stakebank https://github§§§.com/HarbourProject/stakebank/blob/development/contracts/StakeBank.sol
-// declare interface for erc20 token
-// we should NOT talk to the voting contract
-// perhaphs include lifecycle lockable?
-// should grab tests from the same location
-// need to add additional 
-// perhaps use different than lockable .... because we need time lock
-// @todo grab tests and adapt https://github.com/HarbourProject/stakebank/blob/development/test/TestStakeBank.js
-// If this uses block numbers
-// using block numbers is the properly accurate way to do things
-// make sure there is no conflict between how we are doing things here and how they are done elsewhere ie preSale...
-// @todo refactor to put lifecycle inside of tokens
-// could still take a single byte in months... and apply like this...
-// @todo rememebr to reject other tokens
-// must limit transfers directly when not goig through api... can we?
-// @todo at no point do we lock -- when no funds left do not allow anyone to join...  
-
-import "../lifecycle/Lockable.sol";
-import "../ownership/Ownable.sol";
+// lock? destruction?
+// document interface
+// import "../lifecycle/Lockable.sol";
+// import "../ownership/Ownable.sol";
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
-import "../math/SafeMath.sol";
+//import "../math/SafeMath.sol";
 
 contract Staking is StakingInterface/*, Lockable */{
     //@todo use safe math
-    using SafeMath for uint256;
+    // using SafeMath for uint256;
 
     struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
@@ -45,7 +23,9 @@ contract Staking is StakingInterface/*, Lockable */{
 
     mapping (address => StakeEntry[]) public stakesFor;
 
-    // add a parameter for number of bonus tokens...
+    event debugUint(string msg, uint256);
+
+
     /// @param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
@@ -62,8 +42,6 @@ contract Staking is StakingInterface/*, Lockable */{
         stakeFor(msg.sender, _amount, _time, _claimBonus);
     }
 
-    // should change all to claim bonus
-
     /// @notice Stakes a certain amount of tokens for another user.
     /// @param _user Address of the user to stake for.
     /// @param _amount Amount of tokens to stake.
@@ -75,12 +53,10 @@ contract Staking is StakingInterface/*, Lockable */{
         // @todo ensure there are enough funds that a user can withdraw full amount
         // check required number of tokens exist to fulfill
         // make sure there are enough tokens for this user to stake
-        uint256 stakeUntil = block.timestamp + _time; //solium-disable-line security/no-block-members
-         // rename this to avoid similarity to _amount
-        // Update event to include if a bonus has been applied -- and possibly timestamp
+        uint256 stakeUntil = (_time + block.timestamp); //solium-disable-line security/no-block-members
+
         // that way could recreate all that has happened from receipts
-        // unstaking we only need to know the amoun that was unstaked....
-        // am sure this can be tidied up..
+        // @todo rename this to avoid similarity to _amount
         uint256 rate = getRate(_time);
         uint256 amount;
         if (_claimBonus == true) {
@@ -89,20 +65,21 @@ contract Staking is StakingInterface/*, Lockable */{
             amount = _amount;
         }
 
+        // Continue only if there are enough funds to cover bonus
         require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
     
-        StakeEntry memory stakeItem;
-
+        StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
+/*
         // can we pass this as an object rather than adding properties separately
         stakeItem.stakedAt = block.timestamp; //solium-disable-line security/no-block-members
         stakeItem.amount = amount;
         stakeItem.stakeUntil = stakeUntil;
-
+*/
         stakesFor[_user].push(stakeItem);
 
         totalStaked += amount;
-        // deposited... bonus... available to withdraw
+        // deposited... bonus... available to withdraw // should this be claimed or includesBonus
         emit Staked(_user, _amount, stakeUntil, _claimBonus);
     }
 
@@ -110,14 +87,14 @@ contract Staking is StakingInterface/*, Lockable */{
     /// @param _amount Amount of tokens to unstake.
     function unstake(uint256 _amount) 
     public 
-    {
-        require(withdrawStake(msg.sender, _amount), "Unable to withdraw that amount");
+    {   
+
+        // may as well combine unstake and withdraw stake -- theres an artifciual separatop
+        require(withdrawStake(msg.sender, _amount), "Unable to withdraw that amount"); // but it could also be for other rea
         require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
 
         totalStaked -= _amount;
-
-        // if we implememt totalStakeFor then we really don't need to add it to an event
-        // we only need to know it happened
+        // is it worth including how much a users total remaning stake is when that information can easily be derived?
         emit Unstaked(msg.sender, _amount);
     }
 
@@ -155,8 +132,9 @@ contract Staking is StakingInterface/*, Lockable */{
         return token;
     }
 
-
-    // this should call available to unstake at but pass in latest
+    /// @notice Returns the token address.
+    /// @param _user Address of staker
+    /// @return Address of token.
     function availableToUnstake(address _user)
     public
     view 
@@ -170,7 +148,7 @@ contract Staking is StakingInterface/*, Lockable */{
         // could there be any issue arising form less than or equal to 
         // perhaps should be just be less than
         for (uint256 i = 0; i < stakes.length; i++) {
-            if (stakes[i].stakeUntil <= block.timestamp) {
+            if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 available += stakes[i].amount;
             }
         }
@@ -186,9 +164,9 @@ contract Staking is StakingInterface/*, Lockable */{
     view
     returns (uint256 amount) 
     {
-        return 1;
+        return availableToStake
     }
-  */  
+  */
     function withdrawStake(address _user, uint256 _amount)
     private
     returns(bool)
@@ -199,8 +177,10 @@ contract Staking is StakingInterface/*, Lockable */{
         StakeEntry[] storage stakes = stakesFor[_user];
         uint256 toWithdraw = _amount;
         uint256 withdrawn = 0;
-        
+        // is this the correct 
         for (uint256 i = 0; i < stakes.length; i++) {
+            // emit debugUint("block", block.timestamp);
+            // emit debugUint("until", stakes[i].stakeUntil);
             if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 if (stakes[i].amount >= toWithdraw) {
                     stakes[i].amount -= toWithdraw;
