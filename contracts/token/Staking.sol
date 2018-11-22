@@ -1,8 +1,5 @@
 pragma solidity 0.4.24;
-//@todo add docBlocks where none
 // @todo add safemath
-// lock? destruction?
-// document interface
 // import "../ownership/Ownable.sol";
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
@@ -14,7 +11,7 @@ contract Staking is StakingInterface {
 
     struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
-        uint256 stakeUntil; // timestamp, date of deposit
+        uint256 stakeUntil; // timestamp, available to withdraw
         uint256 amount; // current balance in this tranche...
     }
 
@@ -74,7 +71,7 @@ contract Staking is StakingInterface {
     function unstake(uint256 _amount) 
     public 
     {   
-        require(withdrawStake(msg.sender, _amount), "Unable to withdraw"); // but it could also be for other rea
+        require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
         require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
 
         totalStaked -= _amount;
