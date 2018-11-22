@@ -98,6 +98,39 @@ contract Staking is StakingInterface/*, Lockable */{
         emit Unstaked(msg.sender, _amount);
     }
 
+    function withdrawStake(address _user, uint256 _amount)
+    private
+    returns(bool)
+    {
+        // bytes array containing. 
+        // @todo require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
+        require(_amount > 0, "Amount must be greater than 0");
+        StakeEntry[] storage stakes = stakesFor[_user];
+        uint256 toWithdraw = _amount;
+        uint256 withdrawn = 0;
+        // is this the correct 
+        // @TODO this would be better as a do while so we don't evever execute more than is necessary
+        for (uint256 i = 0; i < stakes.length; i++) {
+            // emit debugUint("block", block.timestamp);
+            // emit debugUint("until", stakes[i].stakeUntil);
+            if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
+                if (toWithdraw > 0 && stakes[i].amount >= toWithdraw) {
+                    stakes[i].amount -= toWithdraw;
+                    withdrawn += toWithdraw;
+                    toWithdraw = 0;
+                }
+                else if (stakes[i].amount > 0 && stakes[i].amount < toWithdraw) {
+                    withdrawn += stakes[i].amount;
+                    toWithdraw -= stakes[i].amount;
+                    stakes[i].amount = 0;
+                }
+            }
+        }
+
+        return (toWithdraw == 0 && withdrawn == _amount);
+    }
+
+
     /// @notice Returns total tokens staked for address.
     /// @param _addr Address to check.
     /// @return amount of tokens staked.
@@ -167,43 +200,13 @@ contract Staking is StakingInterface/*, Lockable */{
         return availableToStake
     }
   */
-    function withdrawStake(address _user, uint256 _amount)
-    private
-    returns(bool)
-    {
-        // bytes array containing. 
-        // @todo require(availableToUnstake(_user) >= _amount, "Attempted to unstake more tokens than available.");
-        require(_amount > 0, "Amount must be greater than 0");
-        StakeEntry[] storage stakes = stakesFor[_user];
-        uint256 toWithdraw = _amount;
-        uint256 withdrawn = 0;
-        // is this the correct 
-        for (uint256 i = 0; i < stakes.length; i++) {
-            // emit debugUint("block", block.timestamp);
-            // emit debugUint("until", stakes[i].stakeUntil);
-            if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
-                if (stakes[i].amount >= toWithdraw) {
-                    stakes[i].amount -= toWithdraw;
-                    withdrawn = toWithdraw;
-                    toWithdraw = 0;
-                }
-                else if (stakes[i].amount > 0 && stakes[i].amount < toWithdraw) {
-                    withdrawn = stakes[i].amount;
-                    stakes[i].amount = 0;
-                    toWithdraw = toWithdraw - withdrawn;
-                }
-            }
-        }
 
-        return (toWithdraw == 0 && withdrawn == _amount);
-    }
-
-    // test to assert constants
+    // test to assert constant
     function getRate (uint256 _timeLength) 
     public 
     pure
     returns (uint256 rate) {
-
+        // Would have been much better to have this is a function even if it was not reported as such.
         uint256  secondsInMonth = 2629746; // should this be seconds or milliseconds?
 
         require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");

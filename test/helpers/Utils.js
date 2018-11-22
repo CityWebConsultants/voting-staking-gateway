@@ -4,7 +4,8 @@ function isException(error) {
 }
 
 function ensureException(error) {
-    assert(isException(error), error.toString());
+    console.log(isException(error), error);
+    assert.isTrue(isException(error));
 }
 
 function advanceBlock() {
@@ -20,7 +21,6 @@ function advanceBlock() {
 }
 
 async function increaseTime(integer) {
-
     await web3.currentProvider.send({
         jsonrpc: "2.0", 
         method: "evm_increaseTime", 

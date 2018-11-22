@@ -1,5 +1,6 @@
 // @todo setup tests so we can also run against rinkeby -- maybe have to use some mocks for getrate and blocktimeings
-
+// @todo instead of doing date now -- should get the time of the most recent blokc to apply
+// !!!1 that shoujld fix problem wiht time runningaway
 
 
 // var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
@@ -23,9 +24,27 @@ contract('Staking', function (accounts) {
     let admin = accounts[1];
     let bob = accounts[2];
 
+    //@todo consider tidying up using object to define patrams
+
+    // Don't really need big numbers as they will never be that big
+    // will be tidier without them ---
     const second = new BigNumber('1');
     const month = new BigNumber('2629746');
     const day = new BigNumber('86400');
+
+    //should test getRate... or somehting
+
+    // Helper
+    const abortedUnstake = async (user, amount) => {
+        let attemptedUnstakeException;
+        try {
+            await bank.unstake(amount, {from: user});
+        } catch(e) {
+            console.log(e);
+            attemptedUnstakeException = e;
+        }
+        utils.ensureException(attemptedUnstakeException);
+    }
 
     beforeEach(async () => {
         initialBalance = 10000;
@@ -43,7 +62,7 @@ contract('Staking', function (accounts) {
     });
 
     it.skip("Should do nothing", async () => {
-        assert(true);
+        assert.isTrue(true);
     });
     
     // init
@@ -80,6 +99,8 @@ contract('Staking', function (accounts) {
         const logs = staked.logs[0];
         const blockTime = new BigNumber(web3.eth.getBlock(staked.receipt.blockNumber).timestamp)
         
+        // could create a helper function to test each of staked and unstaked
+        // then would only have to check in one plave if we updated them
         assert.equal(logs.event,'Staked');
         assert.equal(logs.args.amount.toString(), initialBalance);
         assert.equal(logs.args.hasBonus, true);
@@ -91,6 +112,7 @@ contract('Staking', function (accounts) {
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
         const unstaked = await bank.unstake(initialBalance, {from: alice});
 
+        // check events have the correct information
         // we should also assert the event ocurred here
         const aliceBalance = await token.balanceOf.call(alice);
         assert(aliceBalance.toString(), '10000')
@@ -98,10 +120,9 @@ contract('Staking', function (accounts) {
 
 
     // WTF!!!! Why is this failing!!!!!!!!!!!!!!!
-    it("Should not retrieve tokens before whilst time locked", async () => {
+    it("Should not retrieve tokens whilst time locked", async () => {
         const stakeDuration = month.times('6').plus(day).toString();
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
-
 
         let error;
         try {
@@ -109,7 +130,6 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-
         utils.ensureException(error);
     })
 
@@ -128,9 +148,12 @@ contract('Staking', function (accounts) {
         assert(unstaked.logs[0].event === 'Unstaked');
     })
 
-    it("Should not unstake for wrong user", async () => {
+    // @todo test approve transfer
+    it.skip("Should refuse stake for unknown address", async () => {
 
     })
+
+    // @todo assert we do need exceed maximum amount withdrawable
 
     it("Should fire event when unstaked", async () => {
         // Any number less than now should be immediately unstakable
@@ -143,8 +166,125 @@ contract('Staking', function (accounts) {
         assert.equal(logs.args.user, alice);
     })
 
+
+    // @todo multiple stakes in a single month
+
+
+    // Simulate journey
+    // @todo refactor this to make use of objects
+    // so we don't have so we can make use of loops and vars rather than having literal values scattered through
+    it("Should deposit and withdraw tranches of stakes", async () => {
+        const aWeeBit = initialBalance / 10;
+        let aliceTokenBalance;
+        let totalStaked;
+        // No time no bonus
+        await bank.stake(aWeeBit, 0, false, {from: alice});
+
+        // should create this as an object so that the valus are easy to change
+        // can set those params at the start of the file
+        // Would be much tiedier and easier to change and would make it more generic....
+
+        // make thi smore dyanimc, iterate over values
+        // just use lityeral as an amount just now...
+        assert(await bank.totalStaked(),  aWeeBit, 'total staked does not match deposited');
+        // No time no bonus awarded (< 6 months)
+        await bank.stake(aWeeBit, 0, true, {from: alice}); // should still be 0
+        assert(await bank.totalStaked(),  aWeeBit * 2, 'total staked does not match deposited');
+        await bank.stake(aWeeBit, month.times(6), true, {from: alice});
+        assert(await bank.totalStaked(),  '3200', 'total staked does not match deposited');
+        await bank.stake(aWeeBit, month.times(9), true, {from: alice});
+        assert(await bank.totalStaked(),  '4500', 'total staked does not match deposited');
+        await bank.stake(aWeeBit, month.times(12), true, {from: alice});
+        assert(await bank.totalStaked(),  '6000', 'total staked does not match deposited');
+        await bank.stake(aWeeBit, month.times(18), true, {from: alice});
+        assert(await bank.totalStaked(), '7750', 'total staked does not match deposited');
+        await bank.stake(aWeeBit, month.times(24), true, {from: alice});
+        assert(await bank.totalStaked(), '9750', 'total staked does not match deposited');
+        // stake some from bob without bonus for two years
+        aliceTokenBalance = await token.balanceOf.call(alice);
+        assert.equal(aliceTokenBalance.toString(), '3000');
+
+
+        // assert alices coins
+        // assert bobs coins
+    
+        // const bug = await bank.totalStaked();
+        // const a = await bank.availableToUnstake(alice);
+
+        // @todo should also apply a deposit from bob
+        // @todo assert balance of alice
+        // @todo should use getRate function
+        // Should not deposit after time limit
+        let exceedsMaxTimeException
+        try {
+            await bank.stake(aWeeBit, month.times(25).plus(day), true, {from: alice});
+        } catch(e) {
+            exceedsMaxTimeException = e
+        }
+        utils.ensureException(exceedsMaxTimeException);
+        // also assert failures
+    
+        // Check availability
+        let available = await bank.availableToUnstake(alice);
+        assert.equal(available.toString(), aWeeBit * 2);
+        // assert total staked
+        await bank.unstake(2000, {from: alice});
+        assert((await bank.availableToUnstake(alice)).toString(), 0);
+        
+        // 6 months
+        await utils.increaseTime(month.times(6).toNumber());
+        available = await bank.availableToUnstake(alice);
+        assert(available.toNumber(), '1200');
+        await bank.unstake('1200', {from: alice});
+        assert.equal((await token.balanceOf.call(alice)).toString(), '6200');
+
+        // 9 months
+        await utils.increaseTime(month.times(3).toNumber());
+        available = await bank.availableToUnstake(alice);
+        assert(available.toNumber(), '1300');
+        await bank.unstake('1300', {from: alice});
+        assert.equal((await token.balanceOf.call(alice)).toString(), '7500');
+        
+        // 12 months
+        await utils.increaseTime(month.times(3).toNumber());
+        available = await bank.availableToUnstake(alice);
+        assert(available.toNumber(), '1500');
+        await bank.unstake('1500', {from: alice});
+        assert.equal((await token.balanceOf.call(alice)).toString(), '9000');
+
+        // 18 months
+        await utils.increaseTime(month.times(6).toNumber());
+        available = await bank.availableToUnstake(alice);
+        assert(available.toNumber(), '1750');
+        await bank.unstake('1750', {from: alice});
+        assert.equal((await token.balanceOf.call(alice)).toString(), '10750');
+
+        // 24 months
+        await utils.increaseTime(month.times(6).toNumber());
+        available = await bank.availableToUnstake(alice);
+        assert(available.toNumber(), '2000');
+        await bank.unstake('2000', {from: alice});
+        assert.equal((await token.balanceOf.call(alice)).toString(), '12750');
+
+        assert.equal(await token.balanceOf.call(bank.address), initialBankBalance - 2750);
+
+/*
+        attemptedUnstakeException = undefined;
+        try {
+            await bank.unstake(available, {from: alice});
+        } catch(e) {
+            attemptedUnstakeException = e;
+        }
+        available = await bank.availableToUnstake(alice);
+        utils.ensureException(attemptedUnstakeException);
+        */
+
+    })
+
     // testing return values
-    // test batching of amounts
+    // test batching of amounts in different tranches...
+    // theres a solidity preprocessor we coulc maybe use to interpolate variables so that this could actually be tested on-chain
+    // 
     
 
     // it("Should not not s")
