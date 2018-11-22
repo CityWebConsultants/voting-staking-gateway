@@ -171,8 +171,19 @@ contract('Staking', function (accounts) {
 
 
     // Simulate journey
-    // @todo refactor this to make use of objects
+    // @todo refactor this to make use of objects so we can loop and make this more generic
     // so we don't have so we can make use of loops and vars rather than having literal values scattered through
+
+            // assert alices coins
+        // assert bobs coins
+    
+        // const bug = await bank.totalStaked();
+        // const a = await bank.availableToUnstake(alice);
+
+        // @todo should also apply a deposit from bob
+        // @todo assert balance of alice
+        // @todo should use getRate function
+        // Should not deposit after time limit
     it("Should deposit and withdraw tranches of stakes", async () => {
         const aWeeBit = initialBalance / 10;
         let aliceTokenBalance;
@@ -180,16 +191,10 @@ contract('Staking', function (accounts) {
         // No time no bonus
         await bank.stake(aWeeBit, 0, false, {from: alice});
 
-        // should create this as an object so that the valus are easy to change
-        // can set those params at the start of the file
-        // Would be much tiedier and easier to change and would make it more generic....
-
-        // make thi smore dyanimc, iterate over values
-        // just use lityeral as an amount just now...
         assert(await bank.totalStaked(),  aWeeBit, 'total staked does not match deposited');
         // No time no bonus awarded (< 6 months)
         await bank.stake(aWeeBit, 0, true, {from: alice}); // should still be 0
-        assert(await bank.totalStaked(),  aWeeBit * 2, 'total staked does not match deposited');
+        assert(await bank.totalStaked(),  '2000', 'total staked does not match deposited');
         await bank.stake(aWeeBit, month.times(6), true, {from: alice});
         assert(await bank.totalStaked(),  '3200', 'total staked does not match deposited');
         await bank.stake(aWeeBit, month.times(9), true, {from: alice});
@@ -204,17 +209,6 @@ contract('Staking', function (accounts) {
         aliceTokenBalance = await token.balanceOf.call(alice);
         assert.equal(aliceTokenBalance.toString(), '3000');
 
-
-        // assert alices coins
-        // assert bobs coins
-    
-        // const bug = await bank.totalStaked();
-        // const a = await bank.availableToUnstake(alice);
-
-        // @todo should also apply a deposit from bob
-        // @todo assert balance of alice
-        // @todo should use getRate function
-        // Should not deposit after time limit
         let exceedsMaxTimeException
         try {
             await bank.stake(aWeeBit, month.times(25).plus(day), true, {from: alice});
@@ -224,10 +218,10 @@ contract('Staking', function (accounts) {
         utils.ensureException(exceedsMaxTimeException);
         // also assert failures
     
-        // Check availability
+        // now
         let available = await bank.availableToUnstake(alice);
         assert.equal(available.toString(), aWeeBit * 2);
-        // assert total staked
+        assert(available.toNumber(), '2000');
         await bank.unstake(2000, {from: alice});
         assert((await bank.availableToUnstake(alice)).toString(), 0);
         
