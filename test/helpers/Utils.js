@@ -8,6 +8,17 @@ function ensureException(error) {
     assert.isTrue(isException(error));
 }
 
+const promisify = (inner) =>
+    new Promise((resolve, reject) =>
+        inner((err, res) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(res);
+            }
+        })
+    );
+
 function advanceBlock() {
     return new Promise((resolve, reject) => {
         web3.currentProvider.sendAsync({
@@ -52,5 +63,6 @@ module.exports = {
     advanceToBlock: advanceToBlock,
     ensureException: ensureException,
     addPercent: addPercent,
-    increaseTime: increaseTime
+    increaseTime: increaseTime,
+    promisify: promisify
 };

@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 // import "../ownership/Ownable.sol";
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
-//import "../math/SafeMath.sol";
+    //import "../math/SafeMath.sol";
 
 contract Staking is StakingInterface {
     //@todo use safe math
@@ -56,6 +56,10 @@ contract Staking is StakingInterface {
             amount = _amount;
         }
 
+        // actually -- the total amount is not important -- what is important is the rate...
+        // this is a flaw.
+        // we don't care about the principle amount -- we should apply this logic to the added rate
+        // hmmmmmm... that raises the issue -- how do we track only 
         require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
     
@@ -64,6 +68,7 @@ contract Staking is StakingInterface {
         totalStaked += amount;
 
         emit Staked(_user, _amount, stakeUntil, _claimBonus);
+
     }
 
     /// @notice Unstakes a certain amount of tokens.
@@ -92,6 +97,7 @@ contract Staking is StakingInterface {
         uint256 withdrawn = 0;
 
         // @TODO this would be better as a do while so we don't execute more than necessary
+        // refactor a little to make more efficent
         for (uint256 i = 0; i < stakes.length; i++) {
             // emit debugUint("block", block.timestamp);
             // emit debugUint("until", stakes[i].stakeUntil);
@@ -190,7 +196,6 @@ contract Staking is StakingInterface {
         }
     }
 }
-
 
 /*
     function availableToUnstakeAt(address _user, uint256 _time) 
