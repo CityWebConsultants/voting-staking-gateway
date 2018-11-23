@@ -9,6 +9,7 @@ const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
 const leftPad = require('left-pad');
 const BigNumber = require('bignumber.js');
+// consider changing day to hour or just addingg hour
 BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4) 
 // @todo add anon function for only admin to seed babkj
 // swtich over to using fixed times
@@ -191,7 +192,8 @@ contract('Staking', function (accounts) {
         // Should not deposit after time limit
     it("Should deposit and withdraw tranches of stakes", async () => {
         const aWeeBit = initialBalance / 10;
-        let totalStaked, aliceTokenBalance;
+        let totalStaked = 0;
+        let aliceTokenBalance;
 
         rateBoundaries = await [0,6,9,12,18,24].map((item) => {
                 return month.times(item);
@@ -211,15 +213,19 @@ contract('Staking', function (accounts) {
             assert.equal(await bank.totalStaked.call(), totalStakedBefore.add(expectedReturn).toString())
 
             // Check locked
-            await utils.increaseTime((item.minus(day)).toNumber());
-            assert(bank.availableToUnstake(alice), 0);
+            if (index > 0) {
+                await utils.increaseTime((item.minus(day)).toNumber());
+                const a = await bank.availableToUnstake(alice);
+                assert.equal((await bank.availableToUnstake(alice)).toString(), 0);
+            }
 
-            // Unstake
             await utils.increaseTime((day).toNumber());
+
             assert.equal(await bank.availableToUnstake(alice), expectedReturn);
             assert.isOk(await bank.unstake(expectedReturn, {from: alice}));
-            assert(token.balanceOf(alice).toString(), aliceTokenBalance += expectedReturn)
-            assert((await bank.availableToUnstake(alice)).toString(), 0);
+            // aliceTokenBalance += expectedReturn
+            // assert.equal((await token.balanceOf(alice)).toString(), aliceTokenBalance);
+            assert.equal((await bank.availableToUnstake(alice)).toString(), 0);
 
             index++;
         }
@@ -229,81 +235,11 @@ contract('Staking', function (accounts) {
         const firedStakeEvents = await utils.promisify(cb => stakeEvent.get(cb));
         assert.equal(firedStakeEvents.length, rateBoundaries.length);
 
-        // @todo also need to check advanced time!!!!
+        const unstakeEvent = await bank.Unstaked({user: accounts[0]}, { fromBlock: 1, toBlock: 'latest'/*, topics: [accounts[3]]}*/});
+        const firedUnstakeEvents = await utils.promisify(cb => unstakeEvent.get(cb));
+        assert.equal(firedUnstakeEvents.length, rateBoundaries.length);
 
-       /* await bank.stake(aWeeBit, 0, false, {from: alice});*/
-/*
-        assert(await bank.totalStaked(),  aWeeBit, 'total staked does not match deposited');
-        // No time no bonus awarded (< 6 months)
-        await bank.stake(aWeeBit, 0, true, {from: alice}); // should still be 0 
-        assert(await bank.totalStaked(),  '2000', 'total staked does not match deposited');
-        await bank.stake(aWeeBit, month.times(6), true, {from: alice});
-        assert(await bank.totalStaked(),  '3200', 'total staked does not match deposited');
-        await bank.stake(aWeeBit, month.times(9), true, {from: alice});
-        assert(await bank.totalStaked(),  '4500', 'total staked does not match deposited');
-        await bank.stake(aWeeBit, month.times(12), true, {from: alice});
-        assert(await bank.totalStaked(),  '6000', 'total staked does not match deposited');
-        await bank.stake(aWeeBit, month.times(18), true, {from: alice});
-        assert(await bank.totalStaked(), '7750', 'total staked does not match deposited');
-        await bank.stake(aWeeBit, month.times(24), true, {from: alice});
-        assert(await bank.totalStaked(), '9750', 'total staked does not match deposited');
-        // stake some from bob without bonus for two years
-        aliceTokenBalance = await token.balanceOf.call(alice);
-        assert.equal(aliceTokenBalance.toString(), '3000');
 
-        let exceedsMaxTimeException
-        try {
-            await bank.stake(aWeeBit, month.times(25).plus(day), true, {from: alice});
-        } catch(e) {
-            exceedsMaxTimeException = e
-        }
-        utils.ensureException(exceedsMaxTimeException);
-        // also assert failures
-    
-        // now
-        let available = await bank.availableToUnstake(alice);
-        assert.equal(available.toString(), aWeeBit * 2);
-        assert(available.toNumber(), '2000');
-        await bank.unstake(2000, {from: alice});
-        assert((await bank.availableToUnstake(alice)).toString(), 0);
-        
-        // 6 months
-        await utils.increaseTime(month.times(6).toNumber());
-        available = await bank.availableToUnstake(alice);
-        assert(available.toNumber(), '1200');
-        await bank.unstake('1200', {from: alice});
-        assert.equal((await token.balanceOf.call(alice)).toString(), '6200');
-
-        // 9 months
-        await utils.increaseTime(month.times(3).toNumber());
-        available = await bank.availableToUnstake(alice);
-        assert(available.toNumber(), '1300');
-        await bank.unstake('1300', {from: alice});
-        assert.equal((await token.balanceOf.call(alice)).toString(), '7500');
-        
-        // 12 months
-        await utils.increaseTime(month.times(3).toNumber());
-        available = await bank.availableToUnstake(alice);
-        assert(available.toNumber(), '1500');
-        await bank.unstake('1500', {from: alice});
-        assert.equal((await token.balanceOf.call(alice)).toString(), '9000');
-
-        // 18 months
-        await utils.increaseTime(month.times(6).toNumber());
-        available = await bank.availableToUnstake(alice);
-        assert(available.toNumber(), '1750');
-        await bank.unstake('1750', {from: alice});
-        assert.equal((await token.balanceOf.call(alice)).toString(), '10750');
-
-        // 24 months
-        await utils.increaseTime(month.times(6).toNumber());
-        available = await bank.availableToUnstake(alice);
-        assert(available.toNumber(), '2000');
-        await bank.unstake('2000', {from: alice});
-        assert.equal((await token.balanceOf.call(alice)).toString(), '12750');
-
-        assert.equal(await token.balanceOf.call(bank.address), initialBankBalance - 2750);
-*/
 /*
         attemptedUnstakeException = undefined;
         try {
