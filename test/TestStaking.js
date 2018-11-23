@@ -1,13 +1,18 @@
 // @todo setup tests so we can also run against rinkeby -- maybe have to use some mocks for getrate and blocktimeings
 // @todo instead of doing date now -- should get the time of the most recent blokc to apply
 // !!!1 that shoujld fix problem wiht time runningaway
-
+// @todo make sure outstanding amount of tokens left to distribute is handled correctly
+// @todo also need to test the accounting of funds
+// Stake and unsteak coins at each boundary.
 // var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
 // var GatewayERC20Contract = artifacts.require("GatewayERC20Contract");
+// @todo change refernces to month to use of the the boundaries
+// that way makes it easy to change without having to change it all the way through code
+// @todo assert we do need exceed maximum amount withdrawable
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
-const leftPad = require('left-pad');
+// const leftPad = require('left-pad');
 const BigNumber = require('bignumber.js');
 // consider changing day to hour or just addingg hour
 BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4) 
@@ -24,7 +29,6 @@ contract('Staking', function (accounts) {
     let admin = accounts[1];
     let bob = accounts[2];
 
-
     //@todo consider tidying up using object to define patrams
 
     // Don't really need big numbers as they will never be that big
@@ -33,7 +37,7 @@ contract('Staking', function (accounts) {
     const month = new BigNumber('2629746');
     const day = new BigNumber('86400');
 
-    //should test getRate... or somehting
+    const rateBoundaries = [0,6,9,12,18,24].map(item => month.times(item));
 
     // Helper
     const abortedUnstake = async (user, amount) => {
@@ -51,15 +55,16 @@ contract('Staking', function (accounts) {
         initialBalance = 10000;
         initialBankBalance = 100000; // call this intial bank balance
         rate = 10; // default rate for 6 months stake
+        // remove default rate and use actual rates!!!!
         token = await TokenMock.new();
         bank = await Staking.new(token.address);
 
         await token.mint(admin, initialBankBalance);
         await token.mint(alice, initialBalance);
         await token.mint(bob, initialBankBalance); //  Bob is pure minted :)
-
         await token.transfer(bank.address, initialBankBalance, {from: admin});
         await token.balanceOf.call(bank.address);
+        
     });
 
     it.skip("Should do nothing", async () => {
@@ -86,11 +91,9 @@ contract('Staking', function (accounts) {
         assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
     });
 
-    it("Should transfer tokens to stake with no bonus", async () => {
-        // Hmmmm, when we create different states then make stuff harder to test by creating more paths
+    it.skip("Should transfer tokens to stake with no bonus", async () => {
+
     })
-
-
 
     it("Should unstake tokens with no time lock", async () => {
         const stakeDuration = 0;
@@ -103,8 +106,6 @@ contract('Staking', function (accounts) {
         assert(aliceBalance.toString(), '10000')
     })
 
-
-    // WTF!!!! Why is this failing!!!!!!!!!!!!!!!
     it("Should not retrieve tokens whilst time locked", async () => {
         const stakeDuration = month.times('6').plus(day).toString();
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
@@ -138,26 +139,18 @@ contract('Staking', function (accounts) {
 
     })
 
-        // Should perhaps test events as a separate thing...
-    // To what extent should we test individual parts of events separate from transactions
     it("Should fire event when staked", async () => {
-        // actually we don't really need timestamps to be big numbers
+
         const stakeDuration = month.plus(day);
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
-        
         const logs = staked.logs[0];
         const blockTime = new BigNumber(web3.eth.getBlock(staked.receipt.blockNumber).timestamp)
-        
-        // could create a helper function to test each of staked and unstaked
-        // then would only have to check in one plave if we updated them
+
         assert.equal(logs.event,'Staked');
         assert.equal(logs.args.amount.toString(), initialBalance);
         assert.equal(logs.args.hasBonus, true);
         assert.equal(logs.args.stakeUntil.toString(), (blockTime.plus(stakeDuration)).toString());
     })
-
-
-    // @todo assert we do need exceed maximum amount withdrawable
 
     it("Should fire event when unstaked", async () => {
         // Any number less than now should be immediately unstakable
@@ -170,38 +163,11 @@ contract('Staking', function (accounts) {
         assert.equal(logs.args.user, alice);
     })
 
-    
-
-
-    // @todo multiple stakes in a single month
-
-
-    // Simulate journey
-    // @todo refactor this to make use of objects so we can loop and make this more generic
-    // so we don't have so we can make use of loops and vars rather than having literal values scattered through
-
-            // assert alices coins
-        // assert bobs coins
-    
-        // const bug = await bank.totalStaked();
-        // const a = await bank.availableToUnstake(alice);
-
-        // @todo should also apply a deposit from bob
-        // @todo assert balance of alice
-        // @todo should use getRate function
-        // Should not deposit after time limit
     it("Should deposit and withdraw tranches of stakes", async () => {
         const aWeeBit = initialBalance / 10;
         let totalStaked = 0;
         let aliceTokenBalance;
-
-        rateBoundaries = await [0,6,9,12,18,24].map((item) => {
-                return month.times(item);
-        })
-
-        // @todo make sure outstanding amount of tokens left to distribute is handled correctly
-        // @todo also need to test the accounting of funds
-        // Stake and unsteak coins at each boundary.
+    
         let index = 0;
         for (let item of rateBoundaries) {
 
@@ -213,15 +179,15 @@ contract('Staking', function (accounts) {
             assert.equal(await bank.totalStaked.call(), totalStakedBefore.add(expectedReturn).toString())
 
             // Check locked
-            if (index > 0) {
+            if (index > 0) { // cludge for this use case
                 await utils.increaseTime((item.minus(day)).toNumber());
                 const a = await bank.availableToUnstake(alice);
                 assert.equal((await bank.availableToUnstake(alice)).toString(), 0);
             }
 
-            await utils.increaseTime((day).toNumber());
+            await utils.increaseTime(day.toNumber());
 
-            assert.equal(await bank.availableToUnstake(alice), expectedReturn);
+            assert.equal((await bank.availableToUnstake(alice)).toString(), expectedReturn);
             assert.isOk(await bank.unstake(expectedReturn, {from: alice}));
             // aliceTokenBalance += expectedReturn
             // assert.equal((await token.balanceOf(alice)).toString(), aliceTokenBalance);
@@ -230,7 +196,7 @@ contract('Staking', function (accounts) {
             index++;
         }
 
-        // Check total events fired
+        // Check all events fired
         const stakeEvent = await bank.Staked({user: accounts[0]}, { fromBlock: 1, toBlock: 'latest'/*, topics: [accounts[3]]}*/});
         const firedStakeEvents = await utils.promisify(cb => stakeEvent.get(cb));
         assert.equal(firedStakeEvents.length, rateBoundaries.length);
@@ -238,20 +204,33 @@ contract('Staking', function (accounts) {
         const unstakeEvent = await bank.Unstaked({user: accounts[0]}, { fromBlock: 1, toBlock: 'latest'/*, topics: [accounts[3]]}*/});
         const firedUnstakeEvents = await utils.promisify(cb => unstakeEvent.get(cb));
         assert.equal(firedUnstakeEvents.length, rateBoundaries.length);
+    })
 
-
-/*
-        attemptedUnstakeException = undefined;
-        try {
-            await bank.unstake(available, {from: alice});
-        } catch(e) {
-            attemptedUnstakeException = e;
-        }
-        available = await bank.availableToUnstake(alice);
-        utils.ensureException(attemptedUnstakeException);
-        */
+    it.skip("Should retrieve multiple stakes in one withdrawal", async () => {
 
     })
+
+    it.skip("Should not allow staking when inadequate funds in contract to pay out", async() => {
+
+    })
+
+    it.skip("Should deduct corret account from self when returning bonuses", async () => {
+
+    })
+    //     const currentBlock = new BigNumber(web3.eth.blockNumber);
+    //     const targetBlock = currentBlock.add(50);
+    //     // make this a helper funciton
+    //     const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
+
+    //     let error
+    //     try {
+    //         await bank.stake(initialBankBalance - (initialBankBalance * 5 / 100), targetBlockBytes);  
+    //     } catch(e) {
+    //         error = e
+    //     }
+
+    //     utils.ensureException(error)
+    // })
 
     // testing return values
     // test batching of amounts in different tranches...
@@ -267,30 +246,7 @@ contract('Staking', function (accounts) {
 
 
 /*
-    it("Should retrieve tokens staked for 0 blocks", async () => {
-        const rate = 10;
-        const bonus = initialBalance * rate / 100
-
-    //    await bank.stake(initialBalance, '0x0000000000000000000000000000000000000000000000000000000000000001');
-        await bank.stake(initialBalance, '0x0');
-        const totalStaked = await bank.totalStakedFor.call(alice);
-        
-        assert.equal(totalStaked.toString(), initialBalance + bonus);
-
-        // should also assert available
-        // const available = await bank.availableToUnstake(alice)
-        const unstaked = await bank.unstake(totalStaked / 2, '0x0');
-
-        const totalStakedAfter = await bank.totalStakedFor.call(alice);
-        const tokenBalanceAfter = await token.balanceOf.call(alice)
-        const bankTokenBalanceAfter = await token.balanceOf.call(bank.address);
-        
-        //const goo = totalStaked.minus(totalStaked.dividedBy(2)).add(initialBankBalance);
-
-        // @todo tidy up this logic so it is easier to understand
-        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(initialBankBalance).minus(bonus))
-    })
-
+    
     it("Should retrieve tokens staked after target period", async () => {
         const rate = 10;
         const bonus = initialBalance * rate / 100
