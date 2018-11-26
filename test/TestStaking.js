@@ -1,26 +1,14 @@
 // @todo setup tests so we can also run against rinkeby -- maybe have to use some mocks for getrate and blocktimeings
-// @todo instead of doing date now -- should get the time of the most recent blokc to apply
-// !!!1 that shoujld fix problem wiht time runningaway
 // @todo make sure outstanding amount of tokens left to distribute is handled correctly
-// @todo also need to test the accounting of funds
-// Stake and unsteak coins at each boundary.
-// var PaymentGatewayContract = artifacts.require("PaymentGatewayContract");
-// var GatewayERC20Contract = artifacts.require("GatewayERC20Contract");
-// @todo change refernces to month to use of the the boundaries
-// that way makes it easy to change without having to change it all the way through code
 // @todo assert we do need exceed maximum amount withdrawable
+// @todo tidy up comparisons so we dont have bignumber and tostring everywhere
+// @todo add approve for ... can we do approve and call
+
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
-// const leftPad = require('left-pad');
 const BigNumber = require('bignumber.js');
-// consider changing day to hour or just addingg hour
 BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4) 
-// @todo add anon function for only admin to seed babkj
-// swtich over to using fixed times
-// @todo tidy up comparisons so we dont have bignumber and tostring everywhere
-// @todo add approve for ... can we do approve and call
-// 3 x tx to 
 
 contract('Staking', function (accounts) {
 
@@ -29,17 +17,13 @@ contract('Staking', function (accounts) {
     let admin = accounts[1];
     let bob = accounts[2];
 
-    //@todo consider tidying up using object to define patrams
-
-    // Don't really need big numbers as they will never be that big
-    // will be tidier without them ---
     const second = new BigNumber('1');
     const month = new BigNumber('2629746');
     const day = new BigNumber('86400');
 
     const rateBoundaries = [0,6,9,12,18,24].map(item => month.times(item));
 
-    // Helper
+    // Helper -- try this out and maybe remove
     const abortedUnstake = async (user, amount) => {
         let attemptedUnstakeException;
         try {
@@ -53,9 +37,9 @@ contract('Staking', function (accounts) {
 
     beforeEach(async () => {
         initialBalance = 10000;
-        initialBankBalance = 100000; // call this intial bank balance
-        rate = 10; // default rate for 6 months stake
-        // remove default rate and use actual rates!!!!
+        initialBankBalance = 100000; 
+        rate = 10; 
+        // @todo consider removing default rate and using actual rates!!!!
         token = await TokenMock.new();
         bank = await Staking.new(token.address);
 
@@ -100,8 +84,7 @@ contract('Staking', function (accounts) {
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
         const unstaked = await bank.unstake(initialBalance, {from: alice});
 
-        // check events have the correct information
-        // we should also assert the event ocurred here
+        // @todo assert events?
         const aliceBalance = await token.balanceOf.call(alice);
         assert(aliceBalance.toString(), '10000')
     })
@@ -121,22 +104,18 @@ contract('Staking', function (accounts) {
 
     // perhaps should do one min befoe and one min after 
     it("Should retrieve tokens after time lock", async () => {
-        const stakeDuration = month.times('6');
+        const stakeDuration = month.times('6'); // this is the same as adding zero - should be added to current time
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
-        // How -- check which network we are on
 
-        const unstakeAt = stakeDuration.plus(day).toNumber(); ///.plus(Math.floor(Date.now() / 1000)).toString();
+        const unstakeAt = stakeDuration.plus(day).toNumber(); //.plus(Math.floor(Date.now() / 1000)).toString();
         await utils.increaseTime(unstakeAt);
         const unstaked = await bank.unstake(initialBalance, {from: alice});
-
-        // check balance before and after 
-        // Is it better to test it here or give events their own 
         assert(unstaked.logs[0].event === 'Unstaked');
     })
 
     // @todo test approve transfer
     it.skip("Should refuse stake for unknown address", async () => {
-
+        // try / catch
     })
 
     it("Should fire event when staked", async () => {
@@ -206,178 +185,36 @@ contract('Staking', function (accounts) {
         assert.equal(firedUnstakeEvents.length, rateBoundaries.length);
     })
 
-    it.skip("Should retrieve multiple stakes in one withdrawal", async () => {
+    // @todo run numbers on spreadsheet to ensure correct
+    it("Should retrieve stakes deposited in tranches with one withdrawal", async () => {
+        const aWeeBit = initialBalance / 10;
+        let totalStaked = new BigNumber(0);
 
+        for (let item of rateBoundaries) {
+            // const now = web3.eth.getBlock('latest').timestamp
+            // @todo should increase time here
+            const increasedTime = await utils.increaseTime(month.times(6).toNumber());
+            const staked = await bank.stake(aWeeBit, item, true, {from: alice});
+            totalStaked = totalStaked.add(staked.logs[0].args.amount);
+        };
+
+        await utils.increaseTime(month.times(24).toNumber());
+        const available = await bank.availableToUnstake(alice);
+        const unstaked = await bank.unstake(totalStaked, {from: alice});
+
+        assert.equal(totalStaked.toString(), unstaked.logs[0].args.amount.toString());
     })
 
     it.skip("Should not allow staking when inadequate funds in contract to pay out", async() => {
-
+        // attept to stake more than will push over the top
     })
 
     it.skip("Should deduct corret account from self when returning bonuses", async () => {
-
+        // test this in above statements.
     })
-    //     const currentBlock = new BigNumber(web3.eth.blockNumber);
-    //     const targetBlock = currentBlock.add(50);
-    //     // make this a helper funciton
-    //     const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
-
-    //     let error
-    //     try {
-    //         await bank.stake(initialBankBalance - (initialBankBalance * 5 / 100), targetBlockBytes);  
-    //     } catch(e) {
-    //         error = e
-    //     }
-
-    //     utils.ensureException(error)
-    // })
-
-    // testing return values
-    // test batching of amounts in different tranches...
-    // theres a solidity preprocessor we coulc maybe use to interpolate variables so that this could actually be tested on-chain
-    // 
-    
-
-    // it("Should not not s")
 
     // It should be checking the amounts and cutoffs are being applied correctly
     // It should check the aggregate totals are correct
     // It should check what happens when end conditions are reached
 
-
-/*
-    
-    it("Should retrieve tokens staked after target period", async () => {
-        const rate = 10;
-        const bonus = initialBalance * rate / 100
-
-        const currentBlock = new BigNumber(web3.eth.blockNumber);
-        const targetBlock = currentBlock.add(50);
-        // make this a helper funciton
-        const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
-
-        await bank.stake(initialBalance, targetBlockBytes);
-        const totalStaked = await bank.totalStakedFor.call(alice);
-        await utils.advanceToBlock(targetBlock.toString(10))
-
-        assert.equal(totalStaked.toString(), initialBalance + bonus);
-        const available = await bank.availableToUnstake(alice)
-        // @todo assert this
-        const unstaked = await bank.unstake(totalStaked / 2, '0x0');
-
-        const totalStakedAfter = await bank.totalStakedFor.call(alice);
-        const tokenBalanceAfter = await token.balanceOf.call(alice)
-        const bankTokenBalanceAfter = await token.balanceOf.call(bank.address);
-        const foo = 0;
-        assert.deepEqual(bankTokenBalanceAfter, totalStaked.dividedBy(2).add(initialBankBalance).minus(bonus));
-    })
-
-    it("Should not retrieve tokens before target block", async () => {
-        const currentBlock = new BigNumber(web3.eth.blockNumber);
-        const targetBlock = currentBlock.add(50);
-        // make this a helper funciton
-        const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
-
-        await bank.stake(initialBalance, targetBlockBytes);
-        const totalStaked = await bank.totalStakedFor.call(alice);
-        await utils.advanceToBlock(targetBlock.minus(10).toString(10))
-
-        assert(await bank.availableToUnstake(alice), 0);
-
-        let error;
-        try {
-            const unstaked = await bank.unstake(totalStaked, '0x0');
-        } catch(e) {
-            error = e;
-        }
-        utils.ensureException(error);
-    })
-
-    it("Should not allow staking when inadequate funds in contract to pay out", async() => {
-        const currentBlock = new BigNumber(web3.eth.blockNumber);
-        const targetBlock = currentBlock.add(50);
-        // make this a helper funciton
-        const targetBlockBytes = '0x' + leftPad(targetBlock.toString(16), 64, 0);
-
-        let error
-        try {
-            await bank.stake(initialBankBalance - (initialBankBalance * 5 / 100), targetBlockBytes);  
-        } catch(e) {
-            error = e
-        }
-
-        utils.ensureException(error)
-    })
-
-
-*/
-
-
-    ///////////////////////////////////////////////////////////////////////
-
-    // @todo test for passing in more tokens than can handle
-    
-    // it('should allow user to unstake tokens', async () => {
-    //     await bank.stake(initialBalance, '0x0');
-    //     assert.equal(await bank.totalStakedFor.call(accounts[0]), initialBalance);
-    //     await bank.unstake(initialBalance / 2, '0x0');
-    //     assert.equal(await bank.totalStakedFor.call(accounts[0]), initialBalance / 2);
-    // });
-
-    // @todo test blocks
-
-    /*
-
-    it('should allow user to stake for other person', async () => {
-        await bank.stakeFor(accounts[1], initialBalance, '0x0');
-        assert.equal(await bank.totalStakedFor.call(accounts[1]), initialBalance);
-        await bank.unstake(initialBalance / 2, '0x0', {from: accounts[1]});
-        assert.equal(await bank.totalStakedFor.call(accounts[1]), initialBalance / 2);
-    });
-
-    context('staking constants', async () => {
-
-        let firstBlock;
-        let secondBlock;
-
-        beforeEach(async () => {
-            firstBlock = web3.eth.blockNumber;
-            secondBlock = firstBlock + 5;
-
-            let result = await bank.stake(initialBalance / 2, '0x0');
-            firstBlock = result['receipt']['blockNumber'];
-
-            await utils.advanceToBlock(secondBlock);
-
-            result = await bank.stake(initialBalance / 2, '0x0');
-            secondBlock = result['receipt']['blockNumber'];
-        });
-
-        it('should return full staked value when calling totalStaked', async () => {
-            assert.equal(await bank.totalStakedFor.call(accounts[0]), initialBalance);
-        });
-
-        it('should return correct amount staked at block', async () => {
-            assert.equal(await bank.totalStakedForAt.call(accounts[0], firstBlock), initialBalance / 2);
-        });
-
-        it('should return correct block when calling lastStaked', async () => {
-            assert.equal(await bank.lastStakedFor.call(accounts[0]), secondBlock);
-        });
-
-        it('should return correct amount staked at block in future', async () => {
-            assert.equal(await bank.totalStakedForAt.call(accounts[0], secondBlock * 2), initialBalance);
-        });
-    });
-
-    it('should return correct total amount staked', async () => {
-        await bank.stake(initialBalance / 2, '0x0', {from: accounts[0]});
-        let result = await bank.stake(initialBalance / 2, '0x0', {from: accounts[1]});
-
-        let block = result['receipt']['blockNumber'];
-        assert.equal(await bank.totalStakedAt.call(block * 2), initialBalance);
-    });
-});
-
-*/
 })
