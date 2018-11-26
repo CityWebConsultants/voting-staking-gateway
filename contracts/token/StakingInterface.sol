@@ -14,9 +14,12 @@ contract StakingInterface {
     function getRate(uint256 time) public pure returns (uint256);
     function token() public view returns (address);
 
+    function availableToUnstake(address addr) public view returns (uint256);
+    function availableToUnstakeAt(address addr, uint256 time) public view returns (uint256);
     // @todo 
     // function stakeAvailableAt()
     // function stakeAvailableForAt()
+    // have to to do staked for at to be able to talk the other contract
     
 
 }

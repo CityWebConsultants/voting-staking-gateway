@@ -20,6 +20,7 @@ contract Staking is StakingInterface {
     mapping (address => StakeEntry[]) public stakesFor;
 
     event debugUint(string msg, uint256);
+    event ExtendTime(uint256 extendedBy, uint256 trancheId);
 
     /// @param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
@@ -37,6 +38,8 @@ contract Staking is StakingInterface {
         stakeFor(msg.sender, _amount, _time, _claimBonus);
     }
 
+    // Consider using ENUM && or Array of numbers.... same as but easier than using assembly
+    // uint[] _options,
     /// @notice Stakes a certain amount of tokens for another user.
     /// @param _user Address of the user to stake for.
     /// @param _amount Amount of tokens to stake.
@@ -91,10 +94,9 @@ contract Staking is StakingInterface {
         uint256 toWithdraw = _amount;
         uint256 withdrawn = 0;
 
-        // @toodo consider refactoring (do..while) for efficiency
+        // @todo consider refactoring (do..while) for efficiency
         for (uint256 i = 0; i < stakes.length; i++) {
-            // emit debugUint("block", block.timestamp);
-            // emit debugUint("until", stakes[i].stakeUntil);
+
             if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 if (toWithdraw > 0 && stakes[i].amount >= toWithdraw) {
                     stakes[i].amount -= toWithdraw;
@@ -139,21 +141,39 @@ contract Staking is StakingInterface {
     /// @param _user Address of staker
     /// @return Address of token.
     function availableToUnstake(address _user)
-    public
+    public // @todo this should call the next
     view 
     returns (uint256)
+    {
+        return availableToUnstakeAt(_user, block.timestamp);
+    }
+
+    function availableToUnstakeAt(address _user, uint256 _time) 
+    public 
+    view
+    returns (uint256 amount) 
     {
         uint256 available;
         StakeEntry[] memory stakes = stakesFor[_user];
         for (uint256 i = 0; i < stakes.length; i++) {
-            if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
+            if (stakes[i].stakeUntil <= _time) { //solium-disable-line security/no-block-members
                 available += stakes[i].amount;
             }
         }
-
-        return available;
+        return available;   
     }
-
+    
+    //@todo test
+    // Cover edge cases where a user requires lock to complete other action when initial staking period ends
+    // does not include additonal bonus
+    // is there anyway to explot this?
+    function extendStakingDuration(uint256 _duration, uint256 _trancheId)
+        public
+        returns (bool) {
+        stakesFor[msg.sender][_trancheId].stakeUntil += _duration;
+        emit ExtendTime(stakesFor[msg.sender][_trancheId].stakeUntil, _trancheId);
+        return true; // or we could return the timestamp
+    }
 
     /// @notice set rate
     /// @param _timeLength Length of time a user has staked for
@@ -191,12 +211,4 @@ contract Staking is StakingInterface {
     }
 }
 
-/*
-    function availableToUnstakeAt(address _user, uint256 _time) 
-    public 
-    view
-    returns (uint256 amount) 
-    {
-        return availableToStake
-    }
-  */
+  
