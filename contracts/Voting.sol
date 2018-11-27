@@ -2,14 +2,19 @@ pragma solidity ^0.4.24;
 
 import "./token/Staking.sol";
 
-// describe the functions of this and add the interface
+// Implementation of EIP1202
+// todo: add interface
+// todo do not accept funds
+// code to call return of tokens
+
 /**
   A simplest vote interface.
   (1) Support multiple issues
-  (2) Supporrs multiple options
+  (2) Supports multiple options
   (3) time limit on voting // still to implement
   (4) each address can only vote once.
   (5) each address has different weights according to staking.
+  (6) each address may only bote 
   */
 contract Voting {
     // should we consider having a fixed candidate list?
@@ -54,8 +59,8 @@ contract Voting {
     {
         Proposal storage proposal = proposals[_proposalId];
 
-        require(_option <= proposal.optionDescriptions.length, "Vote out of range"); // must be within range
-        require(proposal.ballotOf_[msg.sender] == 0, "The sender has cast proposals."); // no re-vote
+        require(_option <= proposal.optionDescriptions.length, "Vote out of range"); 
+        require(proposal.ballotOf_[msg.sender] == 0, "The sender has cast proposals.");
         // use has coins staked is implicit but perhaps should use require to make it explicit
         proposal.ballotOf_[msg.sender] = _option;
         proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
@@ -181,59 +186,8 @@ contract Voting {
         }
     }
 
-    ///@ wrapper for sorting
-    // humho,  this is not going to be so easy as we have to move the mappings :/
-    // function sort(uint[] _data) 
-    // public 
-    // pure 
-    // returns(uint[]) 
-    // {
-    //     quickSort(_data, int(0), int(_data.length - 1));
-    //     return _data;
-    // }
-    
-    // ///@notice Orders array
-    // function quickSort(uint256[] memory arr, int left, int right) 
-    // internal 
-    // pure 
-    // {
-    //     int i = left;
-    //     int j = right;
-    //     if(i==j) return;
-    //     uint pivot = arr[uint(left + (right - left) / 2)];
-    //     while (i <= j) {
-    //         while (arr[uint(i)] < pivot) i++;
-    //         while (pivot < arr[uint(j)]) j--;
-    //         if (i <= j) {
-    //             (arr[uint(i)], arr[uint(j)]) = (arr[uint(j)], arr[uint(i)]);
-    //             i++;
-    //             j--;
-    //         }
-    //     }
-        
-    //     if (left < j)
-    //     quickSort(arr, left, j);
-    //     if (i < right)
-    //     quickSort(arr, i, right);
-    // }
-
-    // ///@notice Returns index of highest number in array
-    // function imax(uint256[] _data) 
-    // public 
-    // pure
-    // returns (uint) 
-    // {
-    //     uint maximal = 0;
-    //     for(uint i;i < _data.length;i++){
-    //         if(_data[i] > _data[maximal]){
-    //             maximal = i;
-    //         }
-    //     }
-    //     return maximal;
-    // }
-
-    // also need to add a slice to return top values
-
+    // to do
+    // event OnProposal();
     event OnVote(address indexed _from, uint _value);
     event OnStatusChange(bool newIsOpen);
 }
