@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-interface ERC1202 {
+// ERC1202
+interface VotingInterface {
 
-    // Vote with an option. The caller needs to handle success or not
     function vote(uint option) external returns (bool success);
     function setStatus(bool isOpen) external returns (bool success);
 

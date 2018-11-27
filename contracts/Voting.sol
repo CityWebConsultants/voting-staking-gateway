@@ -1,11 +1,12 @@
 pragma solidity ^0.4.24;
 
 import "./token/Staking.sol";
-
+import "./VotingInterface.sol";
 // Implementation of EIP1202
 // todo: add interface
 // todo do not accept funds
 // code to call return of tokens
+// consider adding executable code
 
 /**
   A simplest vote interface.
@@ -16,7 +17,7 @@ import "./token/Staking.sol";
   (5) each address has different weights according to staking.
   (6) each address may only bote 
   */
-contract Voting {
+contract Voting is VotingInterface {
     // should we consider having a fixed candidate list?
     // consider changing ballot of to ballot -- not seen thatuse of undersacore before
     StakingInterface stake;
@@ -126,7 +127,7 @@ contract Voting {
                     highestIndex = j; 
                 }
             }
-            delete voteCounts[j]; // set to 0
+            delete voteCounts[j]; //solium-disable-line
             ordinalIndex[i] = highestIndex;
         }
 
