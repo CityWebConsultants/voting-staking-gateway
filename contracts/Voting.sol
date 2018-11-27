@@ -1,17 +1,15 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "./token/Staking.sol";
-
-
 
 // describe the functions of this and add the interface
 /**
   A simplest vote interface.
-  (1) single issue ... should be multiple issues
-  (2) only 1 or 2 as the vote option
-  (3) time limit on voting
+  (1) Support multiple issues
+  (2) Supporrs multiple options
+  (3) time limit on voting // still to implement
   (4) each address can only vote once.
-  (5) each address has different weights.
+  (5) each address has different weights according to staking.
   */
 contract Voting {
     // should we consider having a fixed candidate list?
@@ -58,6 +56,7 @@ contract Voting {
 
         require(_option <= proposal.optionDescriptions.length, "Vote out of range"); // must be within range
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has cast proposals."); // no re-vote
+        // use has coins staked is implicit but perhaps should use require to make it explicit
         proposal.ballotOf_[msg.sender] = _option;
         proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
 
@@ -104,36 +103,30 @@ contract Voting {
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
-    // function topOptions(uint issueId, uint limit) 
-    // public 
-    // view 
-    // returns (uint[] topOptions_) {
-
-    // }
-
-    // iplement top options
-    // need to slice
-    //function topOptions(uint issueId, uint limit) public view returns (uint[] topOptions_);
     function topOptions(uint256 _proposalId, uint256 _limit) 
     public 
     view 
-    returns (uint[] topOptions_) {
-        Proposal memory proposal = proposals[_proposalId];
-        // uhm.... this isn't going to be so easy
-        // maybe I should have gone for a simple yes or no?
-        // we don't actually need to sort
-        // we just need to know the order of the highest
+    returns (uint[]) {
+        //Proposal memory proposal = proposals[_proposalId];
+        mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
+        uint256 optionSize = proposals[_proposalId].optionDescriptions.length;
+        uint256[] memory ordinalIndex;
 
+        for (uint256 i = 0; i <= _limit; i++) {
+            uint256 highestIndex;
+            uint256 acc = 0;
+            for (uint256 j = 0; i < optionSize; j++) {
+                if (voteCounts[j] >= acc) {
+                    acc = voteCounts[j];
+                    highestIndex = j; 
+                }
+            }
+            delete voteCounts[j]; // set to 0
+            ordinalIndex[i] = highestIndex;
+        }
 
-
-        // uint256[]
-
-        // uint256[] memory result;
-        // return result;
+        return ordinalIndex;
     }
-
-
-
 
     function winningOption(uint256 _proposalId) 
     public 
@@ -190,54 +183,54 @@ contract Voting {
 
     ///@ wrapper for sorting
     // humho,  this is not going to be so easy as we have to move the mappings :/
-    function sort(uint[] _data) 
-    public 
-    pure 
-    returns(uint[]) 
-    {
-        quickSort(_data, int(0), int(_data.length - 1));
-        return _data;
-    }
+    // function sort(uint[] _data) 
+    // public 
+    // pure 
+    // returns(uint[]) 
+    // {
+    //     quickSort(_data, int(0), int(_data.length - 1));
+    //     return _data;
+    // }
     
-    ///@notice Orders array
-    function quickSort(uint256[] memory arr, int left, int right) 
-    internal 
-    pure 
-    {
-        int i = left;
-        int j = right;
-        if(i==j) return;
-        uint pivot = arr[uint(left + (right - left) / 2)];
-        while (i <= j) {
-            while (arr[uint(i)] < pivot) i++;
-            while (pivot < arr[uint(j)]) j--;
-            if (i <= j) {
-                (arr[uint(i)], arr[uint(j)]) = (arr[uint(j)], arr[uint(i)]);
-                i++;
-                j--;
-            }
-        }
+    // ///@notice Orders array
+    // function quickSort(uint256[] memory arr, int left, int right) 
+    // internal 
+    // pure 
+    // {
+    //     int i = left;
+    //     int j = right;
+    //     if(i==j) return;
+    //     uint pivot = arr[uint(left + (right - left) / 2)];
+    //     while (i <= j) {
+    //         while (arr[uint(i)] < pivot) i++;
+    //         while (pivot < arr[uint(j)]) j--;
+    //         if (i <= j) {
+    //             (arr[uint(i)], arr[uint(j)]) = (arr[uint(j)], arr[uint(i)]);
+    //             i++;
+    //             j--;
+    //         }
+    //     }
         
-        if (left < j)
-        quickSort(arr, left, j);
-        if (i < right)
-        quickSort(arr, i, right);
-    }
+    //     if (left < j)
+    //     quickSort(arr, left, j);
+    //     if (i < right)
+    //     quickSort(arr, i, right);
+    // }
 
-    ///@notice Returns index of highest number in array
-    function imax(uint256[] _data) 
-    public 
-    pure
-    returns (uint) 
-    {
-        uint maximal = 0;
-        for(uint i;i < _data.length;i++){
-            if(_data[i] > _data[maximal]){
-                maximal = i;
-            }
-        }
-        return maximal;
-    }
+    // ///@notice Returns index of highest number in array
+    // function imax(uint256[] _data) 
+    // public 
+    // pure
+    // returns (uint) 
+    // {
+    //     uint maximal = 0;
+    //     for(uint i;i < _data.length;i++){
+    //         if(_data[i] > _data[maximal]){
+    //             maximal = i;
+    //         }
+    //     }
+    //     return maximal;
+    // }
 
     // also need to add a slice to return top values
 
