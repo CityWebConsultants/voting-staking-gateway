@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "./token/Staking.sol";
-// import "./VotingInterface.sol";
+import "./VotingInterface.sol";
 // Implementation of EIP1202
 // todo: add interface
 // todo do not accept funds
@@ -30,9 +30,9 @@ contract Voting /*is VotingInterface*/ {
         // do we need to have available options?
         mapping (uint256 => uint256) weightedVoteCounts;
         mapping (address => uint256) ballotOf_;
-        // do we need to hve a time start?  
-        // hmmm
-        //
+
+        // winning option
+        // calculate totals
     }
 
 
@@ -59,7 +59,7 @@ contract Voting /*is VotingInterface*/ {
         Proposal memory proposal = Proposal(true, _votingEnds, _description, optionDescriptions);
         proposals.push(proposal);
 
-        emit OnNewProposal(msg.sender, proposals.length-1, _votingEnds);
+        emit OnProposal(msg.sender, proposals.length-1, _votingEnds);
     }
 
     function vote(uint256 _proposalId, uint256 _option) 
@@ -81,7 +81,7 @@ contract Voting /*is VotingInterface*/ {
     }
 
     function optionDescription(uint256 _proposalId, uint256 _option) 
-    external 
+    public
     view 
     returns (string description) 
     {   
@@ -93,16 +93,15 @@ contract Voting /*is VotingInterface*/ {
     }
 
     function optionDescriptions(uint256 _proposalId) 
-    external 
+    public
     view
     returns (bytes32[] descriptions) {
         return proposals[_proposalId].optionDescriptions;
     }
 
     ///@notice Not implemented
-    function setStatus(bool) 
+    function setStatus(uint256, bool) 
     public 
-    pure 
     returns (bool) 
     {
         return false;
@@ -146,8 +145,9 @@ contract Voting /*is VotingInterface*/ {
     function weightedVoteCountsOf(uint256 _proposalId, uint256 _option) 
     public 
     view 
-    returns (uint count) 
+    returns (uint256 count) 
     {
+        // 
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
@@ -156,54 +156,37 @@ contract Voting /*is VotingInterface*/ {
     view
     returns (uint256[]) 
     {   
-        // might be worth assigning proporasl
-        // require limit greater than 0;
-        // uint256[] memory goo = new uint256[](2);
-        // goo[0] = 1;
-        // goo[1] = 2;
-        // this plus one and minus one for arrays is really footery
         //Proposal memory proposal = proposals[_proposalId];
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
 
         uint256 optionSize = proposals[_proposalId].optionDescriptions.length-1;
-        //emit Debug("Option Size", optionSize);
         uint256[] memory ordinalIndex = new uint256[](_limit);
-        // voteCounts;
-        // optionSize;
-        // ordinalIndex; // or cardinal
-        // could this be a scoping issue???
+
         for (uint256 i = 0; i < _limit; i++) {
             uint256 highestIndex = 0;
             uint256 acc = 0;
             for (uint256 j = 1; j <= optionSize; j++) {
                 if (voteCounts[j] > acc) {
-                    // emit Debug("voteCounts", voteCounts[j]);
-                    acc = voteCounts[j];
-                    highestIndex = j;   
+                    highestIndex = j;  
+                    acc = voteCounts[highestIndex];
                 }
             }
             delete voteCounts[highestIndex]; //solium-disable-line
-          //  voteCounts[highestIndex] = 0;
             ordinalIndex[i] = highestIndex;
-            emit Debug("ordinal", highestIndex);
-            //voteCounts[highestIndex] = 0;
         }
-        // 
+
         return ordinalIndex;
-        // return goo;
     }
 
     function winningOption(uint256 _proposalId) 
     public 
     view 
     returns (uint256 winningOptions) 
-    {     
+    {   
+        // if 0 zero there is no winning option
         uint256[] memory result = topOptions(_proposalId, 1);
         return result[0];
     }
-
-
-
 
     // uhm are we breaking re
     // should there be an individaul option too
@@ -211,15 +194,16 @@ contract Voting /*is VotingInterface*/ {
     function availableOptions(uint256 _proposalId) 
     public 
     view 
-    returns (bytes32[] optionsBytes32)
-    {
-        return proposals[_proposalId].optionDescriptions;
-        // Does it matter much if we use the same eturn values as use elsewhere
-        // for (uint256 i = 1; i < proposals[_proposalId].optionDescriptions.length; i++) {
-        //     // optionsBytes32[i] = stringToBytes32(proposals[_proposalId].optionDescriptions[i]);
-        //     optionsBytes32[i] = stringToBytes32(proposals[_proposalId].optionDescriptions[i]);
-        // }
-        // should this be returning ints for what can be selected or actual options?
+    returns (uint256[] options)
+    {   
+        uint256 optionSize = proposals[_proposalId].optionDescriptions.length;
+        //uint256[] memory options = new uint256[](optionSize);
+
+        for(uint256 i = 0; i < optionSize; i++) {
+            options[i] = i+1;
+        }
+
+        return options;
     }
 
     ///@notice Convert bytes32 to a string
@@ -239,8 +223,6 @@ contract Voting /*is VotingInterface*/ {
            
         return ret; //bytesArray);
     }
-    // maybe we should just store them as bytes32 and return as such
-    // and leave it for to get fixed at other end...
 
     function stringToBytes32(string memory _string) 
     internal
@@ -258,12 +240,8 @@ contract Voting /*is VotingInterface*/ {
     }
 
     // to do
-    event OnNewProposal(address user, uint256 id, uint256 endTime);
+    event OnProposal(address user, uint256 id, uint256 endTime);
     event OnVote(address indexed from, uint value);
     event OnStatusChange(bool newIsOpen);
     event Debug(string str, uint256 num);
 }
-
-
-
-//

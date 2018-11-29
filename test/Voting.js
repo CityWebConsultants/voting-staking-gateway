@@ -75,7 +75,7 @@ contract('Voting', function (accounts) {
         // user places vote
         // how do we stop them placing another vote
         const voted = await voting.vote(0, 1);
-        //await voting.vote(0, 1, {from: accounts[1]});
+        await voting.vote(0, 1, {from: accounts[1]});
         await voting.vote(0, 2, {from: accounts[2]});
         await voting.vote(0, 3, {from: accounts[3]});
         await voting.vote(0, 3, {from: accounts[4]});
@@ -85,13 +85,15 @@ contract('Voting', function (accounts) {
         const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
         
         const ballot = await voting.ballotOf(0, accounts[0]);
-        // try / catch
+
         try {
-   //         const attemptSecondVoteA = await voting.vote(0, 1);
+            const attemptSecondVoteA = await voting.vote(0, 1);
         }
         catch(e) {
             console.log(e);
         }
+
+        // try / catch
         // const attemptSecondVoteB = await voting.vote(0, 2);
         // attempt to vote again
 
@@ -100,7 +102,7 @@ contract('Voting', function (accounts) {
         // WeightAtEndOf....
         // finalisation
         // should this only declare at the end
-        const top = await voting.topOptions(0,3, {gas: 8000000});
+        const top = await voting.topOptions(0,3);
         const winning = await voting.winningOption(0);
 
         const foo = 1;
@@ -125,10 +127,6 @@ contract('Voting', function (accounts) {
 
         // assert description
         // assert options
-
-
-
-
     })
 
     // test what happens at boundary to 32Bytes in string -- we have to make sure that everything fits
@@ -140,13 +138,8 @@ contract('Voting', function (accounts) {
         //const optionC = web3.toHex('I don\'t care');
         const now = Math.floor(Date.now() / 1000);
         const nextWeek = now + 604800;
-
         const createdProposal = await voting.createIssue('Does this work?', [optionA, optionB], nextWeek);
-
-        //voting.
-
-
-
+        //voting
     })
 
     // it should create multiple

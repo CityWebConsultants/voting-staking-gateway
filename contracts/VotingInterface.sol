@@ -1,9 +1,7 @@
 pragma solidity ^0.4.24;
 
-// ERC1202
-interface VotingInterface {
-    // @todo mark as external
-
+// ERC1202 Draft
+contract VotingInterface {
     // Vote with an option. The caller needs to handle success or not
     function vote(uint issueId, uint option) public returns (bool success);
     function setStatus(uint issueId, bool isOpen) public returns (bool success);
