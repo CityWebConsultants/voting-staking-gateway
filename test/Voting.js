@@ -1,10 +1,25 @@
 const VotingContract = artifacts.require("Voting");
 const StakingMock = artifacts.require("StakingMock");
 
+const utils = require('./helpers/Utils.js');
+
 // @todo Mock staking contract
+// @todo tidy up exception handling
 
 contract('Voting', function (accounts) {
     let staking, voting; // contracts
+
+    const optionA = 'Yeah, fab.';
+    const optionB = 'Nope, fix it.';
+    const optionC = 'Dont care.';
+
+    const optionAHex = web3.toHex(optionA);
+    const optionBHex = web3.toHex(optionB);
+    const optionCHex = web3.toHex(optionC);
+
+
+    const now = Math.floor(Date.now() / 1000);
+    const nextWeek = now + 604800;
 
     before(async () => {})
 
@@ -21,18 +36,7 @@ contract('Voting', function (accounts) {
     // refactor 
     // need to create some kind of helper to deal wit
     // check all parameters on new
-    it("Should create new proposal", async () => {
-        const optionA = 'Yeah, fab.';
-        const optionB = 'Nope, fix it.';
-        const optionC = 'Dont care.';
-
-        const optionAHex = web3.toHex(optionA);
-        const optionBHex = web3.toHex(optionB);
-        const optionCHex = web3.toHex(optionC);
-
-
-        const now = Math.floor(Date.now() / 1000);
-        const nextWeek = now + 604800;
+    it("Should create new proposal with correct properties", async () => {
 
         const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         const logs = createdProposal.logs[0];
@@ -63,9 +67,11 @@ contract('Voting', function (accounts) {
         
         const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
         // @todo assertions
-        assert.equal(optionDescriptionsText[1], optionA)
-        assert.equal(optionDescriptionsText[2], optionB)
+        assert.equal(optionDescriptionsText[1], optionA);
+        assert.equal(optionDescriptionsText[2], optionB);
+        assert.equal(optionDescriptionsText[2], optionC);
 
+/*
         // this will change across propo
         const addressWeight = await voting.weightOf(accounts[0], 0);
 
@@ -84,11 +90,12 @@ contract('Voting', function (accounts) {
         const ballot = await voting.ballotOf(0, accounts[0]);
 
         try {
-            const attemptSecondVoteA = await voting.vote(0, 1);
+            //const attemptSecondVoteA = await voting.vote(0, 1);
         }
         catch(e) {
             console.log(e);
         }
+
 
         // try / catch
         // const attemptSecondVoteB = await voting.vote(0, 2);
@@ -124,6 +131,7 @@ contract('Voting', function (accounts) {
 
         // assert description
         // assert options
+        */
     })
 
 
@@ -131,30 +139,58 @@ contract('Voting', function (accounts) {
 
     // test what happens at boundary to 32Bytes in string -- we have to make sure that everything fits
 
-    // it.skip("Should have correct description", async () => {
-    //     // @todo move these in to beforeEach
-    //     const optionA = web3.toHex('Yeah, fab.');
-    //     const optionB = web3.toHex('Nope, fix it.');
-    //     //const optionC = web3.toHex('I don\'t care');
-    //     const now = Math.floor(Date.now() / 1000);
-    //     const nextWeek = now + 604800;
-    //     const createdProposal = await voting.createIssue('Does this work?', [optionA, optionB], nextWeek);
-    //     //voting
-    // })
-
     // it should create multiple
 
 
-    it.skip("Should have correct options", async () => {
-        
+    it("Should cast a vote", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        const voted = await voting.vote(0, 1, {from: accounts[1]});
+        args = voted.logs[0].args;
+
+        assert.equal(args.from, accounts[1]);
+        assert.equal(args.value.toString(), '1');
+
+        const ballot = await voting.ballotOf(0, accounts[1]);
+        assert.equal(ballot.toString(), '1');
+        // consider explicitly setting stakedForAt
+        // also consider changing logic <= > in contract
+        const weightedCount = await voting.weightedVoteCountsOf(0, 1);
+        assert.isTrue(weightedCount.eq(100));
     })
 
-    it.skip("Should", async () => {
+    it("Should not vote outside of option range", async () => {
+
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         
+        let errZero;
+        try {
+            await voting.vote(0, 0, {from: accounts[1]});
+        } catch(e) {
+            errZero = e;
+        }
+
+        utils.ensureException(errZero);
+
+        let errTooHigh;
+        try {
+            await voting.vote(0, 4, {from: accounts[1]});
+        } catch(e) {
+            errTooHigh = e;
+        }
+
+        utils.ensureException(errTooHigh);
     })
 
-    it.skip("Should", async () => {
+    it("It should throw on non-existing poll", async () => {
         
+        let errPoll;
+        try {
+            await voting.vote(1, 1, {from: accounts[0]});
+        } catch(e) {
+            errPoll = e;
+        }
+
+        utils.ensureException(errPoll);
     })
 
     it.skip("Should", async () => {

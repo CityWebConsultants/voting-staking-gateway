@@ -10,7 +10,7 @@ import "./VotingInterface.sol";
 // so .... should these be stored as streing or addresses 
 // argue that this is good enough for just now
 // and we could migrate this in to another contract and sujmarise it layer
-// @todo how should we handle 
+// @todo handle closing and opening
 
 /**
   A simplest vote interface.
@@ -20,9 +20,9 @@ import "./VotingInterface.sol";
   (4) each address can only vote once.
   (5) each address has different weights according to amount staked in external contract.
   */
+
+  // @todo document each function
 contract Voting /*is VotingInterface*/ {
-    // should we consider having a fixed candidate list?
-    // consider changing ballot of to ballot -- not seen thatuse of undersacore before
     StakingInterface stake;
 
     struct Proposal {
@@ -65,13 +65,12 @@ contract Voting /*is VotingInterface*/ {
     returns (bool success) 
     {
         // assert does not equal 0
-        require(_option > 0, "Voting option must be greater than 0");
+        // require(_option > 0, "Voting option must be greater than 0");
         Proposal storage proposal = proposals[_proposalId];
-        require(_option <= proposal.optionDescriptions.length, "Vote out of range"); 
+        require(_option > 0 && _option <= proposal.optionDescriptions.length-1, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
-        // use has coins staked is implicit but perhaps should use require to make it explicit
+
         proposal.ballotOf_[msg.sender] = _option;
-        // proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
         proposal.weightedVoteCounts[_option] += weightOf(msg.sender, _proposalId);
 
         emit OnVote(msg.sender, _option);
@@ -113,17 +112,11 @@ contract Voting /*is VotingInterface*/ {
         return proposals[_proposalId].ballotOf_[addr];
     }
 
-
-    // so we are making
-    // hmmmmmm weight of creates a problem
     function weightOf(address _addr, uint256 _proposalId)
     public 
     view 
     returns (uint weight) {
         return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
-        // so do we just check the amount now -- then a user 
-        // this could use being different
-        //return stake.availableToUnstakeAt(_addr, proposals[_proposalId].votingEnds);
     }
 
     function getStatus(uint256 _proposalId) 
@@ -197,8 +190,8 @@ contract Voting /*is VotingInterface*/ {
     returns (uint256[] options)
     {   
         uint256 optionSize = proposals[_proposalId].optionDescriptions.length;
-        //uint256[] memory options = new uint256[](optionSize);
-
+        // uint256[] memory options = new uint256[](optionSize);
+        // what happens in storage versus array, is it ok to allow the return param to define?
         for(uint256 i = 0; i < optionSize; i++) {
             options[i] = i+1;
         }
@@ -243,5 +236,6 @@ contract Voting /*is VotingInterface*/ {
     event OnProposal(address user, uint256 id, uint256 endTime);
     event OnVote(address indexed from, uint value);
     event OnStatusChange(bool newIsOpen);
+    // when do we check closing conditions
     event Debug(string str, uint256 num);
 }
