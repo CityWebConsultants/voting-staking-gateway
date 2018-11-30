@@ -6,10 +6,7 @@ const StakingMock = artifacts.require("StakingMock");
 contract('Voting', function (accounts) {
     let staking, voting; // contracts
 
-    before(async () => {
-        
-    })
-
+    before(async () => {})
 
     beforeEach(async () => {
         staking = await StakingMock.new(true, 100);
@@ -70,7 +67,7 @@ contract('Voting', function (accounts) {
         assert.equal(optionDescriptionsText[2], optionB)
 
         // this will change across propo
-        const addressWeight = await voting.weightOf(accounts[0]);
+        const addressWeight = await voting.weightOf(accounts[0], 0);
 
         // user places vote
         // how do we stop them placing another vote
@@ -104,7 +101,7 @@ contract('Voting', function (accounts) {
         // should this only declare at the end
         const top = await voting.topOptions(0,3);
         const winning = await voting.winningOption(0);
-
+        // How do we 
         const foo = 1;
 
         // is there a final winnner
@@ -129,18 +126,21 @@ contract('Voting', function (accounts) {
         // assert options
     })
 
+
+    
+
     // test what happens at boundary to 32Bytes in string -- we have to make sure that everything fits
 
-    it.skip("Should have correct description", async () => {
-        // @todo move these in to beforeEach
-        const optionA = web3.toHex('Yeah, fab.');
-        const optionB = web3.toHex('Nope, fix it.');
-        //const optionC = web3.toHex('I don\'t care');
-        const now = Math.floor(Date.now() / 1000);
-        const nextWeek = now + 604800;
-        const createdProposal = await voting.createIssue('Does this work?', [optionA, optionB], nextWeek);
-        //voting
-    })
+    // it.skip("Should have correct description", async () => {
+    //     // @todo move these in to beforeEach
+    //     const optionA = web3.toHex('Yeah, fab.');
+    //     const optionB = web3.toHex('Nope, fix it.');
+    //     //const optionC = web3.toHex('I don\'t care');
+    //     const now = Math.floor(Date.now() / 1000);
+    //     const nextWeek = now + 604800;
+    //     const createdProposal = await voting.createIssue('Does this work?', [optionA, optionB], nextWeek);
+    //     //voting
+    // })
 
     // it should create multiple
 

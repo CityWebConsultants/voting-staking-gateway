@@ -29,6 +29,14 @@ contract StakingMock {
         return staked;
     }
 
+    function totalStakedForAt(address, uint256)
+    public
+    view
+    returns (uint256)
+    {  
+        return staked;
+    }
+
     function setValid(bool _valid)
     public
     {

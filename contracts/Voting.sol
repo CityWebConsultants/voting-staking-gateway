@@ -8,14 +8,17 @@ import "./VotingInterface.sol";
 // code to call return of tokens
 // consider adding executable code
 // so .... should these be stored as streing or addresses 
+// argue that this is good enough for just now
+// and we could migrate this in to another contract and sujmarise it layer
+// @todo how should we handle 
+
 /**
   A simplest vote interface.
   (1) Support multiple issues
   (2) Supports multiple options
   (3) time limit on voting // still to implement
   (4) each address can only vote once.
-  (5) each address has different weights according to staking.
-  (6) each address may only bote 
+  (5) each address has different weights according to amount staked in external contract.
   */
 contract Voting /*is VotingInterface*/ {
     // should we consider having a fixed candidate list?
@@ -30,12 +33,7 @@ contract Voting /*is VotingInterface*/ {
         // do we need to have available options?
         mapping (uint256 => uint256) weightedVoteCounts;
         mapping (address => uint256) ballotOf_;
-
-        // winning option
-        // calculate totals
     }
-
-
 
     Proposal[] proposals;
 
@@ -74,7 +72,7 @@ contract Voting /*is VotingInterface*/ {
         // use has coins staked is implicit but perhaps should use require to make it explicit
         proposal.ballotOf_[msg.sender] = _option;
         // proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
-        proposal.weightedVoteCounts[_option] += weightOf(msg.sender);
+        proposal.weightedVoteCounts[_option] += weightOf(msg.sender, _proposalId);
 
         emit OnVote(msg.sender, _option);
         return true;
@@ -85,11 +83,12 @@ contract Voting /*is VotingInterface*/ {
     view 
     returns (string description) 
     {   
-        // can we simplify by using mapps so we don't always have to avoid 1
-        // really don't liek having all the plus and minus everywhere
-        // just get iot working then consder fecatoring
-        //require(_option > 0 && _option <= proposals.length+1, "Option not in range");
-        return bytes32ToString(proposals[_proposalId].optionDescriptions[_option]);
+        // Should range be required here 
+        if (_option > 0 && _option <= proposals[_proposalId].optionDescriptions.length) {
+            return bytes32ToString(proposals[_proposalId].optionDescriptions[_option]); 
+        } else {
+            return "";
+        }
     }
 
     function optionDescriptions(uint256 _proposalId) 
@@ -117,14 +116,14 @@ contract Voting /*is VotingInterface*/ {
 
     // so we are making
     // hmmmmmm weight of creates a problem
-    function weightOf(address _addr)
+    function weightOf(address _addr, uint256 _proposalId)
     public 
     view 
     returns (uint weight) {
-        return stake.totalStakedFor(_addr);
+        return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
         // so do we just check the amount now -- then a user 
         // this could use being different
-        // return stake.availableToUnstakeAt(_addr, proposals[_proposalId].votingEnds);
+        //return stake.availableToUnstakeAt(_addr, proposals[_proposalId].votingEnds);
     }
 
     function getStatus(uint256 _proposalId) 
@@ -183,6 +182,7 @@ contract Voting /*is VotingInterface*/ {
     view 
     returns (uint256 winningOptions) 
     {   
+        // require()
         // if 0 zero there is no winning option
         uint256[] memory result = topOptions(_proposalId, 1);
         return result[0];

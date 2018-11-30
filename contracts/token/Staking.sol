@@ -82,6 +82,26 @@ contract Staking is StakingInterface {
         emit Unstaked(msg.sender, _amount);
     }
 
+    /// @notice Amount locked in contract at given time.
+    /// @param _addr address of stakee
+    /// @param _time timestamp to check for locked state
+    /// @return amount  
+    function totalStakedForAt(address _addr, uint256 _time)
+    public
+    view 
+    returns (uint256 amount)
+    {
+        // @q -- do we need to define amount
+        // Already gets created in memory when set as a return value
+        StakeEntry[] memory stakes = stakesFor[_addr];
+        for (uint256 i = 0; i < stakes.length; i++) {
+            if (stakes[i].stakeUntil > _time) { //solium-disable-line security/no-block-members
+                amount += stakes[i].amount;
+            }
+        }
+        return amount;   
+    }
+
     /// @notice internal accounting of token withdrawal
     /// @param _user Address of withdrawee
     /// @param _amount Amount to unstake
@@ -163,6 +183,12 @@ contract Staking is StakingInterface {
         return available;   
     }
     
+    // Have to stake coins for a specific duration
+    // function stakedAt()
+    // function totalStakedForAt
+    // means there is no purpose to staking for zero time...
+    // weighted stake
+
     //@todo test
     // Cover edge cases where a user requires lock to complete other action when initial staking period ends
     // does not include additonal bonus

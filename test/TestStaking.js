@@ -90,9 +90,14 @@ contract('Staking', function (accounts) {
     })
 
     it("Should not retrieve tokens whilst time locked", async () => {
-        const stakeDuration = month.times('6').plus(day).toString();
+        const stakeDuration = month.times('6').plus(day);
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
 
+        // get amout locked at this time
+        const stakedAt = await bank.totalStakedForAt(alice, stakeDuration.minus(day));
+        const stakedAt2 = await bank.totalStakedForAt(alice, stakeDuration.plus(day));
+        // @todo -- make an assertion here
+        
         let error;
         try {
             const bug = await bank.unstake(initialBalance, {from: alice});
