@@ -69,7 +69,7 @@ contract('Voting', function (accounts) {
         // @todo assertions
         assert.equal(optionDescriptionsText[1], optionA);
         assert.equal(optionDescriptionsText[2], optionB);
-        assert.equal(optionDescriptionsText[2], optionC);
+        assert.equal(optionDescriptionsText[3], optionC);
 
 /*
         // this will change across propo
@@ -158,6 +158,60 @@ contract('Voting', function (accounts) {
         assert.isTrue(weightedCount.eq(100));
     })
 
+    it("Should not allow a second vote", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.vote(0, 1, {from: accounts[1]});   
+        
+        let errVote;
+        try {
+            await voting.vote(0, 1, {from: accounts[1]});
+        } catch(e) {
+           errVote = e; 
+        }
+
+        utils.ensureException(errVote);
+    })
+
+
+    // check tallies
+    it("Should cast multiple votes on multiple proposals", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        
+        // check events fire on each?
+        await voting.vote(0, 1, {from: accounts[0]});
+        await voting.vote(0, 1, {from: accounts[1]});
+        await voting.vote(0, 1, {from: accounts[2]});
+        await voting.vote(0, 2, {from: accounts[3]});
+        await voting.vote(0, 3, {from: accounts[4]});
+        await voting.vote(0, 3, {from: accounts[5]});
+
+        const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
+        const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
+        const optionCVotes = await voting.weightedVoteCountsOf(0, 3);
+
+        await voting.createIssue('Does this work too?', [optionAHex, optionBHex, optionCHex], nextWeek);
+
+        await voting.vote(1, 1, {from: accounts[0]});
+        await voting.vote(1, 2, {from: accounts[1]});
+        const foo = await voting.vote(1, 2, {from: accounts[2]});
+        foo;
+
+        // checkall the results
+
+        // const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
+        // const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
+        // const optionCVotes = await voting.weightedVoteCountsOf(0, 3);
+        // asserttions
+        // check correct weightings
+        // do we need to check 
+        // perhaps use loops and check weights
+
+        // what other state should w ebe checking
+    })
+
+    // @todo should be no winner
+    // @todo user votes on multiple polls
+
     it("Should not vote outside of option range", async () => {
 
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
@@ -179,7 +233,7 @@ contract('Voting', function (accounts) {
         }
 
         utils.ensureException(errTooHigh);
-    })
+    });
 
     it("It should throw on non-existing poll", async () => {
         
