@@ -5,13 +5,15 @@ const utils = require('./helpers/Utils.js');
 
 // @todo Mock staking contract
 // @todo tidy up exception handling
+// @todo deal with finalisation
+// @todo deal with string which are too long
 
 contract('Voting', function (accounts) {
     let staking, voting; // contracts
 
     const optionA = 'Yeah, fab.';
     const optionB = 'Nope, fix it.';
-    const optionC = 'Dont care.';
+    const optionC = 'Dont care';
 
     const optionAHex = web3.toHex(optionA);
     const optionBHex = web3.toHex(optionB);
@@ -36,8 +38,10 @@ contract('Voting', function (accounts) {
     // refactor 
     // need to create some kind of helper to deal wit
     // check all parameters on new
-    it("Should create new proposal with correct properties", async () => {
 
+    it("Should create new proposal with correct properties", async () => {
+        // use a data structure to create multple
+        // proposals and random results
         const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         const logs = createdProposal.logs[0];
 
@@ -70,77 +74,7 @@ contract('Voting', function (accounts) {
         assert.equal(optionDescriptionsText[1], optionA);
         assert.equal(optionDescriptionsText[2], optionB);
         assert.equal(optionDescriptionsText[3], optionC);
-
-/*
-        // this will change across propo
-        const addressWeight = await voting.weightOf(accounts[0], 0);
-
-        // user places vote
-        // how do we stop them placing another vote
-        const voted = await voting.vote(0, 1);
-        await voting.vote(0, 1, {from: accounts[1]});
-        await voting.vote(0, 2, {from: accounts[2]});
-        await voting.vote(0, 3, {from: accounts[3]});
-        await voting.vote(0, 3, {from: accounts[4]});
-
-        // @todo assert events
-        const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
-        const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
-        
-        const ballot = await voting.ballotOf(0, accounts[0]);
-
-        try {
-            //const attemptSecondVoteA = await voting.vote(0, 1);
-        }
-        catch(e) {
-            console.log(e);
-        }
-
-
-        // try / catch
-        // const attemptSecondVoteB = await voting.vote(0, 2);
-        // attempt to vote again
-
-
-        // weightOf
-        // WeightAtEndOf....
-        // finalisation
-        // should this only declare at the end
-        const top = await voting.topOptions(0,3);
-        const winning = await voting.winningOption(0);
-        // How do we 
-        const foo = 1;
-
-        // is there a final winnner
-        // so, we could count the ballots at the end
-        // and then add the weights
-        // better that weights are withdrawn
-        // no way of know who has done what -- unless cycling through all of the accounts...
-
-        // user places vote
-        // @todo range 0 and above
-        // would need to use try catch or pass baxck undefined string
-
-
-        // should get option for proposal
-        // should get all options for proposal
-        // no need to store internally as strings
-
-        //    function optionDescription(uint option) external view returns (string desc);
-        // get options descriptions
-
-        // assert description
-        // assert options
-        */
     })
-
-
-    
-
-    // test what happens at boundary to 32Bytes in string -- we have to make sure that everything fits
-
-    // it should create multiple
-
 
     it("Should cast a vote", async () => {
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
@@ -172,10 +106,35 @@ contract('Voting', function (accounts) {
         utils.ensureException(errVote);
     })
 
+    it("Should fail on string exceeding bytes32 length", async () => {
+        const optionTooLong = '............................................................';
+        // how the fuck does that wokr!!!
+        // try moving it earlier....
+        const optionTooLongHex = web3.toHex(optionTooLong);
+        const foo = 1;  
+
+        try {
+            const boo = await voting.createIssue('Does this work?', [optionTooLongHex, optionBHex, optionCHex], nextWeek);
+        }
+        catch(e) {
+            const foo = e;
+        }
+
+        const optionDescriptions = await voting.optionDescriptions(0);
+        
+        const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
+        // Hmmmmmmm. This is a problem.... There's no way to enforce this.... :/
+        // What I thought was a good idea turned out to be a bad idea
+        assert.equal(optionDescriptionsText[1], optionTooLongHex);
+        assert.equal(optionDescriptionsText[2], optionB);
+        assert.equal(optionDescriptionsText[3], optionC);
+        // get options -- see what happens
+    })
+
 
     // check tallies
     it("Should cast multiple votes on multiple proposals", async () => {
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+/*        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         
         // check events fire on each?
         await voting.vote(0, 1, {from: accounts[0]});
@@ -195,7 +154,7 @@ contract('Voting', function (accounts) {
         await voting.vote(1, 2, {from: accounts[1]});
         const foo = await voting.vote(1, 2, {from: accounts[2]});
         foo;
-
+*/
         // checkall the results
 
         // const optionAVotes = await voting.weightedVoteCountsOf(0, 1);

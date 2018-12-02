@@ -2,15 +2,8 @@ pragma solidity ^0.4.24;
 
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
-// Implementation of EIP1202
-// todo: add interface
-// todo do not accept funds
-// code to call return of tokens
-// consider adding executable code
-// so .... should these be stored as streing or addresses 
-// argue that this is good enough for just now
-// and we could migrate this in to another contract and sujmarise it layer
-// @todo handle closing and opening
+
+// Any other changes could be considered in a separate contract and the contents of this one migrated over
 
 /**
   A simplest vote interface.
@@ -22,7 +15,7 @@ import "./VotingInterface.sol";
   */
 
   // @todo document each function
-contract Voting /*is VotingInterface*/ {
+contract Voting is VotingInterface {
     StakingInterface stake;
 
     struct Proposal {
@@ -71,7 +64,7 @@ contract Voting /*is VotingInterface*/ {
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
 
         proposal.ballotOf_[msg.sender] = _option;
-        proposal.weightedVoteCounts[_option] += weightOf(msg.sender, _proposalId);
+        proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
 
         emit OnVote(msg.sender, _option);
         return true;
@@ -112,7 +105,7 @@ contract Voting /*is VotingInterface*/ {
         return proposals[_proposalId].ballotOf_[addr];
     }
 
-    function weightOf(address _addr, uint256 _proposalId)
+    function weightOf(uint256 _proposalId, address _addr)
     public 
     view 
     returns (uint weight) {
@@ -127,11 +120,11 @@ contract Voting /*is VotingInterface*/ {
         return proposals[_proposalId].votingOpen;
     }
 
-    function issueDescription(uint256 proposalIndex)
+    function issueDescription(uint256 _proposalIndex)
     public 
     view 
     returns (string description) {
-        return proposals[proposalIndex].issueDescription;
+        return proposals[_proposalIndex].issueDescription;
     }
 
     function weightedVoteCountsOf(uint256 _proposalId, uint256 _option) 
