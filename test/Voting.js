@@ -25,6 +25,7 @@ contract('Voting', function (accounts) {
     const optionCHex = web3.toHex(optionC);
 
     //const now = Math.floor(Date.now() / 1000);
+    const oneMonth = 2630000;
     const oneWeek = 604800;
     const oneMinute = 60;
 
@@ -35,7 +36,7 @@ contract('Voting', function (accounts) {
         voting = await VotingContract.new(staking.address, 100);
         now = await utils.blockNow();
         nextWeek = now + oneWeek;
-        const foo = 1;
+        nextMonth = now + oneMonth;
     });
 
     // test each function
@@ -234,5 +235,14 @@ contract('Voting', function (accounts) {
         utils.ensureException(errPoll);
     })
 
-
+    it("Should prevent creation of a poll when inadequate funds staked at end date", async () => {
+        
+        let inadequateSteak;
+        try {
+            await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextMonth + oneMinute);
+        } catch(e) {
+            inadequateSteak = e;
+        }
+        utils.ensureException(inadequateSteak);
+    })
 })
