@@ -31,6 +31,10 @@ function advanceBlock() {
     })
 }
 
+function blockNow() {
+    return web3.eth.getBlock(web3.eth.blockNumber).timestamp;
+}
+
 async function increaseTime(integer) {
     await web3.currentProvider.send({
         jsonrpc: "2.0", 
@@ -64,5 +68,6 @@ module.exports = {
     ensureException: ensureException,
     addPercent: addPercent,
     increaseTime: increaseTime,
-    promisify: promisify
+    promisify: promisify,
+    blockNow: blockNow
 };

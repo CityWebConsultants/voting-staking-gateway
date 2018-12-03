@@ -10,12 +10,11 @@ contract StakingInterface {
     function stake(uint256 amount, uint256 time, bool hasBonus) public;
     function stakeFor(address user, uint256 amount, uint256 time, bool hasBonus) public;
     function unstake(uint256 amount) public;
-    function totalStakedFor(address addr) public view returns (uint256); // can replace this with for at 
-    // or sue bitg 
+    function totalStakedFor(address addr) public view returns (uint256);
     function getRate(uint256 time) public pure returns (uint256);
     function token() public view returns (address);
 
-    function totalStakedForAt(address _addr, uint256 _time) public view returns (uint256);
+    function totalStakedForAt(address addr, uint256 time) public view returns (uint256);
     function availableToUnstake(address addr) public view returns (uint256);
     function availableToUnstakeAt(address addr, uint256 time) public view returns (uint256);
     // @todo 

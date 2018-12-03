@@ -6,10 +6,13 @@ const utils = require('./helpers/Utils.js');
 // @todo Mock staking contract
 // @todo tidy up exception handling
 // @todo deal with finalisation
-// @todo deal with string which are too long
+// @todo deal with string which are too long? There's not really a way around this other than adding one at a time
+// then that would have to be restricted before opening
+// @todo add only admin?
+// Is voting after endtime enforced?
 
 contract('Voting', function (accounts) {
-    let staking, voting; // contracts
+    let staking, voting, nextweek;
 
     const optionA = 'Yeah, fab.';
     const optionB = 'Nope, fix it.';
@@ -19,15 +22,19 @@ contract('Voting', function (accounts) {
     const optionBHex = web3.toHex(optionB);
     const optionCHex = web3.toHex(optionC);
 
-
+    // Should take time now 
     const now = Math.floor(Date.now() / 1000);
-    const nextWeek = now + 604800;
+    const oneWeek = 604800;
+
+    // change next week to one week
 
     before(async () => {})
 
     beforeEach(async () => {
         staking = await StakingMock.new(true, 100);
         voting = await VotingContract.new(staking.address);
+        nextWeek = await utils.blockNow() + oneWeek;
+        nextWeek;
     });
 
     // test each function
@@ -77,6 +84,7 @@ contract('Voting', function (accounts) {
     })
 
     it("Should cast a vote", async () => {
+        
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         const voted = await voting.vote(0, 1, {from: accounts[1]});
         args = voted.logs[0].args;
@@ -106,30 +114,33 @@ contract('Voting', function (accounts) {
         utils.ensureException(errVote);
     })
 
-    it("Should fail on string exceeding bytes32 length", async () => {
-        const optionTooLong = '............................................................';
-        // how the fuck does that wokr!!!
-        // try moving it earlier....
-        const optionTooLongHex = web3.toHex(optionTooLong);
-        const foo = 1;  
+    // there is no way to enfoce this!!!!???
+    // it("Should fail on string exceeding bytes32 length", async () => {
+    //     // so there is no way to force number of options
+    //     // have to trust in the user
+    //     const optionTooLong = '............................................................';
+    //     // how the fuck does that wokr!!!
+    //     // try moving it earlier....
+    //     const optionTooLongHex = web3.toHex(optionTooLong);
+    //     const foo = 1;  
 
-        try {
-            const boo = await voting.createIssue('Does this work?', [optionTooLongHex, optionBHex, optionCHex], nextWeek);
-        }
-        catch(e) {
-            const foo = e;
-        }
+    //     try {
+    //         const boo = await voting.createIssue('Does this work?', [optionTooLongHex, optionBHex, optionCHex], nextWeek);
+    //     }
+    //     catch(e) {
+    //         const foo = e;
+    //     }   
 
-        const optionDescriptions = await voting.optionDescriptions(0);
+    //     const optionDescriptions = await voting.optionDescriptions(0);
         
-        const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
-        // Hmmmmmmm. This is a problem.... There's no way to enforce this.... :/
-        // What I thought was a good idea turned out to be a bad idea
-        assert.equal(optionDescriptionsText[1], optionTooLongHex);
-        assert.equal(optionDescriptionsText[2], optionB);
-        assert.equal(optionDescriptionsText[3], optionC);
-        // get options -- see what happens
-    })
+    //     const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
+    //     // Hmmmmmmm. This is a problem.... There's no way to enforce this.... :/
+    //     // What I thought was a good idea turned out to be a bad idea
+    //     assert.equal(optionDescriptionsText[1], optionTooLongHex);
+    //     assert.equal(optionDescriptionsText[2], optionB);
+    //     assert.equal(optionDescriptionsText[3], optionC);
+    //     // get options -- see what happens
+    // })
 
 
     // check tallies
@@ -172,7 +183,6 @@ contract('Voting', function (accounts) {
     // @todo user votes on multiple polls
 
     it("Should not vote outside of option range", async () => {
-
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
         
         let errZero;
@@ -206,7 +216,19 @@ contract('Voting', function (accounts) {
         utils.ensureException(errPoll);
     })
 
-    it.skip("Should", async () => {
-        
-    })
+    it("Should not accept vote after end time", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.vote(0, 1, {from: accounts[1]});
+        await utils.increaseTime(oneWeek);
+
+        // double check the mock to make sure is authed properly
+        let errVote;
+        try {
+            await voting.vote(0, 1, {from: accounts[2]});
+        } catch(e) {
+           errVote = e; 
+        }
+
+        utils.ensureException(errVote);
+    });
 })

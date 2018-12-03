@@ -6,7 +6,6 @@ import "./VotingInterface.sol";
 // Any other changes could be considered in a separate contract and the contents of this one migrated over
 
 /**
-  A simplest vote interface.
   (1) Support multiple issues
   (2) Supports multiple options
   (3) time limit on voting // still to implement
@@ -36,13 +35,15 @@ contract Voting is VotingInterface {
     }
 
     // @todo add an event to this
+    // could potentially add 1 by 1
+    // should there be any scope for destroying contract
     function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingEnds)
     public // add modifier
     {   
         // Retain first as a null (zero) value
         bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
 
-        // Pass zero to left in array
+        // Pass zero to left in array // could simplify this by seeting i to 1 making less or equal 
         for (uint256 i = 0; i < _optionDescriptions.length; i++) {
             optionDescriptions[i+1] = _optionDescriptions[i];
         }
@@ -60,8 +61,9 @@ contract Voting is VotingInterface {
         // assert does not equal 0
         // require(_option > 0, "Voting option must be greater than 0");
         Proposal storage proposal = proposals[_proposalId];
-        require(_option > 0 && _option <= proposal.optionDescriptions.length-1, "Vote out of range"); 
+        require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
+        require(block.timestamp < proposals[_proposalId].votingEnds, "Cannot vote after end time");
 
         proposal.ballotOf_[msg.sender] = _option;
         proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
