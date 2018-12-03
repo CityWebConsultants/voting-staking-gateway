@@ -4,6 +4,9 @@ pragma solidity 0.4.24;
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
 //import "../math/SafeMath.sol";
+// test limit
+// access to remove bonus tokens
+// add multisig to withdraw all funds
 
 contract Staking is StakingInterface {
     //@todo use safe math

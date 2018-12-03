@@ -2,14 +2,15 @@ const VotingContract = artifacts.require("Voting");
 const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
+// start date 
+// updating options
 
-// @todo Mock staking contract
-// @todo tidy up exception handling
+// @todo improve exception handling
 // @todo deal with finalisation
 // @todo deal with string which are too long? There's not really a way around this other than adding one at a time
 // then that would have to be restricted before opening
-// @todo add only admin?
-// Is voting after endtime enforced?
+// @todo 
+// @todo update voting contructor 
 
 contract('Voting', function (accounts) {
     let staking, voting, nextweek;
@@ -34,7 +35,6 @@ contract('Voting', function (accounts) {
         staking = await StakingMock.new(true, 100);
         voting = await VotingContract.new(staking.address);
         nextWeek = await utils.blockNow() + oneWeek;
-        nextWeek;
     });
 
     // test each function
@@ -141,7 +141,21 @@ contract('Voting', function (accounts) {
     //     assert.equal(optionDescriptionsText[3], optionC);
     //     // get options -- see what happens
     // })
+    it("Should not accept vote after end time", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.vote(0, 1, {from: accounts[1]});
+        await utils.increaseTime(oneWeek);
 
+        // double check the mock to make sure is authed properly
+        let errVote;
+        try {
+            await voting.vote(0, 1, {from: accounts[2]});
+        } catch(e) {
+           errVote = e; 
+        }
+
+        utils.ensureException(errVote);
+    });
 
     // check tallies
     it("Should cast multiple votes on multiple proposals", async () => {
@@ -216,19 +230,5 @@ contract('Voting', function (accounts) {
         utils.ensureException(errPoll);
     })
 
-    it("Should not accept vote after end time", async () => {
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
-        await voting.vote(0, 1, {from: accounts[1]});
-        await utils.increaseTime(oneWeek);
 
-        // double check the mock to make sure is authed properly
-        let errVote;
-        try {
-            await voting.vote(0, 1, {from: accounts[2]});
-        } catch(e) {
-           errVote = e; 
-        }
-
-        utils.ensureException(errVote);
-    });
 })

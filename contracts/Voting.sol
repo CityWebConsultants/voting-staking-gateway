@@ -4,6 +4,11 @@ import "./token/Staking.sol";
 import "./VotingInterface.sol";
 
 // Any other changes could be considered in a separate contract and the contents of this one migrated over
+// add a start time
+// allow updating options
+// store as a string
+// regardless of binary option
+// we still need a start and end date
 
 /**
   (1) Support multiple issues
@@ -19,7 +24,8 @@ contract Voting is VotingInterface {
 
     struct Proposal {
         bool votingOpen;
-        uint256 votingEnds;
+        // uint256 votingEnds;
+        uint256 votingStarts;
         string issueDescription;
         bytes32[] optionDescriptions; // maybe this should be a mapping and we consider 0 to be void
         // do we need to have available options?
@@ -40,10 +46,9 @@ contract Voting is VotingInterface {
     function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingEnds)
     public // add modifier
     {   
-        // Retain first as a null (zero) value
+        // Length increased by 1 to allow for first element to used as a zero (null) value
         bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
-
-        // Pass zero to left in array // could simplify this by seeting i to 1 making less or equal 
+ 
         for (uint256 i = 0; i < _optionDescriptions.length; i++) {
             optionDescriptions[i+1] = _optionDescriptions[i];
         }
@@ -54,12 +59,13 @@ contract Voting is VotingInterface {
         emit OnProposal(msg.sender, proposals.length-1, _votingEnds);
     }
 
+    /// @notice Place a weighted vote on a given proposal
+    /// @param _proposalId Proposal ID
+    /// @param _option Option to vote for
     function vote(uint256 _proposalId, uint256 _option) 
     public 
     returns (bool success) 
     {
-        // assert does not equal 0
-        // require(_option > 0, "Voting option must be greater than 0");
         Proposal storage proposal = proposals[_proposalId];
         require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
@@ -134,14 +140,13 @@ contract Voting is VotingInterface {
     view 
     returns (uint256 count) 
     {
-        // 
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
     function topOptions(uint256 _proposalId, uint256 _limit) 
     public
     view
-    returns (uint256[]) 
+    returns (uint256[])
     {   
         //Proposal memory proposal = proposals[_proposalId];
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
