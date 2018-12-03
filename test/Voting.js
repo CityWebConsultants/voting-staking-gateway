@@ -4,13 +4,14 @@ const StakingMock = artifacts.require("StakingMock");
 const utils = require('./helpers/Utils.js');
 // start date 
 // updating options
-
 // @todo improve exception handling
 // @todo deal with finalisation
 // @todo deal with string which are too long? There's not really a way around this other than adding one at a time
 // then that would have to be restricted before opening
-// @todo 
 // @todo update voting contructor 
+// @todo should be no winner
+// @todo user votes on multiple polls
+// @todo write test for inadeqaute funds
 
 contract('Voting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -23,18 +24,15 @@ contract('Voting', function (accounts) {
     const optionBHex = web3.toHex(optionB);
     const optionCHex = web3.toHex(optionC);
 
-    // Should take time now 
     //const now = Math.floor(Date.now() / 1000);
     const oneWeek = 604800;
     const oneMinute = 60;
-
-    // change next week to one week
 
     before(async () => {})
 
     beforeEach(async () => {
         staking = await StakingMock.new(true, 100);
-        voting = await VotingContract.new(staking.address);
+        voting = await VotingContract.new(staking.address, 100);
         now = await utils.blockNow();
         nextWeek = now + oneWeek;
         const foo = 1;
@@ -201,9 +199,6 @@ contract('Voting', function (accounts) {
 
         // what other state should w ebe checking
     })
-
-    // @todo should be no winner
-    // @todo user votes on multiple polls
 
     it("Should not vote outside of option range", async () => {
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);

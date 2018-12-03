@@ -16,9 +16,9 @@ contract StakingMock {
     function availableToUnstakeAt(address, uint256) 
     public
     view
-    returns (bool)
+    returns (uint256)
     {  
-        return valid; // huh should this not be a number?
+        return staked; // huh should this not be a number?
     }
 
     function totalStakedFor(address)

@@ -9,6 +9,12 @@ import "./VotingInterface.sol";
 // store as a string
 // regardless of binary option
 // we still need a start and end date
+// add functionality to vest 
+//  If we want to introduce CRUD aspects then we would also have to add properties for a creator
+// Otherewsie anyone could update options
+// should this contract be destructable...
+
+// Would  need to add a creator if we wanted to store ... just adds complexity...
 
 /**
   (1) Support multiple issues
@@ -21,6 +27,8 @@ import "./VotingInterface.sol";
   // @todo document each function
 contract Voting is VotingInterface {
     StakingInterface stake;
+
+    uint256 minimumStakeToPropose;
 
     struct Proposal {
         uint256 votingStarts;
@@ -35,8 +43,14 @@ contract Voting is VotingInterface {
     Proposal[] proposals;
 
     // do we assume it starts as soons as published
-    constructor(StakingInterface stakingAddress) public {
+    constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
         stake = StakingInterface(stakingAddress);
+        minimumStakeToPropose = _minimumStakeToPropose;
+
+
+        // By default we could define yes / no
+        // or update options via a selection of strings
+        // perhaps give options to delete before started
     }
 
     // @todo add an event to this
@@ -44,8 +58,9 @@ contract Voting is VotingInterface {
     // should there be any scope for destroying contract
     function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
     public // add modifier
-    {      
+    {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
+        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStakeToPropose, "Inadeqaute funds at end date");
         // Length increased by 1 to allow for first element to used as a zero (null) value
         bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
  
@@ -126,7 +141,7 @@ contract Voting is VotingInterface {
     returns (bool isOpen) 
     {   
         //@todo get feedback on less than or less than or equal too
-        return (block.timestamp <= proposals[_proposalId].votingEnds && block.timestamp >= proposals[_proposalId].votingStarts);
+        return (block.timestamp >= proposals[_proposalId].votingStarts && block.timestamp <= proposals[_proposalId].votingEnds);
     }
 
     function issueDescription(uint256 _proposalIndex)
