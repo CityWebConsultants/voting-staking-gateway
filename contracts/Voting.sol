@@ -23,9 +23,8 @@ contract Voting is VotingInterface {
     StakingInterface stake;
 
     struct Proposal {
-        bool votingOpen;
-        // uint256 votingEnds;
         uint256 votingStarts;
+        uint256 votingEnds;
         string issueDescription;
         bytes32[] optionDescriptions; // maybe this should be a mapping and we consider 0 to be void
         // do we need to have available options?
@@ -43,9 +42,10 @@ contract Voting is VotingInterface {
     // @todo add an event to this
     // could potentially add 1 by 1
     // should there be any scope for destroying contract
-    function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingEnds)
+    function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
     public // add modifier
-    {   
+    {      
+        require(_votingStarts < _votingEnds, "End time must be later than start time");
         // Length increased by 1 to allow for first element to used as a zero (null) value
         bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
  
@@ -53,7 +53,7 @@ contract Voting is VotingInterface {
             optionDescriptions[i+1] = _optionDescriptions[i];
         }
 
-        Proposal memory proposal = Proposal(true, _votingEnds, _description, optionDescriptions);
+        Proposal memory proposal = Proposal(_votingStarts, _votingEnds, _description, optionDescriptions);
         proposals.push(proposal);
 
         emit OnProposal(msg.sender, proposals.length-1, _votingEnds);
@@ -69,7 +69,7 @@ contract Voting is VotingInterface {
         Proposal storage proposal = proposals[_proposalId];
         require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
-        require(block.timestamp < proposals[_proposalId].votingEnds, "Cannot vote after end time");
+        require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");
 
         proposal.ballotOf_[msg.sender] = _option;
         proposal.weightedVoteCounts[_option] += weightOf(_proposalId, msg.sender);
@@ -124,8 +124,9 @@ contract Voting is VotingInterface {
     public 
     view 
     returns (bool isOpen) 
-    {
-        return proposals[_proposalId].votingOpen;
+    {   
+        //@todo get feedback on less than or less than or equal too
+        return (block.timestamp <= proposals[_proposalId].votingEnds && block.timestamp >= proposals[_proposalId].votingStarts);
     }
 
     function issueDescription(uint256 _proposalIndex)

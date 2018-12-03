@@ -13,7 +13,7 @@ const utils = require('./helpers/Utils.js');
 // @todo update voting contructor 
 
 contract('Voting', function (accounts) {
-    let staking, voting, nextweek;
+    let staking, voting, now, nextweek;
 
     const optionA = 'Yeah, fab.';
     const optionB = 'Nope, fix it.';
@@ -24,8 +24,9 @@ contract('Voting', function (accounts) {
     const optionCHex = web3.toHex(optionC);
 
     // Should take time now 
-    const now = Math.floor(Date.now() / 1000);
+    //const now = Math.floor(Date.now() / 1000);
     const oneWeek = 604800;
+    const oneMinute = 60;
 
     // change next week to one week
 
@@ -34,7 +35,9 @@ contract('Voting', function (accounts) {
     beforeEach(async () => {
         staking = await StakingMock.new(true, 100);
         voting = await VotingContract.new(staking.address);
-        nextWeek = await utils.blockNow() + oneWeek;
+        now = await utils.blockNow();
+        nextWeek = now + oneWeek;
+        const foo = 1;
     });
 
     // test each function
@@ -49,7 +52,7 @@ contract('Voting', function (accounts) {
     it("Should create new proposal with correct properties", async () => {
         // use a data structure to create multple
         // proposals and random results
-        const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         const logs = createdProposal.logs[0];
 
         // check event
@@ -85,7 +88,7 @@ contract('Voting', function (accounts) {
 
     it("Should cast a vote", async () => {
         
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         const voted = await voting.vote(0, 1, {from: accounts[1]});
         args = voted.logs[0].args;
 
@@ -101,7 +104,7 @@ contract('Voting', function (accounts) {
     })
 
     it("Should not allow a second vote", async () => {
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.vote(0, 1, {from: accounts[1]});   
         
         let errVote;
@@ -141,19 +144,25 @@ contract('Voting', function (accounts) {
     //     assert.equal(optionDescriptionsText[3], optionC);
     //     // get options -- see what happens
     // })
-    it("Should not accept vote after end time", async () => {
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
-        await voting.vote(0, 1, {from: accounts[1]});
-        await utils.increaseTime(oneWeek);
+    it("Should not accept votes outside of start and end times", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now + oneMinute, nextWeek);
 
-        // double check the mock to make sure is authed properly
         let errVote;
+        try {
+            await voting.vote(0, 1, {from: accounts[1]});
+        } catch(e) {
+           errVote = e; 
+        }
+        utils.ensureException(errVote);
+
+        await utils.increaseTime(oneWeek + oneMinute);
+
+        errVote = '';
         try {
             await voting.vote(0, 1, {from: accounts[2]});
         } catch(e) {
            errVote = e; 
         }
-
         utils.ensureException(errVote);
     });
 
@@ -197,7 +206,7 @@ contract('Voting', function (accounts) {
     // @todo user votes on multiple polls
 
     it("Should not vote outside of option range", async () => {
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         
         let errZero;
         try {
