@@ -4,7 +4,7 @@ contract StakingMock {
     bool public valid;
     uint256 public mayUnstake;
     uint256 staked;
-    // hum.... how to mock totalStakedForAt
+    uint256 public oneMonth = 2630000;
 
     constructor(bool _valid, uint256 _mayUnstake) 
     public 
@@ -35,11 +35,9 @@ contract StakingMock {
     view
     returns (uint256)
     {  
-        // if greater than a month
-        if (_time >= now + 2630000) {
-            return staked - 50;
+        if (_time >= now + oneMonth) {
+            return staked / 2;
         }
-        // otherwise
         return staked;
     }
 

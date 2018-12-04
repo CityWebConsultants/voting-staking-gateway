@@ -3,7 +3,8 @@
 // @todo assert we do need exceed maximum amount withdrawable
 // @todo tidy up comparisons so we dont have bignumber and tostring everywhere
 // @todo add approve for ... can we do approve and call
-
+// @todo able to refund any other token
+// @todo bounce eth
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');

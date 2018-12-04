@@ -4,22 +4,31 @@ import "./token/Staking.sol";
 import "./VotingInterface.sol";
 
 // Any other changes could be considered in a separate contract and the contents of this one migrated over
-// add a start time
 // allow updating options
-// store as a string
-// regardless of binary option
-// we still need a start and end date
-// add functionality to vest 
-//  If we want to introduce CRUD aspects then we would also have to add properties for a creator
-// Otherewsie anyone could update options
-// should this contract be destructable...
+// this might create greater complexity
+// implementation would have to prevent updating when voting started
+// prevent skipping options ie adding an options in slot 1 and then in slot 3 but missing out slot 2
+// might be better stored as string if they are updated 
+// would require a single transaction per 
 
-// Would  need to add a creator if we wanted to store ... just adds complexity...
+// consider creating a default option of yes / no if no data is provided
+// is this a yes no quesitons
+// then the UI would provide mechanism
+
+// if we want to represent the current state and check if coins have been moved or withdrawn we have to check the state of every address
+// each time making a call to list winning options
+// that would mean creating an array of every address that has voted and iterating...
+
+// now that we have a start date could potentially destroy an issue before it has started
+// that would need to add ownership
+
+// @todo consider adding a default yes or no
+// @todo add docblock
 
 /**
-  (1) Support multiple issues
-  (2) Supports multiple options
-  (3) time limit on voting // still to implement
+  (1) Support multiple issues.
+  (2) Supports multiple options.
+  (3) start and end time limit on voting.
   (4) each address can only vote once.
   (5) each address has different weights according to amount staked in external contract.
   */
@@ -46,11 +55,6 @@ contract Voting is VotingInterface {
     constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
         stake = StakingInterface(stakingAddress);
         minimumStakeToPropose = _minimumStakeToPropose;
-
-
-        // By default we could define yes / no
-        // or update options via a selection of strings
-        // perhaps give options to delete before started
     }
 
     // @todo add an event to this
@@ -93,6 +97,10 @@ contract Voting is VotingInterface {
         return true;
     }
 
+    /// @notice Fetch string text of an voting options
+    /// @param _proposalId Proposal ID
+    /// @param _option Option to return description for
+    /// @return string of text if options exists, otherwise empty string
     function optionDescription(uint256 _proposalId, uint256 _option) 
     public
     view 
@@ -106,6 +114,9 @@ contract Voting is VotingInterface {
         }
     }
 
+    /// @notice Fetch list of option descriptions
+    /// @param _proposalId Proposal ID
+    /// @return 32 byte array of encoded strings
     function optionDescriptions(uint256 _proposalId) 
     public
     view
@@ -115,12 +126,13 @@ contract Voting is VotingInterface {
 
     ///@notice Not implemented
     function setStatus(uint256, bool) 
-    public 
+    public
     returns (bool) 
     {
         return false;
     }
 
+    
     function ballotOf(uint256 _proposalId, address addr) 
     public 
     view 
@@ -186,6 +198,7 @@ contract Voting is VotingInterface {
         return ordinalIndex;
     }
 
+
     function winningOption(uint256 _proposalId) 
     public 
     view 
@@ -197,9 +210,9 @@ contract Voting is VotingInterface {
         return result[0];
     }
 
-    // uhm are we breaking re
-    // should there be an individaul option too
-    // double check this agianst advanced interface
+    /// @notice Fetch all voting options
+    /// @param _proposalId Proposal ID
+    /// @return Numerical list of available options
     function availableOptions(uint256 _proposalId) 
     public 
     view 
