@@ -54,8 +54,10 @@ contract('Staking', function (accounts) {
 
         await token.mint(admin, initialBankBalance);
         await token.mint(alice, initialBalance);
-        await token.mint(bob, initialBankBalance); //  Bob is pure minted :)
-        await token.transfer(bank.address, initialBankBalance, {from: admin});
+        await token.mint(bob, initialBankBalance);
+
+        await bank.depositBonusTokens(initialBankBalance, {from: admin})
+ //     await token.transfer(bank.address, initialBankBalance, {from: admin});
         await token.balanceOf.call(bank.address);
         
     });
@@ -220,16 +222,19 @@ contract('Staking', function (accounts) {
     })
 
     it("Should not allow staking when inadequate funds in contract to pay out", async() => {
-        // attept to stake more than will push over the top
-        // ah!!!!! we're just counting months but not actually adding it to existing time
-        // consider a getter for bonus balance
+        const availableBonusBefore = await bank.availableBonusTokens();
+        const staked = await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: bob});
+        const availableBonusAfter = await bank.availableBonusTokens();
+        
+        assert.equal(availableBonusAfter.toString(), '0');
 
-        const staked = await bank.stake((initialBankBalance/2), month.times(24).plus(day), true, {from: bob});
-        staked;
-        const foo = await token.balanceOf.call(bank.address);
-        foo;
-        const staked2 = await bank.stake(initialBalance, month.times(9), true, {from: alice});
-        staked2;
+        let error;
+        try {
+            await bank.stake(10, month.times(6).plus(day), true, {from: alice});
+        } catch (e) {
+            error = e;
+        }
+        utils.ensureException(error);
     })
 
     it.skip("Should deduct corret account from self when returning bonuses", async () => {
