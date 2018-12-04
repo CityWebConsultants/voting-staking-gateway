@@ -7,6 +7,11 @@ import "./StakingInterface.sol";
 // test limit
 // access to remove bonus tokens
 // add multisig to withdraw all funds
+// @todo consider hardcoding boundaries of time
+// so that we can do a get and figure out the exact wtidrawl data
+// @todo extend time doesn't work past 0 bonus stakes --- consider removing -- get an opinion 
+// Should be able to interrogate what value of return will by doing a call!!!!!!
+
 
 contract Staking is StakingInterface {
     //@todo use safe math
@@ -19,11 +24,13 @@ contract Staking is StakingInterface {
     }
 
     ERC20Interface public token;
+    uint256 public availableBonusTokens;
 
     mapping (address => StakeEntry[]) public stakesFor;
 
     event debugUint(string msg, uint256);
     event ExtendTime(uint256 extendedBy, uint256 trancheId);
+    // uhm... how is this applied to those with bonus 
 
     /// @param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
@@ -33,6 +40,13 @@ contract Staking is StakingInterface {
         // @todo consider owner
     }
  
+    function depositBonusTokens(uint256 _amount)
+    public
+    {   
+        availableBonusTokens += _amount;
+        require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer tokens");
+    }
+
     /// @notice Stakes a certain amount of tokens.
     /// @param _amount Amount of tokens to stake.
     /// @param _time Length of time in seconds to take for.
@@ -56,13 +70,18 @@ contract Staking is StakingInterface {
         uint256 rate = getRate(_time);
         uint256 amount;
 
+        uint256 bonus = _amount * rate / 100;
+
         if (_claimBonus == true) {
-            amount = _amount + (_amount * rate / 100);
+            // @todo check this for re-entrance issues
+            require(availableBonusTokens >= bonus, "Not enough bonus tokens left to pay out");
+            amount = _amount + bonus;
+            availableBonusTokens -= bonus;
         } else {
             amount = _amount;
         }
-
-        require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
+        // check bonus amount against remaining bonus before applying
+        // require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
     
         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
@@ -210,7 +229,7 @@ contract Staking is StakingInterface {
     public 
     pure
     returns (uint256 rate) {
-        uint256  secondsInMonth = 2629746; 
+        uint256  secondsInMonth = 2629746; // this should be defined in root of contract as public to be used in calculatons
 
         require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");
 

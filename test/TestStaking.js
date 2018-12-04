@@ -5,6 +5,14 @@
 // @todo add approve for ... can we do approve and call
 // @todo able to refund any other token
 // @todo bounce eth
+// @todo we have to have a fixed time and derive that from the smart contract
+// @todo otherwise we end up with a whole bunch of different estimates
+// @todo mitigate danger of user locking up for just under a time slot thus having coins locked for months without any gain!!!!
+// @todo perhaps could enumerate slots 6months 9months etc....
+// use big number and 
+
+
+
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
@@ -13,7 +21,7 @@ BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
 
 contract('Staking', function (accounts) {
 
-    let bank, token, initialBalance, rate;
+    let bank, token, initialBalance, initialBankBalance, rate;
     let alice = accounts[0];
     let admin = accounts[1];
     let bob = accounts[2];
@@ -38,7 +46,7 @@ contract('Staking', function (accounts) {
 
     beforeEach(async () => {
         initialBalance = 10000;
-        initialBankBalance = 100000; 
+        initialBankBalance = 100000;
         rate = 10; 
         // @todo consider removing default rate and using actual rates!!!!
         token = await TokenMock.new();
@@ -211,14 +219,23 @@ contract('Staking', function (accounts) {
         assert.equal(totalStaked.toString(), unstaked.logs[0].args.amount.toString());
     })
 
-    it.skip("Should not allow staking when inadequate funds in contract to pay out", async() => {
+    it("Should not allow staking when inadequate funds in contract to pay out", async() => {
         // attept to stake more than will push over the top
+        // ah!!!!! we're just counting months but not actually adding it to existing time
+        // consider a getter for bonus balance
+
+        const staked = await bank.stake((initialBankBalance/2), month.times(24).plus(day), true, {from: bob});
+        staked;
+        const foo = await token.balanceOf.call(bank.address);
+        foo;
+        const staked2 = await bank.stake(initialBalance, month.times(9), true, {from: alice});
+        staked2;
     })
 
     it.skip("Should deduct corret account from self when returning bonuses", async () => {
         // test this in above statements.
     })
-
+    
     // It should be checking the amounts and cutoffs are being applied correctly
     // It should check the aggregate totals are correct
     // It should check what happens when end conditions are reached
