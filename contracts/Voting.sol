@@ -132,14 +132,21 @@ contract Voting is VotingInterface {
         return false;
     }
 
-    
-    function ballotOf(uint256 _proposalId, address addr) 
+    /// @notice Fetch option voted on by address on a proposal
+    /// @param _proposalId Proposal ID
+    /// @param _addr Address of voter
+    /// @return integer value of option voted on
+    function ballotOf(uint256 _proposalId, address _addr) 
     public 
     view 
     returns (uint option) {
-        return proposals[_proposalId].ballotOf_[addr];
+        return proposals[_proposalId].ballotOf_[_addr];
     }
 
+    /// @notice Fetch weight of a given voters vote
+    /// @param _proposalId Proposal ID
+    /// @param _addr Address of voter
+    /// @return Weight of a given voters vote
     function weightOf(uint256 _proposalId, address _addr)
     public 
     view 
@@ -147,6 +154,9 @@ contract Voting is VotingInterface {
         return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
     }
 
+    /// @notice Check if proposal is open for voting
+    /// @param _proposalId Proposal ID
+    /// @return true if voting open, false is closed
     function getStatus(uint256 _proposalId) 
     public 
     view 
