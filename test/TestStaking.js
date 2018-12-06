@@ -10,7 +10,8 @@
 // @todo mitigate danger of user locking up for just under a time slot thus having coins locked for months without any gain!!!!
 // @todo perhaps could enumerate slots 6months 9months etc....
 // use big number and 
-
+// should there be any behaviour when limit reached???
+// reservedBonus would be another way to do it...
 
 
 const Staking = artifacts.require('Staking.sol');
@@ -27,22 +28,12 @@ contract('Staking', function (accounts) {
     let bob = accounts[2];
 
     const second = new BigNumber('1');
-    const month = new BigNumber('2629746');
     const day = new BigNumber('86400');
+    // change this to match 30 * day
+    const month = day.times(30);//new BigNumber('2629746');
+
 
     const rateBoundaries = [0,6,9,12,18,24].map(item => month.times(item));
-
-    // Helper -- try this out and maybe remove
-    const abortedUnstake = async (user, amount) => {
-        let attemptedUnstakeException;
-        try {
-            await bank.unstake(amount, {from: user});
-        } catch(e) {
-            console.log(e);
-            attemptedUnstakeException = e;
-        }
-        utils.ensureException(attemptedUnstakeException);
-    }
 
     beforeEach(async () => {
         initialBalance = 10000;
@@ -57,16 +48,9 @@ contract('Staking', function (accounts) {
         await token.mint(bob, initialBankBalance);
 
         await bank.depositBonusTokens(initialBankBalance, {from: admin})
- //     await token.transfer(bank.address, initialBankBalance, {from: admin});
         await token.balanceOf.call(bank.address);
         
     });
-
-    it.skip("Should do nothing", async () => {
-        assert.isTrue(true);
-    });
-    
-    // init
     
     it("Should start with seeded amount", async () => {
         const bankBalance = await token.balanceOf.call(bank.address);
@@ -221,11 +205,11 @@ contract('Staking', function (accounts) {
         assert.equal(totalStaked.toString(), unstaked.logs[0].args.amount.toString());
     })
 
-    it("Should not allow staking when inadequate funds in contract to pay out", async() => {
+    it("Should not allow staking when inadequate bonus funds in contract to pay out", async() => {
         const availableBonusBefore = await bank.availableBonusTokens();
         const staked = await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: bob});
         const availableBonusAfter = await bank.availableBonusTokens();
-        
+
         assert.equal(availableBonusAfter.toString(), '0');
 
         let error;
@@ -235,14 +219,37 @@ contract('Staking', function (accounts) {
             error = e;
         }
         utils.ensureException(error);
+        
+        // Should stake without bonus
+        // change initialBalance to aliceInitialBalance and bobOInitialBalance
+        const stakedNoBonus = await bank.stake(initialBalance, month.times(6).plus(day), false, {from: alice});
+        assert.equal(stakedNoBonus.logs[0].event, 'Staked');
+
+        await utils.increaseTime(month.times(24).plus(day).toNumber());
+
+        // aaaaarrrghhhhhh - whats the problem here
+        const unstaked = await bank.unstake(initialBankBalance*2, {from: bob});
+        assert(unstaked.logs[0].event, 'Unstaked');
+        
+        const bankBalance = await token.balanceOf.call(bank.address);
+        assert(bankBalance.toString(), initialBalance);
+        // advance time and unstake and make sure all the accounting is correct.
+
+
     })
 
-    it.skip("Should deduct corret account from self when returning bonuses", async () => {
+    it.skip("Should deduct correct account from self when returning bonuses", async () => {
         // test this in above statements.
     })
+
     
     // It should be checking the amounts and cutoffs are being applied correctly
     // It should check the aggregate totals are correct
+    // test boundaries of time more tightly 
+    // if we make it so that we can set the times to work at shorter intervasl we can make it mote testable on the actual chain
+    // timoouts still a bit fucked :/
+
     // It should check what happens when end conditions are reached
+    // ~ Not sure what this refers to... we have tested can't add too miuch
 
 })

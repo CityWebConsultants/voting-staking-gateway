@@ -205,12 +205,6 @@ contract Staking is StakingInterface {
         return available;   
     }
     
-    // Have to stake coins for a specific duration
-    // function stakedAt()
-    // function totalStakedForAt
-    // means there is no purpose to staking for zero time...
-    // weighted stake
-
     //@todo test
     // Cover edge cases where a user requires lock to complete other action when initial staking period ends
     // does not include additonal bonus
@@ -229,14 +223,14 @@ contract Staking is StakingInterface {
     public 
     pure
     returns (uint256 rate) {
-        uint256  secondsInMonth = 2629746; // this should be defined in root of contract as public to be used in calculatons
+        uint256  secondsInMonth = 2592000; // based on a 30 day month
 
         require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");
-
-        if (_timeLength == 0) {
-            return 0;
-        }
         
+        // if (_timeLength >= 0 && _timeLength <= 6) {
+        //     return 0;
+        // }
+    
         if (_timeLength >= 6 * secondsInMonth && _timeLength < 9 * secondsInMonth) {
             return 20;
         }
@@ -256,6 +250,8 @@ contract Staking is StakingInterface {
         if (_timeLength >= 24 * secondsInMonth && _timeLength < 25 * secondsInMonth) {
             return 100;
         }
+
+        return 0;
     }
 }
 
