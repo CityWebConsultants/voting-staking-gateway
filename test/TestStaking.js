@@ -218,23 +218,18 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        utils.ensureException(error);
         
-        // Should stake without bonus
-        // change initialBalance to aliceInitialBalance and bobOInitialBalance
+        utils.ensureException(error);
         const stakedNoBonus = await bank.stake(initialBalance, month.times(6).plus(day), false, {from: alice});
         assert.equal(stakedNoBonus.logs[0].event, 'Staked');
 
         await utils.increaseTime(month.times(24).plus(day).toNumber());
 
-        // aaaaarrrghhhhhh - whats the problem here
         const unstaked = await bank.unstake(initialBankBalance*2, {from: bob});
         assert(unstaked.logs[0].event, 'Unstaked');
         
         const bankBalance = await token.balanceOf.call(bank.address);
         assert(bankBalance.toString(), initialBalance);
-        // advance time and unstake and make sure all the accounting is correct.
-
 
     })
 

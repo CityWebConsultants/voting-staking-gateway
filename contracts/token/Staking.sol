@@ -12,7 +12,6 @@ import "./StakingInterface.sol";
 // @todo extend time doesn't work past 0 bonus stakes --- consider removing -- get an opinion 
 // Should be able to interrogate what value of return will by doing a call!!!!!!
 
-
 contract Staking is StakingInterface {
     //@todo use safe math
     // using SafeMath for uint256;
@@ -227,9 +226,11 @@ contract Staking is StakingInterface {
 
         require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");
         
+        // is it better to save steps and exit early or catch all 
         // if (_timeLength >= 0 && _timeLength <= 6) {
         //     return 0;
         // }
+        //@q should the deposit window be reduced?
     
         if (_timeLength >= 6 * secondsInMonth && _timeLength < 9 * secondsInMonth) {
             return 20;
