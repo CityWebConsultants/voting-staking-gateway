@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 // import "../ownership/Ownable.sol";
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
-//import "../math/SafeMath.sol";
+import "../math/SafeMath.sol";
 // test limit
 // access to remove bonus tokens
 // add multisig to withdraw all funds
@@ -14,7 +14,7 @@ import "./StakingInterface.sol";
 
 contract Staking is StakingInterface {
     //@todo use safe math
-    // using SafeMath for uint256;
+    using SafeMath for uint256;
 
     struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
@@ -23,22 +23,27 @@ contract Staking is StakingInterface {
     }
 
     ERC20Interface public token;
-    uint256 public availableBonusTokens;
 
+    uint256 public availableBonusTokens;
+    // 30 days in seconds
+    uint256 public constant month = 2592000;
+    
     mapping (address => StakeEntry[]) public stakesFor;
 
     event debugUint(string msg, uint256);
     event ExtendTime(uint256 extendedBy, uint256 trancheId);
     // uhm... how is this applied to those with bonus 
 
-    /// @param _token Token that can be staked.
+    ///@param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
         token = _token;
         // @todo consider destruction
         // @todo consider owner
     }
- 
+    
+    ///@notice Transfer tokens from sender to this contract
+    ///@param _amount of tokens to deposit
     function depositBonusTokens(uint256 _amount)
     public
     {   
@@ -46,21 +51,21 @@ contract Staking is StakingInterface {
         require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer tokens");
     }
 
-    /// @notice Stakes a certain amount of tokens.
-    /// @param _amount Amount of tokens to stake.
-    /// @param _time Length of time in seconds to take for.
-    /// @param _claimBonus Whether a bonus should be applied.
+    ///@notice Stakes a certain amount of tokens.
+    ///@param _amount Amount of tokens to stake.
+    ///@param _time Length of time in seconds to take for.
+    ///@param _claimBonus Whether a bonus should be applied.
     function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
         stakeFor(msg.sender, _amount, _time, _claimBonus);
     }
 
     // Consider using ENUM && or Array of numbers.... same as but easier than using assembly
     // uint[] _options,
-    /// @notice Stakes a certain amount of tokens for another user.
-    /// @param _user Address of the user to stake for.
-    /// @param _amount Amount of tokens to stake.
-    /// @param _time Length of time in seconds to take for.
-    /// @param _claimBonus Whether a bonus should be applied.
+    ///@notice Stakes a certain amount of tokens for another user.
+    ///@param _user Address of the user to stake for.
+    ///@param _amount Amount of tokens to stake.
+    ///@param _time Length of time in seconds to take for.
+    ///@param _claimBonus Whether a bonus should be applied.
     function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) 
     public
     {
@@ -85,28 +90,28 @@ contract Staking is StakingInterface {
     
         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
         stakesFor[_user].push(stakeItem);
-        totalStaked += amount;
+        totalStaked = totalStaked.add(amount);
 
         emit Staked(_user, amount, stakeUntil, _claimBonus);
     }
 
-    /// @notice Unstakes a certain amount of tokens.
-    /// @param _amount Amount of tokens to unstake.
+    ///@notice Unstakes a certain amount of tokens.
+    ///@param _amount Amount of tokens to unstake.
     function unstake(uint256 _amount) 
     public 
     {   
         require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
         require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
 
-        totalStaked -= _amount;
+        totalStaked = totalStaked.sub(_amount);
 
         emit Unstaked(msg.sender, _amount);
     }
 
-    /// @notice Amount locked in contract at given time.
-    /// @param _addr address of stakee
-    /// @param _time timestamp to check for locked state
-    /// @return amount  
+    ///@notice Amount locked in contract at given time.
+    ///@param _addr address of stakee
+    ///@param _time timestamp to check for locked state
+    ///@return amount  
     function totalStakedForAt(address _addr, uint256 _time)
     public
     view 
@@ -117,15 +122,15 @@ contract Staking is StakingInterface {
         StakeEntry[] memory stakes = stakesFor[_addr];
         for (uint256 i = 0; i < stakes.length; i++) {
             if (stakes[i].stakeUntil > _time) { //solium-disable-line security/no-block-members
-                amount += stakes[i].amount;
+                amount = amount.add(stakes[i].amount);
             }
         }
         return amount;   
     }
 
-    /// @notice internal accounting of token withdrawal
-    /// @param _user Address of withdrawee
-    /// @param _amount Amount to unstake
+    ///@notice internal accounting of token withdrawal
+    ///@param _user Address of withdrawee
+    ///@param _amount Amount to unstake
     function withdrawStake(address _user, uint256 _amount)
     private
     returns(bool)
@@ -140,13 +145,13 @@ contract Staking is StakingInterface {
 
             if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
                 if (toWithdraw > 0 && stakes[i].amount >= toWithdraw) {
-                    stakes[i].amount -= toWithdraw;
-                    withdrawn += toWithdraw;
+                    stakes[i].amount = stakes[i].amount.sub(toWithdraw);
+                    withdrawn = withdrawn.add(toWithdraw);
                     toWithdraw = 0;
                 }
                 else if (stakes[i].amount > 0 && stakes[i].amount < toWithdraw) {
-                    withdrawn += stakes[i].amount;
-                    toWithdraw -= stakes[i].amount;
+                    withdrawn = withdrawn.add(stakes[i].amount);
+                    toWithdraw = toWithdraw.sub(stakes[i].amount);
                     stakes[i].amount = 0;
                 }
             }
@@ -156,20 +161,20 @@ contract Staking is StakingInterface {
     }
 
 
-    /// @notice Returns total tokens staked for address.
-    /// @param _addr Address to check.
-    /// @return amount of tokens staked.
+    ///@notice Returns total tokens staked for address.
+    ///@param _addr Address to check.
+    ///@return amount of tokens staked.
     function totalStakedFor(address _addr) public view returns (uint256) {
         StakeEntry[] memory stakes = stakesFor[_addr];
         uint256 amountStaked;
         for (uint256 i = 0; i < stakes.length; i++) {
-            amountStaked += stakes[i].amount;
+            amountStaked = amountStaked.add(stakes[i].amount);
         }
         return amountStaked;
     }
 
-    /// @notice Returns the token address.
-    /// @return Address of token.
+    ///@notice Returns the token address.
+    ///@return Address of token.
     function token() 
     public 
     view 
@@ -178,9 +183,9 @@ contract Staking is StakingInterface {
         return token;
     }
 
-    /// @notice Returns the token address.
-    /// @param _user Address of staker
-    /// @return Address of token.
+    ///@notice Returns the token address.
+    ///@param _user Address of staker
+    ///@return Address of token.
     function availableToUnstake(address _user)
     public // @todo this should call the next
     view 
@@ -198,7 +203,7 @@ contract Staking is StakingInterface {
         StakeEntry[] memory stakes = stakesFor[_user];
         for (uint256 i = 0; i < stakes.length; i++) {
             if (stakes[i].stakeUntil <= _time) { //solium-disable-line security/no-block-members
-                available += stakes[i].amount;
+                available = available.add(stakes[i].amount);
             }
         }
         return available;   
@@ -211,20 +216,20 @@ contract Staking is StakingInterface {
     function extendStakingDuration(uint256 _duration, uint256 _trancheId)
         public
         returns (bool) {
-        stakesFor[msg.sender][_trancheId].stakeUntil += _duration;
+        stakesFor[msg.sender][_trancheId].stakeUntil = stakesFor[msg.sender][_trancheId].stakeUntil.add(_duration);
         emit ExtendTime(stakesFor[msg.sender][_trancheId].stakeUntil, _trancheId);
         return true; // or we could return the timestamp
     }
 
-    /// @notice set rate
-    /// @param _timeLength Length of time a user has staked for
+    ///@notice set rate
+    ///@param _timeLength Length of time a user has staked for
+    ///@return Percentage rate of bonus
     function getRate (uint256 _timeLength) 
     public 
     pure
     returns (uint256 rate) {
-        uint256  secondsInMonth = 2592000; // based on a 30 day month
 
-        require(_timeLength < secondsInMonth * 25, "Cannot stake for this long");
+        require(_timeLength < month.mul(25), "Cannot stake for this long");
         
         // is it better to save steps and exit early or catch all 
         // if (_timeLength >= 0 && _timeLength <= 6) {
@@ -232,23 +237,23 @@ contract Staking is StakingInterface {
         // }
         //@q should the deposit window be reduced?
     
-        if (_timeLength >= 6 * secondsInMonth && _timeLength < 9 * secondsInMonth) {
+        if (_timeLength >= month.mul(6) && _timeLength < month.mul(9)) {
             return 20;
         }
 
-        if (_timeLength >= 9 * secondsInMonth && _timeLength < 12 * secondsInMonth) {
+        if (_timeLength >= month.mul(9) && _timeLength < month.mul(12)) {
             return 30;
         }
 
-        if (_timeLength >= 12 * secondsInMonth && _timeLength < 18 * secondsInMonth) {
+        if (_timeLength >= month.mul(12) && _timeLength < month.mul(18)) {
             return 50;
         }
 
-        if (_timeLength >= 18 * secondsInMonth && _timeLength < 24 * secondsInMonth) {
+        if (_timeLength >= month.mul(18) && _timeLength < month.mul(24)) {
             return 75;
         }
 
-        if (_timeLength >= 24 * secondsInMonth && _timeLength < 25 * secondsInMonth) {
+        if (_timeLength >= month.mul(24) && _timeLength < month.mul(25)) {
             return 100;
         }
 
