@@ -17,10 +17,4 @@ contract StakingInterface {
     function totalStakedForAt(address addr, uint256 time) public view returns (uint256);
     function availableToUnstake(address addr) public view returns (uint256);
     function availableToUnstakeAt(address addr, uint256 time) public view returns (uint256);
-    // @todo 
-    // function stakeAvailableAt()
-    // function stakeAvailableForAt()
-    // have to to do staked for at to be able to talk the other contract
-    
-
 }

@@ -1,19 +1,13 @@
 pragma solidity 0.4.24;
-// @todo add safemath
-// import "../ownership/Ownable.sol";
+
 import "./ERC20Interface.sol";
 import "./StakingInterface.sol";
 import "../math/SafeMath.sol";
-// test limit
-// access to remove bonus tokens
-// add multisig to withdraw all funds
-// @todo consider hardcoding boundaries of time
-// so that we can do a get and figure out the exact wtidrawl data
-// @todo extend time doesn't work past 0 bonus stakes --- consider removing -- get an opinion 
-// Should be able to interrogate what value of return will by doing a call!!!!!!
+
+// @todo add multisig functionality to withdraw all funds in case of emergency.
 
 contract Staking is StakingInterface {
-    //@todo use safe math
+
     using SafeMath for uint256;
 
     struct StakeEntry {
@@ -27,19 +21,22 @@ contract Staking is StakingInterface {
     uint256 public availableBonusTokens;
     // 30 days in seconds
     uint256 public constant month = 2592000;
-    
+
     mapping (address => StakeEntry[]) public stakesFor;
 
     event debugUint(string msg, uint256);
-    event ExtendTime(uint256 extendedBy, uint256 trancheId);
-    // uhm... how is this applied to those with bonus 
 
     ///@param _token Token that can be staked.
     constructor(ERC20Interface _token) public {
         require(address(_token) != 0x0, "Empty address!");
         token = _token;
-        // @todo consider destruction
-        // @todo consider owner
+    }
+
+    ///@notice all ur eth r not belong to us
+    function () 
+    public
+    payable {
+        revert("Contract does not accept Ether");
     }
     
     ///@notice Transfer tokens from sender to this contract
@@ -47,7 +44,7 @@ contract Staking is StakingInterface {
     function depositBonusTokens(uint256 _amount)
     public
     {   
-        availableBonusTokens += _amount;
+        availableBonusTokens = availableBonusTokens.add(_amount);
         require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer tokens");
     }
 
@@ -59,8 +56,6 @@ contract Staking is StakingInterface {
         stakeFor(msg.sender, _amount, _time, _claimBonus);
     }
 
-    // Consider using ENUM && or Array of numbers.... same as but easier than using assembly
-    // uint[] _options,
     ///@notice Stakes a certain amount of tokens for another user.
     ///@param _user Address of the user to stake for.
     ///@param _amount Amount of tokens to stake.
@@ -84,10 +79,9 @@ contract Staking is StakingInterface {
         } else {
             amount = _amount;
         }
-        // check bonus amount against remaining bonus before applying
-        // require(token.balanceOf(address(this)) >= totalStaked + amount, "Not enough funds to pay out stake");
+
         require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
-    
+
         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
         stakesFor[_user].push(stakeItem);
         totalStaked = totalStaked.add(amount);
@@ -117,8 +111,7 @@ contract Staking is StakingInterface {
     view 
     returns (uint256 amount)
     {
-        // @q -- do we need to define amount
-        // Already gets created in memory when set as a return value
+        //@q? Is it acceptable to let amount be defined in return value statement and not in body of function?
         StakeEntry[] memory stakes = stakesFor[_addr];
         for (uint256 i = 0; i < stakes.length; i++) {
             if (stakes[i].stakeUntil > _time) { //solium-disable-line security/no-block-members
@@ -174,7 +167,7 @@ contract Staking is StakingInterface {
     }
 
     ///@notice Returns the token address.
-    ///@return Address of token.
+    ///@return Address of token contract.
     function token() 
     public 
     view 
@@ -194,6 +187,10 @@ contract Staking is StakingInterface {
         return availableToUnstakeAt(_user, block.timestamp);
     }
 
+    ///@notice Get amount available to unstake at a given time
+    ///@param _user Address of staker
+    ///@param _time The time at which funds may be unstaked
+    ///@return Amount available to unstake
     function availableToUnstakeAt(address _user, uint256 _time) 
     public 
     view
@@ -209,18 +206,6 @@ contract Staking is StakingInterface {
         return available;   
     }
     
-    //@todo test
-    // Cover edge cases where a user requires lock to complete other action when initial staking period ends
-    // does not include additonal bonus
-    // is there anyway to explot this?
-    function extendStakingDuration(uint256 _duration, uint256 _trancheId)
-        public
-        returns (bool) {
-        stakesFor[msg.sender][_trancheId].stakeUntil = stakesFor[msg.sender][_trancheId].stakeUntil.add(_duration);
-        emit ExtendTime(stakesFor[msg.sender][_trancheId].stakeUntil, _trancheId);
-        return true; // or we could return the timestamp
-    }
-
     ///@notice set rate
     ///@param _timeLength Length of time a user has staked for
     ///@return Percentage rate of bonus
@@ -231,11 +216,9 @@ contract Staking is StakingInterface {
 
         require(_timeLength < month.mul(25), "Cannot stake for this long");
         
-        // is it better to save steps and exit early or catch all 
-        // if (_timeLength >= 0 && _timeLength <= 6) {
-        //     return 0;
-        // }
-        //@q should the deposit window be reduced?
+        if (_timeLength >= 0 && _timeLength < 6) {
+            return 0;
+        }
     
         if (_timeLength >= month.mul(6) && _timeLength < month.mul(9)) {
             return 20;
@@ -256,8 +239,6 @@ contract Staking is StakingInterface {
         if (_timeLength >= month.mul(24) && _timeLength < month.mul(25)) {
             return 100;
         }
-
-        return 0;
     }
 }
 

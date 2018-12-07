@@ -3,31 +3,9 @@ pragma solidity ^0.4.24;
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
 
-// Any other changes could be considered in a separate contract and the contents of this one migrated over
-// allow updating options
-// this might create greater complexity
-// implementation would have to prevent updating when voting started
-// prevent skipping options ie adding an options in slot 1 and then in slot 3 but missing out slot 2
-// might be better stored as string if they are updated 
-// would require a single transaction per 
-
-// consider creating a default option of yes / no if no data is provided
-// is this a yes no quesitons
-// then the UI would provide mechanism
-
-// if we want to represent the current state and check if coins have been moved or withdrawn we have to check the state of every address
-// each time making a call to list winning options
-// that would mean creating an array of every address that has voted and iterating...
-
-// now that we have a start date could potentially destroy an issue before it has started
-// that would need to add ownership
-
-// @todo consider adding a default yes or no
-// @todo add docblock
-
 /**
   (1) Support multiple issues.
-  (2) Supports multiple options.
+  (2) Supports defining multiple options
   (3) start and end time limit on voting.
   (4) each address can only vote once.
   (5) each address has different weights according to amount staked in external contract.
@@ -51,15 +29,11 @@ contract Voting is VotingInterface {
 
     Proposal[] proposals;
 
-    // do we assume it starts as soons as published
     constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
         stake = StakingInterface(stakingAddress);
         minimumStakeToPropose = _minimumStakeToPropose;
     }
 
-    // @todo add an event to this
-    // could potentially add 1 by 1
-    // should there be any scope for destroying contract
     function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
     public // add modifier
     {
@@ -75,12 +49,12 @@ contract Voting is VotingInterface {
         Proposal memory proposal = Proposal(_votingStarts, _votingEnds, _description, optionDescriptions);
         proposals.push(proposal);
 
-        emit OnProposal(msg.sender, proposals.length-1, _votingEnds);
+        emit OnProposal(msg.sender, proposals.length-1, _votingStarts, _votingEnds);
     }
 
-    /// @notice Place a weighted vote on a given proposal
-    /// @param _proposalId Proposal ID
-    /// @param _option Option to vote for
+    ///@notice Place a weighted vote on a given proposal
+    ///@param _proposalId Proposal ID
+    ///@param _option Option to vote for
     function vote(uint256 _proposalId, uint256 _option) 
     public 
     returns (bool success) 
@@ -97,10 +71,10 @@ contract Voting is VotingInterface {
         return true;
     }
 
-    /// @notice Fetch string text of an voting options
-    /// @param _proposalId Proposal ID
-    /// @param _option Option to return description for
-    /// @return string of text if options exists, otherwise empty string
+    ///@notice Fetch string text of an voting options
+    ///@param _proposalId Proposal ID
+    ///@param _option Option to return description for
+    ///@return string of text if options exists, otherwise empty string
     function optionDescription(uint256 _proposalId, uint256 _option) 
     public
     view 
@@ -114,9 +88,9 @@ contract Voting is VotingInterface {
         }
     }
 
-    /// @notice Fetch list of option descriptions
-    /// @param _proposalId Proposal ID
-    /// @return 32 byte array of encoded strings
+    ///@notice Fetch list of option descriptions
+    ///@param _proposalId Proposal ID
+    ///@return 32 byte array of encoded strings
     function optionDescriptions(uint256 _proposalId) 
     public
     view
@@ -132,10 +106,10 @@ contract Voting is VotingInterface {
         return false;
     }
 
-    /// @notice Fetch option voted on by address on a proposal
-    /// @param _proposalId Proposal ID
-    /// @param _addr Address of voter
-    /// @return integer value of option voted on
+    ///@notice Fetch option voted on by address on a proposal
+    ///@param _proposalId Proposal ID
+    ///@param _addr Address of voter
+    ///@return integer value of option voted on
     function ballotOf(uint256 _proposalId, address _addr) 
     public 
     view 
@@ -143,10 +117,10 @@ contract Voting is VotingInterface {
         return proposals[_proposalId].ballotOf_[_addr];
     }
 
-    /// @notice Fetch weight of a given voters vote
-    /// @param _proposalId Proposal ID
-    /// @param _addr Address of voter
-    /// @return Weight of a given voters vote
+    ///@notice Fetch weight of a given voters vote
+    ///@param _proposalId Proposal ID
+    ///@param _addr Address of voter
+    ///@return Weight of a given voters vote
     function weightOf(uint256 _proposalId, address _addr)
     public 
     view 
@@ -154,9 +128,9 @@ contract Voting is VotingInterface {
         return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
     }
 
-    /// @notice Check if proposal is open for voting
-    /// @param _proposalId Proposal ID
-    /// @return true if voting open, false is closed
+    ///@notice Check if proposal is open for voting
+    ///@param _proposalId Proposal ID
+    ///@return true if voting open, false is closed
     function getStatus(uint256 _proposalId) 
     public 
     view 
@@ -166,13 +140,19 @@ contract Voting is VotingInterface {
         return (block.timestamp >= proposals[_proposalId].votingStarts && block.timestamp <= proposals[_proposalId].votingEnds);
     }
 
-    function issueDescription(uint256 _proposalIndex)
+    ///@notice Fetch description of proposal
+    ///@param _proposalId Proposal ID
+    ///@return Proposal description
+    function issueDescription(uint256 _proposalId)
     public 
     view 
     returns (string description) {
-        return proposals[_proposalIndex].issueDescription;
+        return proposals[_proposalId].issueDescription;
     }
 
+    ///@notice Fetch aggregate weighted votes for an option of a proposal
+    ///@param _proposalId Proposal ID
+    ///@return Weighted vote count
     function weightedVoteCountsOf(uint256 _proposalId, uint256 _option) 
     public 
     view 
@@ -181,6 +161,9 @@ contract Voting is VotingInterface {
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
+    ///@notice Fetch a given number of voting options ordered by number of weighted votes
+    ///@param _proposalId Proposal ID
+    ///@param _limit Number of items to return
     function topOptions(uint256 _proposalId, uint256 _limit) 
     public
     view
@@ -208,21 +191,22 @@ contract Voting is VotingInterface {
         return ordinalIndex;
     }
 
-
+    ///@notice Get winning options
+    ///@param _proposalId Proposal ID
+    ///@return Winning optons or 0 is no winner (no votes or tie)
     function winningOption(uint256 _proposalId) 
     public 
     view 
     returns (uint256 winningOptions) 
     {   
-        // require()
         // if 0 zero there is no winning option
         uint256[] memory result = topOptions(_proposalId, 1);
         return result[0];
     }
 
-    /// @notice Fetch all voting options
-    /// @param _proposalId Proposal ID
-    /// @return Numerical list of available options
+    ///@notice Fetch all voting options
+    ///@param _proposalId Proposal ID
+    ///@return Numerical list of available options
     function availableOptions(uint256 _proposalId) 
     public 
     view 
@@ -256,6 +240,9 @@ contract Voting is VotingInterface {
         return ret; //bytesArray);
     }
 
+    ///@notice Convert string to bytes32
+    ///@param _string string to convert
+    ///@return A 32Byte number
     function stringToBytes32(string memory _string) 
     internal
     pure
@@ -271,10 +258,8 @@ contract Voting is VotingInterface {
         }
     }
 
-    // to do
-    event OnProposal(address user, uint256 id, uint256 endTime);
+    event OnProposal(address user, uint256 id, uint256 startTime, uint256 endTime);
     event OnVote(address indexed from, uint value);
     event OnStatusChange(bool newIsOpen);
-    // when do we check closing conditions
     event Debug(string str, uint256 num);
 }

@@ -12,7 +12,8 @@
 // use big number and 
 // should there be any behaviour when limit reached???
 // reservedBonus would be another way to do it...
-
+// @todo disambiguate starting balances by using bobBalance, aliceBalance
+// part of the build process
 
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
@@ -29,17 +30,15 @@ contract('Staking', function (accounts) {
 
     const second = new BigNumber('1');
     const day = new BigNumber('86400');
-    // change this to match 30 * day
-    const month = day.times(30);//new BigNumber('2629746');
-
+    // For purposes of smart contract we have 30 days in a monnth
+    const month = day.times(30);
 
     const rateBoundaries = [0,6,9,12,18,24].map(item => month.times(item));
 
     beforeEach(async () => {
         initialBalance = 10000;
         initialBankBalance = 100000;
-        rate = 10; 
-        // @todo consider removing default rate and using actual rates!!!!
+
         token = await TokenMock.new();
         bank = await Staking.new(token.address);
 
@@ -60,7 +59,7 @@ contract('Staking', function (accounts) {
     // Staking
 
     it('Should transfer tokens to stake', async () => {
-        // fix this --- is a bit broken --- take a break....
+
         await bank.stake(initialBalance, month.plus(day), true, {from: alice});
         // @todo we should handle cases where what id we stake for 
         const aliceBalance = await token.balanceOf.call(alice);
@@ -191,8 +190,6 @@ contract('Staking', function (accounts) {
         let totalStaked = new BigNumber(0);
 
         for (let item of rateBoundaries) {
-            // const now = web3.eth.getBlock('latest').timestamp
-            // @todo should increase time here
             const increasedTime = await utils.increaseTime(month.times(6).toNumber());
             const staked = await bank.stake(aWeeBit, item, true, {from: alice});
             totalStaked = totalStaked.add(staked.logs[0].args.amount);
@@ -218,7 +215,7 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        
+
         utils.ensureException(error);
         const stakedNoBonus = await bank.stake(initialBalance, month.times(6).plus(day), false, {from: alice});
         assert.equal(stakedNoBonus.logs[0].event, 'Staked');
@@ -233,18 +230,10 @@ contract('Staking', function (accounts) {
 
     })
 
-    it.skip("Should deduct correct account from self when returning bonuses", async () => {
-        // test this in above statements.
-    })
+    it("Should retrieve correct rates")
 
-    
-    // It should be checking the amounts and cutoffs are being applied correctly
+    // Test minimum stake to propose
+    // @todo test start and end time
+    // check boundaries more precisely
     // It should check the aggregate totals are correct
-    // test boundaries of time more tightly 
-    // if we make it so that we can set the times to work at shorter intervasl we can make it mote testable on the actual chain
-    // timoouts still a bit fucked :/
-
-    // It should check what happens when end conditions are reached
-    // ~ Not sure what this refers to... we have tested can't add too miuch
-
 })
