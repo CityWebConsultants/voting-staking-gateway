@@ -2,16 +2,10 @@ const VotingContract = artifacts.require("Voting");
 const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
-// start date 
-// updating options
-// @todo improve exception handling
-// @todo deal with finalisation
-// @todo deal with string which are too long? There's not really a way around this other than adding one at a time
-// then that would have to be restricted before opening
-// @todo update voting contructor 
-// @todo should be no winner
-// @todo user votes on multiple polls
-// @todo write test for inadeqaute funds
+
+// @todo improve exception handling for DRYness
+// @todo review tests for user votes on multiple polls
+// @todo all suggestions for improving coverage welcome
 
 contract('Voting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -24,7 +18,6 @@ contract('Voting', function (accounts) {
     const optionBHex = web3.toHex(optionB);
     const optionCHex = web3.toHex(optionC);
 
-    //const now = Math.floor(Date.now() / 1000);
     const oneMonth = 2630000;
     const oneWeek = 604800;
     const oneMinute = 60;
@@ -39,18 +32,8 @@ contract('Voting', function (accounts) {
         nextMonth = now + oneMonth;
     });
 
-    // test each function
-    it.skip("Should do nothing", async () => {
-        assert.isTrue(true);
-    })
-
-    // refactor 
-    // need to create some kind of helper to deal wit
-    // check all parameters on new
-
     it("Should create new proposal with correct properties", async () => {
-        // use a data structure to create multple
-        // proposals and random results
+
         const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         const logs = createdProposal.logs[0];
 
@@ -62,9 +45,6 @@ contract('Voting', function (accounts) {
         const description = await voting.issueDescription(0);
         assert.equal(description, "Does this work?");
 
-        // @todo test indiviudal functions sepaarelt mebs set up two contracts
-        // one for journey one for individual functions
-        // place directly in to assert when tidying up
         const noOption = await voting.optionDescription(0, 0);
         const optionDescriptionA = await voting.optionDescription(0, 1);
         const optionDescriptionB = await voting.optionDescription(0, 2);
@@ -116,33 +96,6 @@ contract('Voting', function (accounts) {
         utils.ensureException(errVote);
     })
 
-    // there is no way to enfoce this!!!!???
-    // it("Should fail on string exceeding bytes32 length", async () => {
-    //     // so there is no way to force number of options
-    //     // have to trust in the user
-    //     const optionTooLong = '............................................................';
-    //     // how the fuck does that wokr!!!
-    //     // try moving it earlier....
-    //     const optionTooLongHex = web3.toHex(optionTooLong);
-    //     const foo = 1;  
-
-    //     try {
-    //         const boo = await voting.createIssue('Does this work?', [optionTooLongHex, optionBHex, optionCHex], nextWeek);
-    //     }
-    //     catch(e) {
-    //         const foo = e;
-    //     }   
-
-    //     const optionDescriptions = await voting.optionDescriptions(0);
-        
-    //     const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
-    //     // Hmmmmmmm. This is a problem.... There's no way to enforce this.... :/
-    //     // What I thought was a good idea turned out to be a bad idea
-    //     assert.equal(optionDescriptionsText[1], optionTooLongHex);
-    //     assert.equal(optionDescriptionsText[2], optionB);
-    //     assert.equal(optionDescriptionsText[3], optionC);
-    //     // get options -- see what happens
-    // })
     it("Should not accept votes outside of start and end times", async () => {
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now + oneMinute, nextWeek);
 
