@@ -11,6 +11,7 @@ BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
 contract('Staking', function (accounts) {
 
     let bank, token, initialBalance, initialBankBalance, rate;
+    let signers = [accounts[7], accounts[8], accounts[9]];
     let alice = accounts[0];
     let admin = accounts[1];
     let bob = accounts[2];
@@ -27,7 +28,7 @@ contract('Staking', function (accounts) {
         initialBankBalance = 100000;
 
         token = await TokenMock.new();
-        bank = await Staking.new(token.address);
+        bank = await Staking.new(token.address, signers, '2', {from: accounts[7], gas: 4200000});
 
         await token.mint(admin, initialBankBalance);
         await token.mint(alice, initialBalance);
@@ -207,4 +208,11 @@ contract('Staking', function (accounts) {
     })
 
     it.skip("Should retrieve correct rates")
+
+
+    // MultiSig
+    it("Should contain same multisig file as gnosis multisig master", async() => {
+        
+    })
+
 })
