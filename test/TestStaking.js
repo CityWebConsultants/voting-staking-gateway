@@ -211,8 +211,23 @@ contract('Staking', function (accounts) {
 
 
     // MultiSig
-    it("Should contain same multisig file as gnosis multisig master", async() => {
-        
+
+    // Avoid reimplementing tests written for multisig by proving we have an identical file
+    it("Should contain same multisig contract as gnosis multisig on master", async() => {
+        const fetch = require('node-fetch')
+        const fs = require('fs')
+
+        let gnosisMultiSigUrl = 'https://raw.githubusercontent.com/gnosis/MultiSigWallet/master/contracts/MultiSigWallet.sol'
+
+        const upstream = await fetch(gnosisMultiSigUrl).then(res => res.text())
+
+        fs.readFile(__dirname + '/../contracts/MultiSigWallet.sol', 'utf8', function read(err, local) {
+            if (err) {
+                throw err
+            }
+
+            assert.equal(local.toString().trim(), upstream.toString().trim())
+        });
     })
 
 })
