@@ -15,6 +15,7 @@ contract('Staking', function (accounts) {
     let alice = accounts[0];
     let admin = accounts[1];
     let bob = accounts[2];
+    let carol = accounts[3];
 
     const second = new BigNumber('1');
     const day = new BigNumber('86400');
@@ -38,7 +39,7 @@ contract('Staking', function (accounts) {
         await token.balanceOf.call(bank.address);
         
     });
-    
+
     it("Should start with seeded amount", async () => {
         const bankBalance = await token.balanceOf.call(bank.address);
         assert.equal(bankBalance, initialBankBalance);
@@ -211,8 +212,7 @@ contract('Staking', function (accounts) {
 
 
     // MultiSig
-
-    // Avoid reimplementing tests written for multisig by proving we have an identical file
+    // Avoid reimplementing tests written for gnosis multisig by proving we have an identical file
     it("Should contain same multisig contract as gnosis multisig on master", async() => {
         const fetch = require('node-fetch')
         const fs = require('fs')
@@ -230,4 +230,18 @@ contract('Staking', function (accounts) {
         });
     })
 
+    // Single use case
+    it("Should move funds using 2 of 3 sigs", async() => {
+        const bankBalanceBefore = await token.balanceOf.call(bank.address);
+        const tx = token.contract.transfer.getData(carol, bankBalanceBefore);
+        const submitted = await bank.submitTransaction(token.address, 0, tx, {from: signers[1]});
+        const txId = submitted.logs[0].args.transactionId;
+        await bank.confirmTransaction(txId, {from: signers[2]});
+
+        const bankBalanceAfter = await token.balanceOf.call(bank.address);
+        const carolBalance = await token.balanceOf.call(carol);
+
+        assert.equal(bankBalanceAfter.toString(), '0');
+        assert.deepEqual(carolBalance, bankBalanceBefore);
+    })
 })
