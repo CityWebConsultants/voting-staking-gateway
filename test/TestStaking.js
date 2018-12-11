@@ -230,7 +230,7 @@ contract('Staking', function (accounts) {
         });
     })
 
-    // Single use case
+    // Our single use case
     it("Should move funds using 2 of 3 sigs", async() => {
         const bankBalanceBefore = await token.balanceOf.call(bank.address);
         const tx = token.contract.transfer.getData(carol, bankBalanceBefore);
