@@ -36,13 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var GatewayConfigObject = /** @class */ (function () {
-        function GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenContractAbiUrl) {
-            this.network = network;
-            this.contractAddress = contractAddress;
-            this.contractAbiUrl = contractAbiUrl;
-            this.tokenAddress = tokenAddress;
-            // Should we really be routing html in this context --- re 
-            this.tokenContractAbiUrl = tokenContractAbiUrl;
+        function GatewayConfigObject() {
+            this.network = 'https://localhost:7545';
+            this.contractAddress = '0xb469690cc97d84bf98098262fbe9a0f3e21fc7fc';
+            this.contractAbiUrl = 'abis/GatewayERC20Contract.json';
+            this.tokenAddress = '0x8c951fe19dbf212ae4c57198891ad9dd5f446d1c';
+            this.tokenContractAbiUrl = 'abis/PaymentGatewayContract.json';
         }
         return GatewayConfigObject;
     }());
@@ -76,10 +75,11 @@ var priceDiscoveryUrl = "https://min-api.cryptocompare.com/data/price?fsym=ETH&t
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var EthPaymentGatewayBase = /** @class */ (function () {
-        function EthPaymentGatewayBase(config) {
-            //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
-            this.web3Instance = new Web3(Web3.currentProvider);
-            this.gatewayConfig = config;
+        function EthPaymentGatewayBase() {
+            this.gatewayConfig = new EthPaymentGateway.GatewayConfigObject();
+            // Take the provider from the browser or if not present config.
+            this.web3Instance = new Web3(Web3.currentProvider || new Web3.providers.HttpProvider(this.gatewayConfig.network));
+            // this.web3Instance = new Web3(Web3.currentProvider);
         }
         /*
             Read or retrieve data functions
@@ -327,12 +327,12 @@ var EthPaymentGateway;
 ///<reference path="EthPaymentGatewayBase.ts"/>
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
-    var network = "http://localhost:7545";
-    var contractAddress = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
-    var contractAbiUrl = "http://127.0.0.1/src/gateway-contract-abi.json";
-    var tokenAddress = "0xe186255319a4c5354e57ae553811498a5129e790";
-    var tokenAbiUrl = "http://127.0.0.1/src/erc20-contract-abi.json";
-    var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    // const network = process.env.ETHNODEURL || ""
+    // const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    // const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    // const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    // const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
+    var gatewayConfig = new EthPaymentGateway.GatewayConfigObject();
     var EthPaymentGatewayMerchant = /** @class */ (function () {
         function EthPaymentGatewayMerchant(merchant) {
             var _this = this;
@@ -363,7 +363,7 @@ var EthPaymentGateway;
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             }); }); };
-            this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase(gatewayConfig);
+            this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase();
             this.merchant = merchant;
         }
         return EthPaymentGatewayMerchant;

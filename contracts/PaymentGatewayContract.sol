@@ -51,12 +51,6 @@ contract PaymentGatewayContract is Ownable{
         return tokenContract;
     }
 
-// Is this required?
-//    function issueTokens(address _recipient, uint _amount) public onlyOwner{
-//        tokenContract.issueTokens(_recipient, _amount);
-//    }
-
-
     function addMerchant(address _walletAddress) 
     public
     onlyOwner 
