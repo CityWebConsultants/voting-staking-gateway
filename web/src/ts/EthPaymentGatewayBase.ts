@@ -9,13 +9,13 @@ namespace EthPaymentGateway{
         web3Instance: any;
         gatewayConfig: GatewayConfigObject;
     
-        constructor(config: GatewayConfigObject){
-
-            //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
-            this.web3Instance = new Web3(web3.currentProvider);
-            this.gatewayConfig = config;
-        }     
-        
+        constructor(){
+            this.gatewayConfig = new GatewayConfigObject();
+            // Take the provider from the browser or if not present config.
+            this.web3Instance = new Web3(Web3.currentProvider || new Web3.providers.HttpProvider(this.gatewayConfig.network));
+            // this.web3Instance = new Web3(Web3.currentProvider);
+        } 
+    
         /*
             Read or retrieve data functions
         */

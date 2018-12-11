@@ -13,6 +13,7 @@
     "dotenv": "^6.1.0",
     "ethjs-abi": "^0.2.1",
     "file-loader": "^1.1.11",
+    "left-pad": "^1.3.0",
     "npx": "^10.2.0",
     "truffle-core": "^4.1.14",
     "truffle-hdwallet-provider": "0.0.6",
@@ -26,6 +27,7 @@
     "@types/node": "^10.3.1",
     "core-js": "^2.5.7",
     "gulp": "^3.9.1",
+    "gulp-copy": "^4.0.1",
     "gulp-typescript": "^5.0.0-alpha.3",
     "gulp-uglify": "^3.0.0",
     "typescript": "^2.9.2"
@@ -36,12 +38,13 @@
     "test-client": "truffle test ./test/ClientGatewayTests.js",
     "test-token": "truffle test ./test/ClientGatewayTests.js",
     "tests": "truffle test",
-    "build": "npm run client && npm run merchant && npm run admin",
+    "build": "npm run client && npm run merchant && npm run admin & npm run copy-artifacts",
     "deploy": "npm run purge && truffle migrate --reset",
-    "purge": "rm build/contracts/*.json -f",
+    "purge": "rm -f build/contracts/*.json",
     "client": "gulp client",
     "admin": "gulp admin",
-    "merchant": "gulp merchant"
+    "merchant": "gulp merchant",
+    "copy-artifacts": "gulp copyArtifacts"
   },
   "repository": {
     "type": "git",

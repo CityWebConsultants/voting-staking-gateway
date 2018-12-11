@@ -1,6 +1,6 @@
-
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonic = "hollow reduce afford gaze blast oak entire essence fantasy man industry donkey six left avocado";
+let HDWalletProvider = require("truffle-hdwallet-provider");
+let mnemonic = 'peanut grocery material tenant soccer love stereo trial leader mask sunny great'
+// let mnemonic = "hollow reduce afford gaze blast oak entire essence fantasy man industry donkey six left avocado";
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
@@ -8,8 +8,9 @@ module.exports = {
     development: {
       host: "127.0.0.1",
       port: 7545,
-      network_id: "*", 
-      gas: 3000000
+      network_id: "5777",
+      gas: 3000000,
+   //   from: '0x3fabe74712f7cbaed335ba7b60c3493fc16c7bdb'
     },
     rinkeby: {
       provider: function() {

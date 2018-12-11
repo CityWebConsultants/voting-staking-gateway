@@ -1,1 +1,372 @@
-var Web3,__awaiter=this&&this.__awaiter||function(o,i,s,c){return new(s||(s=Promise))(function(t,e){function n(t){try{a(c.next(t))}catch(t){e(t)}}function r(t){try{a(c.throw(t))}catch(t){e(t)}}function a(e){e.done?t(e.value):new s(function(t){t(e.value)}).then(n,r)}a((c=c.apply(o,i||[])).next())})},__generator=this&&this.__generator||function(n,r){var a,o,i,t,s={label:0,sent:function(){if(1&i[0])throw i[1];return i[1]},trys:[],ops:[]};return t={next:e(0),throw:e(1),return:e(2)},"function"==typeof Symbol&&(t[Symbol.iterator]=function(){return this}),t;function e(e){return function(t){return function(e){if(a)throw new TypeError("Generator is already executing.");for(;s;)try{if(a=1,o&&(i=2&e[0]?o.return:e[0]?o.throw||((i=o.return)&&i.call(o),0):o.next)&&!(i=i.call(o,e[1])).done)return i;switch(o=0,i&&(e=[2&e[0],i.value]),e[0]){case 0:case 1:i=e;break;case 4:return s.label++,{value:e[1],done:!1};case 5:s.label++,o=e[1],e=[0];continue;case 7:e=s.ops.pop(),s.trys.pop();continue;default:if(!(i=0<(i=s.trys).length&&i[i.length-1])&&(6===e[0]||2===e[0])){s=0;continue}if(3===e[0]&&(!i||e[1]>i[0]&&e[1]<i[3])){s.label=e[1];break}if(6===e[0]&&s.label<i[1]){s.label=i[1],i=e;break}if(i&&s.label<i[2]){s.label=i[2],s.ops.push(e);break}i[2]&&s.ops.pop(),s.trys.pop();continue}e=r.call(n,s)}catch(t){e=[6,t],o=0}finally{a=i=0}if(5&e[0])throw e[1];return{value:e[0]?e[1]:void 0,done:!0}}([e,t])}}};!function(t){var e=function(t,e,n,r,a){this.network=t,this.contractAddress=e,this.contractAbiUrl=n,this.tokenAddress=r,this.tokenContractAbiUrl=a};t.GatewayConfigObject=e,t.EventType={PaymentMadeEvent:"PaymentMadeEvent",WithdrawGatewayFundsEvent:"WithdrawGatewayFundsEvent",WithdrawPaymentEvent:"WithdrawPaymentEvent"},t.paymentStatus=function(t){return null==t||null==t?{}:{merchant:t.args._merchant,reference:t.args._reference,amountInWei:t.args._amount.c[0]}},t.withdrawalRecord=function(t){return null==t||null==t?{}:{merchant:t.args._walletAddress,amountInWei:t.args._amount.c[0]}}}(EthPaymentGateway||(EthPaymentGateway={}));var EthPaymentGateway,priceDiscoveryUrl="https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=GBP";!function(i){var t=function(){function t(t){this.web3Instance=new Web3(new Web3.providers.HttpProvider(t.network)),this.gatewayConfig=t}return t.prototype.getCostInWeiFromCostInGbp=function(n){return __awaiter(this,void 0,void 0,function(){var e;return __generator(this,function(t){switch(t.label){case 0:return[4,fetch(priceDiscoveryUrl)];case 1:return[4,t.sent().json()];case 2:return e=t.sent(),[2,this.calculateCost(n,e.GBP)]}})})},t.prototype.getPaymentStatusFromMerchantAndReference=function(a,o){return __awaiter(this,void 0,void 0,function(){var e,n,r;return __generator(this,function(t){switch(t.label){case 0:return[4,this.getEventsFromBlocks(i.EventType.PaymentMadeEvent,0,"latest")];case 1:for(e=t.sent(),n=0;n<e.length;n++)if((r=e[n]).args._merchant.toLowerCase()==a.toLowerCase()&&r.args._reference==o)return[2,i.paymentStatus(r)];return[2,i.paymentStatus(null)]}})})},t.prototype.getTransactionReceiptFromNetwork=function(e){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.web3Instance.eth.getTransactionReceipt(e)];case 1:return[2,t.sent()]}})})},t.prototype.getPaymentReceivedStatusFromHash=function(o){return __awaiter(this,void 0,void 0,function(){var e,n,r,a;return __generator(this,function(t){switch(t.label){case 0:return[4,this.getTransactionReceiptFromNetwork(o)];case 1:return(e=t.sent())?(n=e.blockNumber,[4,this.getEventsFromBlocks(i.EventType.PaymentMadeEvent,n,n)]):[2,i.paymentStatus(null)];case 2:return r=t.sent(),a=this.getEventFromListUsingTxHash(r,o),[2,i.paymentStatus(a)]}})})},t.prototype.getEventsFromBlocks=function(r,a,o){return __awaiter(this,void 0,void 0,function(){var e,n;return __generator(this,function(t){switch(t.label){case 0:return[4,this.getGatewayContract()];case 1:return e=t.sent(),n=null,r==i.EventType.PaymentMadeEvent&&(n=this.promisify(function(t){return e.PaymentMadeEvent({},{fromBlock:a,toBlock:o}).get(t)})),r==i.EventType.WithdrawPaymentEvent&&(n=this.promisify(function(t){return e.WithdrawPaymentEvent({},{fromBlock:a,toBlock:o}).get(t)})),r==i.EventType.WithdrawGatewayFundsEvent&&(n=this.promisify(function(t){return e.WithdrawGatewayFundsEvent({},{fromBlock:a,toBlock:o}).get(t)})),n?[4,n]:[2,null];case 2:return[2,t.sent()]}})})},t.prototype.getTokenBalance=function(e){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.getTokenContract()];case 1:return[4,t.sent().balanceOf(e)];case 2:return[2,t.sent()]}})})},t.prototype.withdrawMerchantBalance=function(e){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.getGatewayContract()];case 1:return[4,t.sent().withdrawPayment(e)];case 2:return[2,t.sent()]}})})},t.prototype.getGatewayContract=function(){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.getContract(this.gatewayConfig.contractAddress,this.gatewayConfig.contractAbiUrl)];case 1:return[2,t.sent()]}})})},t.prototype.getTokenContract=function(){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.getContract(this.gatewayConfig.tokenAddress,this.gatewayConfig.tokenContractAbiUrl)];case 1:return[2,t.sent()]}})})},t.prototype.getContract=function(n,r){return __awaiter(this,void 0,void 0,function(){var e;return __generator(this,function(t){switch(t.label){case 0:return[4,this.getContractAbi(r)];case 1:return e=t.sent(),[4,this.web3Instance.eth.contract(e).at(n)];case 2:return[2,t.sent()]}})})},t.prototype.getContractAbi=function(e){return __awaiter(this,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,fetch(e)];case 1:return[4,t.sent().json()];case 2:return[2,t.sent().abi]}})})},t.prototype.calculateCost=function(t,e){return t/e},t.prototype.getEventFromListUsingTxHash=function(t,e){for(var n=0;n<t.length;n++){var r=t[n];if(r.transactionHash==e)return r}return null},t.prototype.createWithdrawalEventArray=function(t){for(var e=[],n=0;n<t.length;n++){var r=t[n];e.push(i.withdrawalRecord(r))}return e},t.prototype.promisify=function(t){return new Promise(function(n,r){return t(function(t,e){t?r(t):n(e)})})},t}();i.EthPaymentGatewayBase=t}(EthPaymentGateway||(EthPaymentGateway={})),function(e){var n=new e.GatewayConfigObject("http://localhost:7545","0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f","http://127.0.0.1/src/gateway-contract-abi.json","0xe186255319a4c5354e57ae553811498a5129e790","http://127.0.0.1/src/erc20-contract-abi.json"),t=function(t){var r=this;this.getCostInWeiFromCostInGbp=function(e){return __awaiter(r,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.baseClass.getCostInWeiFromCostInGbp(e)];case 1:return[2,t.sent()]}})})},this.getTransactionReceiptFromNetwork=function(e){return __awaiter(r,void 0,void 0,function(){return __generator(this,function(t){return[2,this.baseClass.getTransactionReceiptFromNetwork(e)]})})},this.getPaymentStatusFromMerchantAndReference=function(e,n){return __awaiter(r,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.baseClass.getPaymentStatusFromMerchantAndReference(e,n)];case 1:return[2,t.sent()]}})})},this.getTokenBalance=function(e){return __awaiter(r,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.baseClass.getTokenBalance(e)];case 1:return[2,t.sent()]}})})},this.withdrawMerchantBalance=function(e){return __awaiter(r,void 0,void 0,function(){return __generator(this,function(t){switch(t.label){case 0:return[4,this.baseClass.withdrawMerchantBalance(e)];case 1:return[2,t.sent()]}})})},this.baseClass=new e.EthPaymentGatewayBase(n),this.merchant=t};e.EthPaymentGatewayMerchant=t}(EthPaymentGateway||(EthPaymentGateway={}));
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var EthPaymentGateway;
+(function (EthPaymentGateway) {
+    var GatewayConfigObject = /** @class */ (function () {
+        function GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenContractAbiUrl) {
+            this.network = network;
+            this.contractAddress = contractAddress;
+            this.contractAbiUrl = contractAbiUrl;
+            this.tokenAddress = tokenAddress;
+            // Should we really be routing html in this context --- re 
+            this.tokenContractAbiUrl = tokenContractAbiUrl;
+        }
+        return GatewayConfigObject;
+    }());
+    EthPaymentGateway.GatewayConfigObject = GatewayConfigObject;
+    EthPaymentGateway.EventType = {
+        PaymentMadeEvent: "PaymentMadeEvent",
+        WithdrawGatewayFundsEvent: "WithdrawGatewayFundsEvent",
+        WithdrawPaymentEvent: "WithdrawPaymentEvent"
+    };
+    function paymentStatus(paymentEvent) {
+        if (paymentEvent == undefined || paymentEvent == null) {
+            return {};
+        }
+        return { merchant: paymentEvent.args._merchant,
+            reference: paymentEvent.args._reference,
+            amountInWei: paymentEvent.args._amount.c[0] }; // !!!! afaict this won't scale to big numbers... need to use big number
+    }
+    EthPaymentGateway.paymentStatus = paymentStatus;
+    function withdrawalRecord(merchantWithdrawalEvent) {
+        if (merchantWithdrawalEvent == undefined || merchantWithdrawalEvent == null) {
+            return {};
+        }
+        return { merchant: merchantWithdrawalEvent.args._walletAddress,
+            amountInWei: merchantWithdrawalEvent.args._amount.c[0] };
+    }
+    EthPaymentGateway.withdrawalRecord = withdrawalRecord;
+})(EthPaymentGateway || (EthPaymentGateway = {}));
+///<reference path="EthPaymentGatewayModels.ts"/>
+var Web3;
+var priceDiscoveryUrl = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=GBP";
+var EthPaymentGateway;
+(function (EthPaymentGateway) {
+    var EthPaymentGatewayBase = /** @class */ (function () {
+        function EthPaymentGatewayBase(config) {
+            //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
+            this.web3Instance = new Web3(Web3.currentProvider);
+            this.gatewayConfig = config;
+        }
+        /*
+            Read or retrieve data functions
+        */
+        EthPaymentGatewayBase.prototype.getCostInWeiFromCostInGbp = function (amountInGbp) {
+            return __awaiter(this, void 0, void 0, function () {
+                var response, data, price;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, fetch(priceDiscoveryUrl)];
+                        case 1:
+                            response = _a.sent();
+                            return [4 /*yield*/, response.json()];
+                        case 2:
+                            data = _a.sent();
+                            price = this.calculateCost(amountInGbp, data.GBP);
+                            return [2 /*return*/, price];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getPaymentStatusFromMerchantAndReference = function (merchant, reference) {
+            return __awaiter(this, void 0, void 0, function () {
+                var events, e, event_1;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getEventsFromBlocks(EthPaymentGateway.EventType.PaymentMadeEvent, 0, 'latest')];
+                        case 1:
+                            events = _a.sent();
+                            for (e = 0; e < events.length; e++) {
+                                event_1 = events[e];
+                                if (event_1.args._merchant.toLowerCase() == merchant.toLowerCase() && event_1.args._reference == reference) {
+                                    return [2 /*return*/, EthPaymentGateway.paymentStatus(event_1)];
+                                }
+                            }
+                            return [2 /*return*/, EthPaymentGateway.paymentStatus(null)];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getTransactionReceiptFromNetwork = function (txHash) {
+            return __awaiter(this, void 0, void 0, function () {
+                var txReceipt;
+                var _this = this;
+                return __generator(this, function (_a) {
+                    txReceipt = this.promisify(function (cb) { return _this.web3Instance.eth.getTransactionReceipt(txHash, cb); });
+                    return [2 /*return*/, txReceipt];
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getPaymentReceivedStatusFromHash = function (txHash) {
+            return __awaiter(this, void 0, void 0, function () {
+                var txReceipt, blockNumber, events, event;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getTransactionReceiptFromNetwork(txHash)];
+                        case 1:
+                            txReceipt = _a.sent();
+                            if (!txReceipt) {
+                                return [2 /*return*/, EthPaymentGateway.paymentStatus(null)];
+                            }
+                            blockNumber = txReceipt.blockNumber;
+                            return [4 /*yield*/, this.getEventsFromBlocks(EthPaymentGateway.EventType.PaymentMadeEvent, blockNumber, blockNumber)];
+                        case 2:
+                            events = _a.sent();
+                            event = this.getEventFromListUsingTxHash(events, txHash);
+                            return [2 /*return*/, EthPaymentGateway.paymentStatus(event)];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getEventsFromBlocks = function (eventType, fromBlock, toBlock) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, eventsCallback, events;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getGatewayContract()];
+                        case 1:
+                            contract = _a.sent();
+                            eventsCallback = null;
+                            if (eventType == EthPaymentGateway.EventType.PaymentMadeEvent) {
+                                eventsCallback = this.promisify(function (cb) { return contract.PaymentMadeEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb); });
+                            }
+                            if (eventType == EthPaymentGateway.EventType.WithdrawPaymentEvent) {
+                                eventsCallback = this.promisify(function (cb) { return contract.WithdrawPaymentEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb); });
+                            }
+                            if (eventType == EthPaymentGateway.EventType.WithdrawGatewayFundsEvent) {
+                                eventsCallback = this.promisify(function (cb) { return contract.WithdrawGatewayFundsEvent({}, { fromBlock: fromBlock, toBlock: toBlock }).get(cb); });
+                            }
+                            if (!eventsCallback) {
+                                return [2 /*return*/, null];
+                            }
+                            return [4 /*yield*/, eventsCallback];
+                        case 2:
+                            events = _a.sent();
+                            return [2 /*return*/, events];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getTokenBalance = function (address) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getTokenContract()];
+                        case 1:
+                            contract = _a.sent();
+                            this.promisify(function (cb) { return contract.totalSupply(cb); }).then(function (val) {
+                                console.log('total supply: ' + val);
+                            });
+                            result = this.promisify(function (cb) { return contract.balanceOf(address, cb); });
+                            //let result: number = await contract.balanceOf(address);
+                            return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.balanceOfGateway = function (address) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract, result;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getGatewayContract()];
+                        case 1:
+                            contract = _a.sent();
+                            result = this.promisify(function (cb) { return contract.balanceOf(address, cb); });
+                            //let result: number = await contract.balanceOf(address);
+                            return [2 /*return*/, result];
+                    }
+                });
+            });
+        };
+        /*
+            Withdrawal methods
+        */
+        EthPaymentGatewayBase.prototype.withdrawMerchantBalance = function (merchant) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contract;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getGatewayContract()];
+                        case 1:
+                            contract = _a.sent();
+                            //return await contract.withdrawPayment(merchant);
+                            return [2 /*return*/, this.promisify(function (cb) { return contract.withdrawPayment(merchant, cb); })];
+                    }
+                });
+            });
+        };
+        /*
+            Utility methods
+        */
+        /// Contract
+        EthPaymentGatewayBase.prototype.getGatewayContract = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getContract(this.gatewayConfig.contractAddress, this.gatewayConfig.contractAbiUrl)];
+                        case 1: return [2 /*return*/, _a.sent()];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getTokenContract = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getContract(this.gatewayConfig.tokenAddress, this.gatewayConfig.tokenContractAbiUrl)];
+                        case 1: return [2 /*return*/, _a.sent()];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getContract = function (address, abiUrl) {
+            return __awaiter(this, void 0, void 0, function () {
+                var contractAbi, contract;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.getContractAbi(abiUrl)];
+                        case 1:
+                            contractAbi = _a.sent();
+                            return [4 /*yield*/, this.web3Instance.eth.contract(contractAbi).at(address)];
+                        case 2:
+                            contract = _a.sent();
+                            return [2 /*return*/, contract];
+                    }
+                });
+            });
+        };
+        EthPaymentGatewayBase.prototype.getContractAbi = function (abiUrl) {
+            return __awaiter(this, void 0, void 0, function () {
+                var response, data;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, fetch(abiUrl)];
+                        case 1:
+                            response = _a.sent();
+                            return [4 /*yield*/, response.json()];
+                        case 2:
+                            data = _a.sent();
+                            return [2 /*return*/, data.abi];
+                    }
+                });
+            });
+        };
+        /// Functional
+        EthPaymentGatewayBase.prototype.calculateCost = function (unitCostPerItem, unitsPerEth) {
+            var costInEth = unitCostPerItem / unitsPerEth;
+            return costInEth;
+        };
+        EthPaymentGatewayBase.prototype.getEventFromListUsingTxHash = function (events, txHash) {
+            for (var e = 0; e < events.length; e++) {
+                var event_2 = events[e];
+                if (event_2.transactionHash == txHash) {
+                    return event_2;
+                }
+            }
+            return null;
+        };
+        EthPaymentGatewayBase.prototype.createWithdrawalEventArray = function (events) {
+            var eventArray = [];
+            for (var e = 0; e < events.length; e++) {
+                var event_3 = events[e];
+                eventArray.push(EthPaymentGateway.withdrawalRecord(event_3));
+            }
+            return eventArray;
+        };
+        EthPaymentGatewayBase.prototype.promisify = function (inner) {
+            return new Promise(function (resolve, reject) {
+                return inner(function (err, res) {
+                    if (err) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(res);
+                    }
+                });
+            });
+        };
+        return EthPaymentGatewayBase;
+    }());
+    EthPaymentGateway.EthPaymentGatewayBase = EthPaymentGatewayBase;
+})(EthPaymentGateway || (EthPaymentGateway = {}));
+///<reference path="EthPaymentGatewayBase.ts"/>
+var EthPaymentGateway;
+(function (EthPaymentGateway) {
+    var network = "http://localhost:7545";
+    var contractAddress = "0x21b072d12ae68fc4ca02e3fea7a12bf5e001e79f";
+    var contractAbiUrl = "http://127.0.0.1/src/gateway-contract-abi.json";
+    var tokenAddress = "0xe186255319a4c5354e57ae553811498a5129e790";
+    var tokenAbiUrl = "http://127.0.0.1/src/erc20-contract-abi.json";
+    var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    var EthPaymentGatewayMerchant = /** @class */ (function () {
+        function EthPaymentGatewayMerchant(merchant) {
+            var _this = this;
+            this.getCostInWeiFromCostInGbp = function (amountInGbp) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseClass.getCostInWeiFromCostInGbp(amountInGbp)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            }); }); };
+            this.getTransactionReceiptFromNetwork = function (txHash) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                return [2 /*return*/, this.baseClass.getTransactionReceiptFromNetwork(txHash)];
+            }); }); };
+            this.getPaymentStatusFromMerchantAndReference = function (merchant, reference) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseClass.getPaymentStatusFromMerchantAndReference(merchant, reference)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            }); }); };
+            this.getTokenBalance = function (address) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseClass.getTokenBalance(address)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            }); }); };
+            this.withdrawMerchantBalance = function (merchant) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.baseClass.withdrawMerchantBalance(merchant)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            }); }); };
+            this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase(gatewayConfig);
+            this.merchant = merchant;
+        }
+        return EthPaymentGatewayMerchant;
+    }());
+    EthPaymentGateway.EthPaymentGatewayMerchant = EthPaymentGatewayMerchant;
+})(EthPaymentGateway || (EthPaymentGateway = {}));

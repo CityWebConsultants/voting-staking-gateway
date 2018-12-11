@@ -1,19 +1,10 @@
 namespace EthPaymentGateway{
     export class GatewayConfigObject{
-        network: string;
-        contractAddress: string;
-        contractAbiUrl: string;
-        tokenAddress: string;
-        tokenContractAbiUrl: string;
-
-        constructor(network: string, contractAddress: string, contractAbiUrl: string, tokenAddress: string, tokenContractAbiUrl: string){
-
-            this.network = network;
-            this.contractAddress = contractAddress;
-            this.contractAbiUrl = contractAbiUrl;
-            this.tokenAddress = tokenAddress;
-            this.tokenContractAbiUrl = tokenContractAbiUrl;            
-        }
+        readonly network: string = 'https://localhost:7545';
+        readonly contractAddress: string = '0xb469690cc97d84bf98098262fbe9a0f3e21fc7fc';
+        readonly contractAbiUrl: string = 'abis/GatewayERC20Contract.json';
+        readonly tokenAddress: string = '0x8c951fe19dbf212ae4c57198891ad9dd5f446d1c'
+        readonly tokenContractAbiUrl: string = 'abis/PaymentGatewayContract.json';
     }
 
     export var EventType: any = {
@@ -29,7 +20,7 @@ namespace EthPaymentGateway{
 
         return {merchant: paymentEvent.args._merchant, 
                 reference: paymentEvent.args._reference,
-                amountInWei: paymentEvent.args._amount.c[0] };
+                amountInWei: paymentEvent.args._amount.c[0] }; // !!!! afaict this won't scale to big numbers... need to use big number
     }   
 
     export function withdrawalRecord(merchantWithdrawalEvent: any){

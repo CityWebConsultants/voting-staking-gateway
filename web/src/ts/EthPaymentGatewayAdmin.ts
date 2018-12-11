@@ -1,24 +1,19 @@
 ///<reference path="EthPaymentGatewayBase.ts"/>
 
 namespace EthPaymentGateway{
-    /*const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
-    const tokenAddress: string = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";*/
 
-    const network: string = "http://127.0.0.1:7545";
-    const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
-    const tokenAddress: string = "0x70d164aaa79495FA60FdA1eEd7c8fa945F2FbE73";
-
-    const contractAbiUrl: string = "/abis/PaymentGatewayContract.json";
-    const tokenAbiUrl: string = "/abis/erc20-contract-abi.json";
-
-    const gatewayConfig: GatewayConfigObject = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    // const network = process.env.ETHNODEURL || ""
+    // const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    // const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    // const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    // const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
+    // const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
 
     export class EthPaymentGatewayAdmin{
         baseClass: EthPaymentGatewayBase;
 
         constructor(){
-            this.baseClass = new EthPaymentGatewayBase(gatewayConfig);
+            this.baseClass = new EthPaymentGatewayBase();
         }
 
         /*
@@ -48,8 +43,8 @@ namespace EthPaymentGateway{
 
         async transferGateway(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            //let result: any = await contract.issueTokens(address, amount);
-            let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
+            let result: any = await contract.issueTokens(address, amount);
+            //let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
             return result;
         }
 

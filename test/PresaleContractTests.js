@@ -14,7 +14,8 @@ var tokenCostInWei = 2600000000; // $0.75 = 2600000 wei ?
 // what is the purpose of the minimum spend
 var minimumSpend = 340; // $100 = 340 finney ?
 
-// 
+// @todo this needs all tests running and more of them.
+// @todo make a list of above
 contract("PreSale - Test", function(accounts){
     let gatewayContract;
     let tokenContract;

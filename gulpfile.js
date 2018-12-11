@@ -1,9 +1,10 @@
-var gulp = require('gulp');
-var ts = require('gulp-typescript');
-var uglify = require('gulp-uglify');
-var pump = require('pump');
+const gulp = require('gulp')
+const ts = require('gulp-typescript')
+const uglify = require('gulp-uglify')
+const pump = require('pump')
+const copy = require('gulp-copy')
 
-gulp.task('client', function(cb){
+gulp.task('client', (cb) => {
     pump([ 
         gulp.src('web/src/ts/EthPaymentGatewayClient.ts'),
         ts({
@@ -16,7 +17,7 @@ gulp.task('client', function(cb){
     ], cb);
 });
 
-gulp.task('merchant', function(cb){
+gulp.task('merchant', (cb) => {
     pump([ 
         gulp.src('web/src/ts/EthPaymentGatewayMerchant.ts'),
         ts({
@@ -29,7 +30,7 @@ gulp.task('merchant', function(cb){
     ], cb);
 });
 
-gulp.task('admin', function(cb){
+gulp.task('admin', (cb) => {
     pump([ 
         gulp.src('web/src/ts/EthPaymentGatewayAdmin.ts'),
         ts({
@@ -41,3 +42,8 @@ gulp.task('admin', function(cb){
         gulp.dest('web/src/js')
     ], cb);
 });
+
+gulp.task('copyArtifacts', () => {
+    gulp.src(['build/contracts/PaymentGatewayContract.json', 'build/contracts/GatewayERC20Contract.json'])
+    .pipe(copy('web/src/abis',  { prefix: 2 }))
+})
