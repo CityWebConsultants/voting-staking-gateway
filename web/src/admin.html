@@ -78,31 +78,6 @@
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <div class="card-title">Issue tokens</div>
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">Recipient address</span>
-                </div>
-                <input type="text" class="form-control" data-bind="value: tokenRecipientAddress"/>
-            </div>
-            </br>            
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">No of tokens</span>
-                </div>
-                <input type="text" class="form-control" data-bind="value: tokenAmountToIssue"/>
-            </div> 
-            </br>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: issueTokens}">Issue tokens</button>
-        </br>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getTokenIssueEvents}">Check token issue events</button> 
-        </br>
-        <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: getBalance}">Check token balance</button>
-            <button type="button" class="btn btn-outline-secondary" data-bind="event: { click: balanceOfGateway}">Check token balance (gateway)</button>
-        </div>
-    </div>
 
     <div class="card">
         <div class="card-body">
@@ -175,11 +150,11 @@
                     console.log(result);
                 }    
                 
-        self.issueTokens = async function(){
-            console.log("issue tokens");
-            let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
-            console.log("tokens issued");
-        }
+        // self.issueTokens = async function(){
+        //     console.log("issue tokens");
+        //     let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
+        //     console.log("tokens issued");
+        // }
 
       self.transfer = async function(){
         console.log("transfer tokens");
@@ -188,11 +163,11 @@
       }
 
 
-        self.getTokenIssueEvents = async function(){
-            console.log("token issue events..");
-            let events = await self.gateway.getTokenIssueEvents();
-            console.log(events);
-        }
+        // self.getTokenIssueEvents = async function(){
+        //     console.log("token issue events..");
+        //     let events = await self.gateway.getTokenIssueEvents();
+        //     console.log(events);
+        // }
 
         self.getBalance = async function(){
             console.log("Get balance...");

@@ -22,30 +22,22 @@ namespace EthPaymentGateway{
         async addMerchant(address: string, name: string){
             let contract: any = await this.baseClass.getGatewayContract();
             //let result: any = await contract.addMerchant(address, name);
-
+ 
             let result = this.baseClass.promisify(cb => contract.addMerchant(address, name, cb))
             return result;
         }  
 
-        async issueTokens(address: string, amount: number){
-            let contract: any = await this.baseClass.getGatewayContract();
-            //let result: any = await contract.issueTokens(address, amount);
-            let result = this.baseClass.promisify(cb => contract.issueTokens(address, amount, cb))
-            return result;          
-        }
-
         async transfer(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            //let result: any = await contract.issueTokens(address, amount);
             let result = this.baseClass.promisify(cb => contract.transfer(address, amount, cb))
             return result;
         }
 
         async transferGateway(address: string, amount: number){
             let contract: any = await this.baseClass.getTokenContract();
-            let result: any = await contract.issueTokens(address, amount);
-            //let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
-            return result;
+            // @todo web3 instantiation needs fixed
+            // let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
+            // return result;
         }
 
         withdrawMerchantBalance = async (merchant: string) => { return await this.baseClass.withdrawMerchantBalance(merchant); } 
@@ -78,7 +70,6 @@ namespace EthPaymentGateway{
 
         async getTokenContractAddress(){
             let contract: any = await this.baseClass.getGatewayContract();
-            //let tx: any = await contract.withdrawGatewayFees();
             let tx = this.baseClass.promisify(cb => contract.getTokenContractAddress( cb));
             return tx;
         }
@@ -105,13 +96,6 @@ namespace EthPaymentGateway{
         async getMerchantWithdrawalHistory(){
             let events: any = await this.baseClass.getEventsFromBlocks(EventType.WithdrawPaymentEvent, 0, 'latest');
             return this.baseClass.createWithdrawalEventArray(events);
-        }        
-
-        async getTokenIssueEvents(){
-            let contract: any = await this.baseClass.getTokenContract();
-            let eventsCallback: any = this.baseClass.promisify(cb => contract.IssueTokens({}, { fromBlock: 0, toBlock: 'latest' }).get(cb));
-            let events: any = await eventsCallback;
-            return events;          
-        }          
+        }              
     }
 }

@@ -141,46 +141,6 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
         assert.equal(withdrawalUnsuccessful, true, "Withdraw merchant funds using random account possible");
     });    
     
-    /*
-        Token Functionality
-    */
-    // @todo have a look at token issuance and see if this should go or not
-    it("Token Functionality - As Owner, given an incorrect address and correct amount, should not issue tokens", async function(){
-        let tokenBalance = 0;
-        try{
-            await gatewayContract.issueTokens(test_invalidAddress, test_validAmountOfTokens);
-            let tokenContract = await GatewayERC20Contract.deployed();
-            let balance = await tokenContract.balanceOf(test_invalidAddress);
-            tokenBalance = balance.c[0];
-        }
-        catch(error){ }
-
-        assert.equal(tokenBalance, 0, "Token balance is more than 0 for invalid address");
-    });
-   
-    it("Token Functionality - As Owner, given a correct address and invalid token amount, should fail issue", async function(){
-        let tokenIssueFail = false;
-        try{
-            await gatewayContract.issueTokens(clientAddress, test_invalidAmountOfTokens);
-        }
-        catch(error){
-            tokenIssueFail = true;
-        }
-
-        assert.equal(tokenIssueFail, true, "Issued tokens with when given an invalid amount ("+test_invalidAmountOfTokens+")");
-    });
-
-    it("Token Functionality - As NOT Owner, given a correct address and amount, should not issue tokens", async function(){
-        let issueTokensUnsuccessful = false;
-        try{
-            await gatewayContract.issueTokens(clientAddress, test_validAmountOfTokens, {from:clientAddress});
-        }
-        catch(error){
-            issueTokensUnsuccessful = true;
-        }
-
-        assert.equal(issueTokensUnsuccessful, true, "Able to issue tokens when not owner");
-    });    
 });
 
 

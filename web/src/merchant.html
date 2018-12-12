@@ -95,17 +95,6 @@
                     console.log(result);
                 }    
                 
-        self.issueTokens = async function(){
-            console.log("issue tokens");
-            let tokenIssue = await self.gateway.issueTokens(self.tokenRecipientAddress(), self.tokenAmountToIssue());
-            console.log("tokens issued");
-        }
-
-        self.getTokenIssueEvents = async function(){
-            console.log("token issue events..");
-            let events = await self.gateway.getTokenIssueEvents();
-            console.log(events);
-        }
 
         self.getBalance = async function(){
             console.log("Get balance...");
