@@ -33,21 +33,21 @@ contract Presale {
      * Setup the owner
      */
     constructor(
-        address addressOfTokenUsedAsReward,
+        address addressOfTokenUsedAsReward, // just call this token
         address ifSuccessfulSendTo,
         address ifSuccessfulSendToTech,
         uint256 fundingGoalInEthers, // no longer used
         uint256 durationInMinutes,
-        uint256 etherCostOfEachToken,
+        uint256 _costOfEachToken,
         uint256 _minimumSpend
     ) public {
         tokenContract = GatewayERC20Contract(addressOfTokenUsedAsReward);
         startTime = now;
         beneficiary = ifSuccessfulSendTo;
         techFund = ifSuccessfulSendToTech;
-        deadline = now + durationInMinutes * 1 minutes; // consider using blocktime // should also set a start time
-        price = etherCostOfEachToken * 1 wei; // uhm!?
-        minimumSpend = _minimumSpend * 1 finney; // uhm, why don't we just use wei? this make
+        deadline = now + (durationInMinutes * 1 minutes);
+        price = _costOfEachToken; 
+        minimumSpend = _minimumSpend;
     }
 
     function getTokenContractAddress() 
@@ -143,12 +143,10 @@ contract Presale {
         }
 
         if (fundingGoalReached && beneficiary == msg.sender) {
-            // Why divided by 3 and 4 
-            // these values should be set as constants 
-            // elsewhere or in here
+            // @todo useSafeMath
             beneficiary.transfer(amountRaised / 4 * 3);
             techFund.transfer(amountRaised / 4);
-            emit FundTransfer(beneficiary, amountRaised / 3, false);
+            emit FundTransfer(beneficiary, amountRaised / 4 * 3, false);
             emit FundTransfer(techFund, amountRaised / 4, false);
             // } else {
             //     // why would the transfer fail and why would we unlock it, and how would that unlock it -- it is already defaulted to fales
