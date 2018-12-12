@@ -5,6 +5,7 @@ namespace EthPaymentGateway{
         readonly contractAbiUrl: string = 'abis/GatewayERC20Contract.json';
         readonly tokenAddress: string = '0x8c951fe19dbf212ae4c57198891ad9dd5f446d1c'
         readonly tokenContractAbiUrl: string = 'abis/PaymentGatewayContract.json';
+        readonly someValue = '/* @echo FOO */';
     }
 
     export var EventType: any = {

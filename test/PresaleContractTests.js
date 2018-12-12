@@ -6,13 +6,13 @@ var test_symbol = "BUD";
 var test_name = "eBudz";
 var decimals = 6;
 var validAmountOfTokens = 100;
-var invalidAmountOfTokens = -1;
+var invalidAmountOfTokens = -1; // why are negative numbers being tested. Just use safemath
 var validAmountOfWeiToPay = web3.toWei(10,'ether');
 var fundingGoal = 10;
 var saleDurationInMins = 1; // minutes
 var tokenCostInWei = 2600000000; // $0.75 = 2600000 wei ?
 // what is the purpose of the minimum spend
-var minimumSpend = 340; // $100 = 340 finney ?
+var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
 
 // @todo this needs all tests running and more of them.
 // @todo make a list of above
@@ -30,10 +30,10 @@ contract("PreSale - Test", function(accounts){
     // cos it wasn't coded that way.... doh!...
     beforeEach('setup and deploy gateway contract', async function() {
         gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
-        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, '420000000', 'BUD', 'eBudz');
+        tokenContract = await GatewayERC20Contract.new(gatewayContract.address, '420000000000000', 'BUD', 'eBudz');
         presaleContract = await PresaleContract.new(tokenContract.address, saleBeneficiary, techBeneficiary, fundingGoal, saleDurationInMins, tokenCostInWei,  minimumSpend);
         await tokenContract.transfer(presaleContract.address, 770000000);
-    })    
+    })
 
     it("Presale address", async function(){
         let tokenAddress = await presaleContract.getTokenContractAddress();

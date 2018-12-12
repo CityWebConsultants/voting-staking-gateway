@@ -22,7 +22,7 @@ contract Staking is StakingInterface, MultiSigWallet {
 
     uint256 public availableBonusTokens;
     // 30 days in seconds
-    uint256 public constant month = 2592000;
+    uint256 public constant month = 30 days; //2592000;
 
     mapping (address => StakeEntry[]) public stakesFor;
 
