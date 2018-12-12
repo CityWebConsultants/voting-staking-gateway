@@ -4,7 +4,6 @@ const ts = require('gulp-typescript')
 const uglify = require('gulp-uglify')
 const pump = require('pump')
 const copy = require('gulp-copy')
-
 const preprocess = require("gulp-preprocess")
 
 gulp.task("set-env", () => {
