@@ -1,8 +1,18 @@
+require('dotenv').config({path: __dirname + '/app-config.env'})
 const gulp = require('gulp')
 const ts = require('gulp-typescript')
 const uglify = require('gulp-uglify')
 const pump = require('pump')
 const copy = require('gulp-copy')
+
+const preprocess = require("gulp-preprocess")
+
+gulp.task("set-env", () => {
+    gulp
+      .src("web/src/ts/EthPaymentGatewayModels.ts",  {base: "./"})
+      .pipe(preprocess({ context:{}}))
+      .pipe(gulp.dest("./"))
+  });
 
 gulp.task('client', (cb) => {
     pump([ 

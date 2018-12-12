@@ -36,13 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var GatewayConfigObject = /** @class */ (function () {
-        function GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenContractAbiUrl) {
-            this.network = network;
-            this.contractAddress = contractAddress;
-            this.contractAbiUrl = contractAbiUrl;
-            this.tokenAddress = tokenAddress;
-            // Should we really be routing html in this context --- re 
-            this.tokenContractAbiUrl = tokenContractAbiUrl;
+        function GatewayConfigObject() {
+            this.network = 'https://localhost:7545';
+            this.contractAddress = '0xb469690cc97d84bf98098262fbe9a0f3e21fc7fc';
+            this.contractAbiUrl = 'abis/GatewayERC20Contract.json';
+            this.tokenAddress = '0x8c951fe19dbf212ae4c57198891ad9dd5f446d1c';
+            this.tokenContractAbiUrl = 'abis/PaymentGatewayContract.json';
         }
         return GatewayConfigObject;
     }());
@@ -76,10 +75,11 @@ var priceDiscoveryUrl = "https://min-api.cryptocompare.com/data/price?fsym=ETH&t
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
     var EthPaymentGatewayBase = /** @class */ (function () {
-        function EthPaymentGatewayBase(config) {
-            //this.web3Instance = new Web3(new Web3.providers.HttpProvider(config.network));
-            this.web3Instance = new Web3(Web3.currentProvider);
-            this.gatewayConfig = config;
+        function EthPaymentGatewayBase() {
+            this.gatewayConfig = new EthPaymentGateway.GatewayConfigObject();
+            // Take the provider from the browser or if not present config.
+            this.web3Instance = new Web3(Web3.currentProvider || new Web3.providers.HttpProvider(this.gatewayConfig.network));
+            // this.web3Instance = new Web3(Web3.currentProvider);
         }
         /*
             Read or retrieve data functions
@@ -325,19 +325,14 @@ var EthPaymentGateway;
     EthPaymentGateway.EthPaymentGatewayBase = EthPaymentGatewayBase;
 })(EthPaymentGateway || (EthPaymentGateway = {}));
 ///<reference path="EthPaymentGatewayBase.ts"/>
-// why do we use this reference thingy here? does deleting from ts folder affect compilation
 var EthPaymentGateway;
 (function (EthPaymentGateway) {
-    /*const network: string = "https://rinkeby.infura.io/v3/e418fc96660e461ba2979615bc2269ad";
-    const contractAddress: string = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
-    const tokenAddress: string = "0x9c2319ae355f40015899bf6aac586d4c3c9d35b3";*/
-    var network = "http://127.0.0.1:7545";
-    var contractAddress = "0x3ba0ed597573f9b1b962a70d920263a7f8750b35";
-    var tokenAddress = "0x70d164aaa79495FA60FdA1eEd7c8fa945F2FbE73";
-    // @todo copy in latest when building
-    var contractAbiUrl = "/abis/PaymentGatewayContract.json";
-    var tokenAbiUrl = "/abis/erc20-contract-abi.json";
-    var gatewayConfig = new EthPaymentGateway.GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
+    // const network = process.env.ETHNODEURL || ""
+    // const contractAddress = process.env.MERCHANTCONTRACTADDRESS || "0x";
+    // const contractAbiUrl = "abis/${process.env.MERCHANTCONTRACTNAME}/.json" || "";
+    // const tokenAddress = process.env.TOKENCONTRACTADDRESS  || "0x"
+    // const tokenAbiUrl =  "abis/${process.env.TOKENCONTRACTNAME}/.json" || ""; 
+    // const gatewayConfig = new GatewayConfigObject(network, contractAddress, contractAbiUrl, tokenAddress, tokenAbiUrl);
     var EthPaymentGatewayAdmin = /** @class */ (function () {
         function EthPaymentGatewayAdmin() {
             var _this = this;
@@ -377,7 +372,7 @@ var EthPaymentGateway;
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             }); }); };
-            this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase(gatewayConfig);
+            this.baseClass = new EthPaymentGateway.EthPaymentGatewayBase();
         }
         /*
             Merchant and token administration functions
@@ -391,20 +386,6 @@ var EthPaymentGateway;
                         case 1:
                             contract = _a.sent();
                             result = this.baseClass.promisify(function (cb) { return contract.addMerchant(address, name, cb); });
-                            return [2 /*return*/, result];
-                    }
-                });
-            });
-        };
-        EthPaymentGatewayAdmin.prototype.issueTokens = function (address, amount) {
-            return __awaiter(this, void 0, void 0, function () {
-                var contract, result;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.baseClass.getGatewayContract()];
-                        case 1:
-                            contract = _a.sent();
-                            result = this.baseClass.promisify(function (cb) { return contract.issueTokens(address, amount, cb); });
                             return [2 /*return*/, result];
                     }
                 });
@@ -426,17 +407,13 @@ var EthPaymentGateway;
         };
         EthPaymentGatewayAdmin.prototype.transferGateway = function (address, amount) {
             return __awaiter(this, void 0, void 0, function () {
-                var contract, result;
+                var contract;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
                         case 1:
                             contract = _a.sent();
-                            return [4 /*yield*/, contract.issueTokens(address, amount)];
-                        case 2:
-                            result = _a.sent();
-                            //let result = this.baseClass.promisify(cb => contract.gatewayTokenTransfer(web3.eth.accounts[0], address, amount, cb));
-                            return [2 /*return*/, result];
+                            return [2 /*return*/];
                     }
                 });
             });
@@ -522,23 +499,6 @@ var EthPaymentGateway;
                         case 1:
                             events = _a.sent();
                             return [2 /*return*/, this.baseClass.createWithdrawalEventArray(events)];
-                    }
-                });
-            });
-        };
-        EthPaymentGatewayAdmin.prototype.getTokenIssueEvents = function () {
-            return __awaiter(this, void 0, void 0, function () {
-                var contract, eventsCallback, events;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.baseClass.getTokenContract()];
-                        case 1:
-                            contract = _a.sent();
-                            eventsCallback = this.baseClass.promisify(function (cb) { return contract.IssueTokens({}, { fromBlock: 0, toBlock: 'latest' }).get(cb); });
-                            return [4 /*yield*/, eventsCallback];
-                        case 2:
-                            events = _a.sent();
-                            return [2 /*return*/, events];
                     }
                 });
             });

@@ -65,3 +65,6 @@ build/
 
 # TS build files
 web/src/ts/*.js
+
+# mac files
+.DS_Store

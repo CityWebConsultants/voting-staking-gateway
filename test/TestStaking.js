@@ -11,9 +11,11 @@ BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
 contract('Staking', function (accounts) {
 
     let bank, token, initialBalance, initialBankBalance, rate;
+    let signers = [accounts[7], accounts[8], accounts[9]];
     let alice = accounts[0];
     let admin = accounts[1];
     let bob = accounts[2];
+    let carol = accounts[3];
 
     const second = new BigNumber('1');
     const day = new BigNumber('86400');
@@ -27,7 +29,7 @@ contract('Staking', function (accounts) {
         initialBankBalance = 100000;
 
         token = await TokenMock.new();
-        bank = await Staking.new(token.address);
+        bank = await Staking.new(token.address, signers, '2', {from: accounts[7], gas: 4200000});
 
         await token.mint(admin, initialBankBalance);
         await token.mint(alice, initialBalance);
@@ -37,7 +39,7 @@ contract('Staking', function (accounts) {
         await token.balanceOf.call(bank.address);
         
     });
-    
+
     it("Should start with seeded amount", async () => {
         const bankBalance = await token.balanceOf.call(bank.address);
         assert.equal(bankBalance, initialBankBalance);
@@ -207,4 +209,39 @@ contract('Staking', function (accounts) {
     })
 
     it.skip("Should retrieve correct rates")
+
+
+    // MultiSig
+    // Avoid reimplementing tests written for gnosis multisig by proving we have an identical file
+    it("Should contain same multisig contract as gnosis multisig on master", async() => {
+        const fetch = require('node-fetch')
+        const fs = require('fs')
+
+        let gnosisMultiSigUrl = 'https://raw.githubusercontent.com/gnosis/MultiSigWallet/master/contracts/MultiSigWallet.sol'
+
+        const upstream = await fetch(gnosisMultiSigUrl).then(res => res.text())
+
+        fs.readFile(__dirname + '/../contracts/MultiSigWallet.sol', 'utf8', function read(err, local) {
+            if (err) {
+                throw err
+            }
+
+            assert.equal(local.toString().trim(), upstream.toString().trim())
+        });
+    })
+
+    // Our single use case
+    it("Should move funds using 2 of 3 sigs", async() => {
+        const bankBalanceBefore = await token.balanceOf.call(bank.address);
+        const tx = token.contract.transfer.getData(carol, bankBalanceBefore);
+        const submitted = await bank.submitTransaction(token.address, 0, tx, {from: signers[1]});
+        const txId = submitted.logs[0].args.transactionId;
+        await bank.confirmTransaction(txId, {from: signers[2]});
+
+        const bankBalanceAfter = await token.balanceOf.call(bank.address);
+        const carolBalance = await token.balanceOf.call(carol);
+
+        assert.equal(bankBalanceAfter.toString(), '0');
+        assert.deepEqual(carolBalance, bankBalanceBefore);
+    })
 })
