@@ -20,7 +20,7 @@ contract GatewayERC20Contract is ERC20, Ownable{
     
     // humho
     constructor(address _gatewayContract, uint256 _initialSupply, string _symbol, string _name)
-    ERC20(_initialSupply * 1000000, _name, 18, _symbol)
+    ERC20(_initialSupply, _name, 10, _symbol)
     public //internal?  
     {
         paymentGatewayAddress = _gatewayContract;
