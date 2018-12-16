@@ -15,7 +15,6 @@ contract ERC20 is ERC20Interface {
     string public name;
     uint8 public decimals;
     string public symbol;
-    // uint256 totalSupply;
 
     constructor(
         uint256 _initialAmount,

@@ -48,7 +48,7 @@ contract GatewayERC20Contract is ERC20, Ownable{
     }
 
     function gatewayTokenTransfer(address from, address to, uint tokens) public
-        callerIsGatewayContract() returns (bool success) {
+        callerIsGatewayContract() returns (bool success) { // no params passed so why ()
         //transfer(to, tokens)
         //or transferFrom
         require(hasSufficientBalanceForTransfer(from, tokens));
