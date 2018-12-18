@@ -99,14 +99,18 @@ contract("Crowdsale", function(accounts) {
         assert.equal(aliceBalanceBefore.toString(), '0', 'Balance should be 0');
         
         const sentTransaction = await sale.sendTransaction({from: alice, value: ethWeiValue});
-
+        const logs = sentTransaction.logs[0];
         const aliceBalanceAfter = await token.balanceOf(alice);
 
+        assert.equal(logs.event, 'Contribution');
+        assert.equal(logs.args.account, alice);
+        assert(logs.args.amount.equals(ethWeiValue));
+        assert(aliceBalanceAfter.equals(logs.args.tokens));
+        
         const tokens = tokensPurchased(ethWeiValue);
         const expected = tokens.add(weekOneBonus(tokens))
+
         assert(aliceBalanceAfter.equals(expected), 'Balance does not match expected amount');
-        // @todo test firing of event
-        // then don't have to after that
     });
 
     // wtf!!!! why would this work before and not now!????

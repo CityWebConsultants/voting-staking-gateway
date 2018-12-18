@@ -33,8 +33,8 @@ contract Crowdsale {
     // 
     event GoalReached(address indexed recipient, uint256 totalAmountRaised);
 
-    event Contribution(address indexed _account, uint256 _amount, uint256 _return);
-    event Withdrawal(address indexed _account, uint amount);
+    event Contribution(address indexed account, uint256 amount, uint256 tokens);
+    event Withdrawal(address indexed account, uint amount);
 
     /**
      * Constructor function
