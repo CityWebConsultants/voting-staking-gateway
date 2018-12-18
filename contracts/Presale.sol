@@ -77,14 +77,15 @@ contract Presale {
         uint256 amount = msg.value; 
         balanceOf[msg.sender] = balanceOf[msg.sender].add(amount);
         amountRaised = amountRaised.add(amount);
-    
-        // uint256 awarded = getRate(amount);
-        uint256 discount = getRate(amount);
 
-        // token.transfer(msg.sender, awarded);
-        token.transfer(msg.sender, discount / price);
-        // emit FundTransfer(msg.sender, awarded, true);
-        emit FundTransfer(msg.sender, discount, true);
+        // @todo improve logic with fewer vars
+        // perhaps discount as before?
+        uint256 tokens = amount.div(price);
+        uint256 bonusTokens = getBonus(tokens);
+        uint256 totalTokens = tokens + bonusTokens;
+
+        token.transfer(msg.sender, totalTokens);
+        emit FundTransfer(msg.sender, totalTokens, true);
         //        require(!crowdsaleClosed);
         // require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
         // uint256 amount = msg.value; 
@@ -93,7 +94,7 @@ contract Presale {
         
         // // Offer discount for volume
         // // should this also include the amount a user has already desposited?
-        // uint256 discount = getRate(amount);
+        // uint256 discount = getBonus(amount);
         // // should be using safe math here and assign variable before use (imo)
         // // is it because not have permission to do this?
         // // so are these actually minted first!!!???
@@ -128,7 +129,8 @@ contract Presale {
         }
         crowdsaleClosed = true;
     }
-
+    
+    // @todo break this apart in to two separate functions -- too make more testable and encasulate logic better
     /**
      * Withdraw the funds
      *
@@ -151,48 +153,38 @@ contract Presale {
             }
         }
 
-        // this relies on a single key to retrieve funds
-        // how could we improve this situation
         if (fundingGoalReached && beneficiary == msg.sender) {
             // 75% to project, 25% to tech fund
             uint256 benficiaryAllocation = address(this).balance.div(100).mul(75);
             uint256 techFundAllocation = address(this).balance.sub(benficiaryAllocation);
-            // do we need to assert that total amount is correct
-            // is it possible to get in to a situaiotn where can't withdarw
+
             beneficiary.transfer(benficiaryAllocation);
             techFund.transfer(techFundAllocation);
 
             emit FundTransfer(beneficiary, benficiaryAllocation, false);
             emit FundTransfer(techFund, techFundAllocation, false);
         }
-        // there was an else here that marked fund  ...
+        // there was an else here that marked fund  ... what was the idea
     }
 
-    // @todo the way this is used it is not getting a rate but actually calculating 
-    // should be get total award
-    function getRate(uint256 _amount) 
-    internal
+    // Need to check this against the whitepaper
+    function getBonus(uint256 _tokens)
+    public
     view  
     returns(uint256)
     {
-        // easier to use an array for this logic... 
-        // divide and multiple 
-        // perhaps we should pass in an array of blocktimes 
-        // double seems a bit nuts -- it's a bit extreme
-        // If this is a presale, then how will the sale be managed...
-        // blocknumber...
-        // pass in two arrays. One containing 
-        // should we use safemath for time too
-        if (block.timestamp < startTime + 1 weeks ) {
-            // return _amount * 2;
-            return _amount.mul(2); //number of tokens in week 1
+        // 20% bonus in first week
+        if (block.timestamp <= startTime.add(1 weeks)) {
+            return _tokens.div(100).mul(20); //number of tokens in week 1
         //} else if (startTime + 2 weeks > now) {
         //        return 750; //number of tokens in week 2
         //} else if (startTime + 3 weeks > now) {
         //        return 500; //number of tokens in week 3
-        } else {
-            return _amount + _amount.div(10).mul(3);
-            //return _amount + ((_amount / 10) * 3);
+        } else if (block.timestamp > startTime.add(1 weeks) && block.timestamp <= startTime.add(2 weeks)) {
+            return _tokens.div(100).mul(10);
+        }
+        else {
+            return 0;
         }
     }
 }
