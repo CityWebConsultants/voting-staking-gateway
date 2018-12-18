@@ -1,7 +1,7 @@
 var Migrations = artifacts.require("./Migrations.sol");
 var PaymentGatewayContract = artifacts.require("./PaymentGatewayContract.sol");
 var GatewayERC20Contract = artifacts.require("./GatewayERC20Contract.sol");
-var Presale = artifacts.require("./Presale.sol");
+var Crowdsale = artifacts.require("./Crowdsale.sol");
 var Staking = artifacts.require('./Staking.sol');
 
 var gatewayFee = 4;
@@ -21,7 +21,7 @@ module.exports = function(deployer) {
       .then((erc20) => {
         deployer.deploy(Staking, erc20.address);
         return deployer.deploy(
-          Presale, 
+          Crowdsale, 
           erc20.address, 
           gatewayBeneficiary, 
           techFundAddr, 
@@ -30,7 +30,7 @@ module.exports = function(deployer) {
           tokenCostInEth, 
           minimumSpend);
       })
-      .then((presale) => {
+      .then((crowdale) => {
       // return deployer.deploy(Staking, erc20.address);
       })
    })

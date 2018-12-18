@@ -36,10 +36,6 @@ const weekOneBonus = (amount) => amount.div(100).times(20).toFixed(0);
 const weekTwoBonus = (amount) => amount.div(100).times(10).toFixed(0);
 const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 
-// @todo set max amount eth in settings for ganache-cli on autotest
-// set tests to run on an opens source tool via github
-// delete these
-
 const day = new BN('86400');
 //@todo change this to use millseconds and measure in days.
 //@todo or should we just specifiy an end time
@@ -48,8 +44,7 @@ const saleDurationInMins = 43200; // 30 days
 const fundingGoal = 0;
 var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
 // token cost should be derived from contract
-// @todo this needs all tests running and more of them.
-// @todo make a list of above
+
 // @todo tests for
 // user withdrawal on inadequate funds raised
 // admin withdrawal on success
@@ -85,20 +80,19 @@ contract("Crowdsale", function(accounts) {
         await token.transfer(sale.address, icoSupply);
     })
 
-
     it("Should have correct settings at start of sale", async () => {
-        assert.equal(await sale.token(), token.address, "Token address is not as expected");
-        assert.equal(await web3.eth.getBalance(sale), 0, "Balance is not equal");
+        assert.equal(await sale.token.call(), token.address, "Token address is not as expected");
+        assert.equal(await web3.eth.getBalance(sale.address), 0, "Balance is not equal");
+        assert(icoSupply.equals(await token.balanceOf(sale.address)), "token supply doesn't match");
+    })
+
+    it("Should be finalised at end date", async () => {
 
     })
 
-
-//       // Checking initial state? why?
-//   it("Get presale ETH balance", async () => {
-//     // let balance = await presale.balance();
-//     // balance = balance.toString();
-   
-//   });
+    it("Should withdraw funds at end of successful crowdsale", async () => {
+        
+    })
 
     it("Should return correct bonus amounts", async () => {
         assert.equal(await sale.getBonus.call(100), '20')
@@ -106,8 +100,6 @@ contract("Crowdsale", function(accounts) {
         assert.equal(await sale.getBonus.call(100), 10);
         // could also test our own helper function matches
     })
-
-    // assert all the values should have together in stead of habing lots of separate stuff
 
     // the only useful things therse tests do is check one successful and one unsuccessful transefr
     // thats not nearly enough coverage
