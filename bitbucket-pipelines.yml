@@ -15,5 +15,5 @@ pipelines:
           - npm install -g truffle
           - npm install -g ganache-cli
           #- ganache-cli --port=7545 --blockTime=1 2>&1 > ganache-output.log &
-          - ganache-cli --port=7545 2>&1 > ganache-output.log &
+          - ganache-cli --port=7545 --defaultBalanceEther="100000000000000000" 2>&1 > ganache-output.log &
           - truffle test --network=development
