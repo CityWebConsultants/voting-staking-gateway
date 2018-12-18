@@ -29,13 +29,11 @@ const tokensPerEth = (ethDollarValue.div(tokenDollarValue)).shift(tokenDecimals)
 const ethWeiValue = new BN(web3.toWei('1', 'ether'));
 const tokenCostInWei = ethWeiValue.dividedToIntegerBy(tokensPerEth);
 
-// this ignores bonus
-const maxAmountEthCanRaise = icoSupply.dividedToIntegerBy(tokensPerEth);
-maxAmountEthCanRaise;
-// bonus times need updated
+// this ignores bonus'
+// const maxAmountEthCanRaise = icoSupply.dividedToIntegerBy(tokensPerEth);
 
-const oneWeekBonus = (amount) => amount.div(100).times(20).toFixed(0);
-const laterBonus = (amount) => amount.div(100).times(10).toFixed(0);
+const weekOneBonus = (amount) => amount.div(100).times(20).toFixed(0);
+const weekTwoBonus = (amount) => amount.div(100).times(10).toFixed(0);
 const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 
 // @todo set max amount eth in settings for ganache-cli on autotest
@@ -43,10 +41,11 @@ const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 // delete these
 
 const day = new BN('86400');
-//@todo fix token decinal places...
-// @todo check other values are updated correctly -- eg balance of 
-//var tokenCostInWei = 2600000000; // $0.75 = 2600000 wei ?
-// what is the purpose of the minimum spend
+//@todo change this to use millseconds and measure in days.
+//@todo or should we just specifiy an end time
+const saleDurationInMins = 43200; // 30 days
+
+const fundingGoal = 0;
 var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
 // token cost should be derived from contract
 // @todo this needs all tests running and more of them.
@@ -63,10 +62,13 @@ var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
     // need to calculate how many ether
     // @todo check our boundaries
 
+
+
+
 contract("Crowdsale", function(accounts) {
     let gatewayContract;
     let token;
-    let presale; // change the name of this
+    let sale;
     let alice = accounts[2];
     let clientB = accounts[3];
     let saleBeneficiary = accounts[4];
@@ -76,36 +78,33 @@ contract("Crowdsale", function(accounts) {
     // Aha -- couldn't understand why was not being reset everytime -- 
     // cos it wasn't coded that way.... doh!...
     beforeEach('setup and deploy gateway contract', async function() {
-        // do we need to know about this contract?
-        gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
 
+        gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
         token = await GatewayERC20Contract.new(gatewayContract.address, totalSupply, tokenSymbol, tokenName);
-        presale = await Crowdsale.new(token.address, saleBeneficiary, techBeneficiary, fundingGoal, saleDurationInMins, tokenCostInWei,  minimumSpend);
-        await token.transfer(presale.address, icoSupply);
+        sale = await Crowdsale.new(token.address, saleBeneficiary, techBeneficiary, fundingGoal, saleDurationInMins, tokenCostInWei,  minimumSpend);
+        await token.transfer(sale.address, icoSupply);
     })
 
 
     it("Should have correct settings at start of sale", async () => {
-        
+        assert.equal(await sale.token(), token.address, "Token address is not as expected");
+        assert.equal(await web3.eth.getBalance(sale), 0, "Balance is not equal");
+
     })
 
-    it("Presale address", async function(){
-        let tokenAddress = await presale.token();
-        assert.equal(tokenAddress, token.address, "Token address is not as expected")
-    });
 
-      // Checking initial state? why?
-  it.skip("Get presale ETH balance", async () => {
-    let balance = await presale.balance();
-    balance = balance.toString();
-    assert.equal(balance, 0, "Balance is not equal");
-  });
+//       // Checking initial state? why?
+//   it("Get presale ETH balance", async () => {
+//     // let balance = await presale.balance();
+//     // balance = balance.toString();
+   
+//   });
 
     it("Should return correct bonus amounts", async () => {
-        assert.equal(await presale.getBonus.call(100), '20')
+        assert.equal(await sale.getBonus.call(100), '20')
         await utils.increaseTime((day.mul(8)).toNumber());
-        assert.equal(await presale.getBonus.call(100), 10)
-        // could also test our own function in here!
+        assert.equal(await sale.getBonus.call(100), 10);
+        // could also test our own helper function matches
     })
 
     // assert all the values should have together in stead of habing lots of separate stuff
@@ -118,11 +117,11 @@ contract("Crowdsale", function(accounts) {
         const aliceBalanceBefore = await token.balanceOf(alice)
         assert.equal(aliceBalanceBefore.toString(), '0', 'Balance should be 0');
  
-        let sentTransaction = await presale.sendTransaction({from: alice, value: ethWeiValue});
+        let sentTransaction = await sale.sendTransaction({from: alice, value: ethWeiValue});
         const aliceBalanceAfter = await token.balanceOf(alice);
 
         const tokens = tokensPurchased(ethWeiValue);
-        const expected = tokens.add(oneWeekBonus(tokens))
+        const expected = tokens.add(weekOneBonus(tokens))
 
         assert.equal(aliceBalanceAfter.toString(), expected, 'Balance does not match expected amount');
         // test firing of event
@@ -132,11 +131,11 @@ contract("Crowdsale", function(accounts) {
     it("Should buy tokens after first week", async () => {
 
         await utils.increaseTime((day.mul(8)).toNumber());
-        await presale.sendTransaction({from: alice, value: ethWeiValue});
+        await sale.sendTransaction({from: alice, value: ethWeiValue});
 
         const aliceBalance = await token.balanceOf(alice);
         const tokens = tokensPurchased(ethWeiValue);
-        const expected = tokens.add(laterBonus(tokens))
+        const expected = tokens.add(weekTwoBonus(tokens))
         assert.equal(aliceBalance.toString(), expected, 'Balance does not match expected amount');
     })
 
@@ -148,10 +147,10 @@ contract("Crowdsale", function(accounts) {
 
         const maxEth = icoSupply.dividedToIntegerBy(tokensPerEth);
 
-        const boughtTokens = await presale.sendTransaction({from: alice, value: web3.toWei(maxEth.minus(1), "ether")});
+        const boughtTokens = await sale.sendTransaction({from: alice, value: web3.toWei(maxEth.minus(1), "ether")});
         let failed
         try {
-            let result = await presale.sendTransaction({from: alice, value: web3.toWei(1, "ether")});
+            let result = await sale.sendTransaction({from: alice, value: web3.toWei(1, "ether")});
             result
         }
         catch (error) {

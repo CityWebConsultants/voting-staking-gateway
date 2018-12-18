@@ -4,20 +4,21 @@ import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 import "./math/SafeMath.sol";
 
+//@todo implement max spend
+//@todo separate funds going in from funds going out in event
 contract Crowdsale {
     using SafeMath for uint256;
     // @todo add safeMath
     address public beneficiary;
     address public techFund;
-    uint public fundingGoal; // this a product of number of tokens and cost... doesn't need to be here...
-    // means we have to sell the exact amount of tokens -- should derive like 90% or something like that
+    uint public fundingGoal; // need feedback on usage
     uint public amountRaised;
     uint public deadline;
     uint public startTime;
     uint public price;
     uint public minimumSpend; // whats the reasoning behing a minimum spend
-    // maximum spend ????
-    // @todo this should be disambiguated from erc20 token balance of
+
+    // @todo should be disambiguated from erc20 token balance of?
     mapping(address => uint256) public balanceOf; // 
     bool fundingGoalReached = false;
     bool crowdsaleClosed = false;
@@ -28,15 +29,6 @@ contract Crowdsale {
     event FundTransfer(address indexed backer, uint amount, bool isContribution);
     // deposit
     // withdrawal
-    // Suggest creating two separate events for contributuon and withdrawal so we can access via filters
-    // here we assume if it is not a contributuin that it is a wuthdrawal
-    // may better to use emnumartatioin or separate events
-    // since bool is not indexed, we can't "watch" ie subscribe for fund transfers of a given type
-
-
-    // an event should be fired that differs from cashing out to techfund... backer makes no sense
-    // what happens if targets are not met!?
-// should have 'stop' / 'start' flags ?
 
     /**
      * Constructor function
