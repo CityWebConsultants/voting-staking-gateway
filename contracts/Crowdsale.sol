@@ -4,12 +4,7 @@ import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 import "./math/SafeMath.sol";
 
-
-
-//@todo add start-time to constructor
-//@todo make endtime a fixed date and not a calculaiton in minutes
 //@todo implement max spend
-//@todo separate funds going in from funds going out in event
 contract Crowdsale {
     using SafeMath for uint256;
 
@@ -30,9 +25,7 @@ contract Crowdsale {
     GatewayERC20Contract public token;
 
     // @todo whats the purpose of indexed recipient here...
-    // 
     event GoalReached(address indexed recipient, uint256 totalAmountRaised);
-
     event Contribution(address indexed account, uint256 amount, uint256 tokens);
     event Withdrawal(address indexed account, uint amount);
 
@@ -62,8 +55,7 @@ contract Crowdsale {
         //maxSpend = _maxSpend;
     }
 
-    // @todo check we actually have enough gas to set these values !!!!!!!
-    // only have a stipend of 2600
+    // add a modifier or condition to check early on that enough tokens are left
     /** 
      * Fallback function
      *
@@ -89,7 +81,7 @@ contract Crowdsale {
         emit Contribution(msg.sender, amount, totalTokens);
     }
 
-    modifier afterendTime() 
+    modifier afterEndTime() 
     {
         require(block.timestamp > endTime);
         _;
@@ -104,12 +96,12 @@ contract Crowdsale {
      */
     function checkGoalReached() 
     public 
-    afterendTime 
+    afterEndTime 
     {
         require(crowdsaleClosed == false, "Crowdsale is already closed");
         uint balance = token.balanceOf(address(this));
         // @todo needs fixed - this could easily end up locking coins given mimimum
-        if (balance == 0) { 
+        if (balance == 0) {
             fundingGoalReached = true;
             // why do we include beneficiary here!?
             emit GoalReached(beneficiary, amountRaised);
@@ -117,7 +109,8 @@ contract Crowdsale {
         crowdsaleClosed = true;
     }
     
-    // @todo break this apart in to two separate functions -- too make more testable and encasulate logic better
+
+    // This refund stuff needs work!!!!!!!!
     /**
      * Withdraw the funds
      *
@@ -127,7 +120,7 @@ contract Crowdsale {
      */
     function safeWithdrawal() 
     public 
-    afterendTime 
+    afterEndTime 
     {   
         if (!fundingGoalReached) {
         
@@ -140,6 +133,14 @@ contract Crowdsale {
             }
         }
 
+        // there was an else here that marked fund  ... what was the idea
+    }
+
+
+    function allocateFunds()
+    public
+    afterEndTime
+    {
         if (fundingGoalReached && beneficiary == msg.sender) {
             // 75% to project, 25% to tech fund
             uint256 benficiaryAllocation = address(this).balance.div(100).mul(75);
@@ -147,11 +148,13 @@ contract Crowdsale {
 
             beneficiary.transfer(benficiaryAllocation);
             techFund.transfer(techFundAllocation);
-
+            
+            // do we even need a withdrawal function -- we can see this from erc20?
             emit Withdrawal(beneficiary, benficiaryAllocation);
             emit Withdrawal(techFund, techFundAllocation);
+
+            // do we need some other kind of closure here?
         }
-        // there was an else here that marked fund  ... what was the idea
     }
 
     // Need to check this against the whitepaper
