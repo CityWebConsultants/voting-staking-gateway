@@ -4,7 +4,7 @@ import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 import "./math/SafeMath.sol";
 
-contract Presale {
+contract Crowdsale {
     using SafeMath for uint256;
     // @todo add safeMath
     address public beneficiary;
