@@ -41,11 +41,6 @@ const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 // @todo set max amount eth in settings for ganache-cli on autotest
 // set tests to run on an opens source tool via github
 // delete these
-var validAmountOfTokens = 100;  // what the fuck does that even mean! -- valid for what!?
-var invalidAmountOfTokens = -1; // why are negative numbers being tested. Just use safemath
-var validAmountOfWeiToPay = web3.toWei(10,'ether'); //wtf
-var fundingGoal = 10; // this should be in wei
-var saleDurationInMins = 1; // minutes // should we use days?
 
 const day = new BN('86400');
 //@todo fix token decinal places...
