@@ -12,7 +12,7 @@ import "./math/SafeMath.sol";
 //@todo separate funds going in from funds going out in event
 contract Crowdsale {
     using SafeMath for uint256;
-    // @todo add safeMath
+
     address public beneficiary;
     address public techFund;
     uint public fundingGoal; // need feedback on usage
@@ -20,7 +20,7 @@ contract Crowdsale {
     uint public startTime;
     uint public endTime;
     uint public price;
-    uint public minimumSpend; // whats the reasoning behing a minimum spend
+    uint public minSpend; // whats the reasoning behing a minimum spend
 
     // @todo should be disambiguated from erc20 token balance of?
     mapping(address => uint256) public balanceOf; // 
@@ -29,10 +29,12 @@ contract Crowdsale {
 
     GatewayERC20Contract public token;
 
+    // @todo whats the purpose of indexed recipient here...
+    // 
     event GoalReached(address indexed recipient, uint256 totalAmountRaised);
-    event FundTransfer(address indexed backer, uint amount, bool isContribution);
-    // deposit
-    // withdrawal
+
+    event Contribution(address indexed _account, uint256 _amount, uint256 _return);
+    event Withdrawal(address indexed _account, uint amount);
 
     /**
      * Constructor function
@@ -47,7 +49,7 @@ contract Crowdsale {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _tokenCost,
-        uint256 _minimumSpend
+        uint256 _minSpend
     ) public {
         token = GatewayERC20Contract(_token);
         startTime = _startTime;
@@ -56,7 +58,8 @@ contract Crowdsale {
         startTime = _startTime;
         endTime = _endTime;
         price = _tokenCost; 
-        minimumSpend = _minimumSpend;
+        minSpend = _minSpend;
+        //maxSpend = _maxSpend;
     }
 
     // @todo check we actually have enough gas to set these values !!!!!!!
@@ -71,33 +74,19 @@ contract Crowdsale {
     payable 
     {
         require(!crowdsaleClosed, "Crowdsale is closed");
-        require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
+        require(msg.value >= minSpend, "Value must but be greater than minimum spend");
+        // require(msg.value <= maxSpend);
         uint256 amount = msg.value; 
         balanceOf[msg.sender] = balanceOf[msg.sender].add(amount);
         amountRaised = amountRaised.add(amount);
-
+        
         // @todo improve logic with fewer vars
-        // perhaps discount as before?
         uint256 tokens = amount.div(price);
         uint256 bonusTokens = getBonus(tokens);
         uint256 totalTokens = tokens + bonusTokens;
 
         token.transfer(msg.sender, totalTokens);
-        emit FundTransfer(msg.sender, totalTokens, true);
-        //        require(!crowdsaleClosed);
-        // require(msg.value > minimumSpend, "Value must but be greater than minimum spend");
-        // uint256 amount = msg.value; 
-        // balanceOf[msg.sender] += amount;
-        // amountRaised += amount;
-        
-        // // Offer discount for volume
-        // // should this also include the amount a user has already desposited?
-        // uint256 discount = getBonus(amount);
-        // // should be using safe math here and assign variable before use (imo)
-        // // is it because not have permission to do this?
-        // // so are these actually minted first!!!???
-        // token.transfer(msg.sender, discount / price);
-        // emit FundTransfer(msg.sender, discount, true);
+        emit Contribution(msg.sender, amount, totalTokens);
     }
 
     modifier afterendTime() 
@@ -106,8 +95,8 @@ contract Crowdsale {
         _;
     }
 
-
     // Anyone can close crowdsale, assuming this is ok?
+    // this mutates values so shouldn't be called check (implies is getter)
     /**
      * Check if goal was reached
      *
@@ -147,7 +136,7 @@ contract Crowdsale {
             if (amount > 0) {
                 balanceOf[msg.sender] = 0;
                 msg.sender.transfer(amount);
-                emit FundTransfer(msg.sender, amount, false);
+                emit Withdrawal(msg.sender, amount);
             }
         }
 
@@ -159,8 +148,8 @@ contract Crowdsale {
             beneficiary.transfer(benficiaryAllocation);
             techFund.transfer(techFundAllocation);
 
-            emit FundTransfer(beneficiary, benficiaryAllocation, false);
-            emit FundTransfer(techFund, techFundAllocation, false);
+            emit Withdrawal(beneficiary, benficiaryAllocation);
+            emit Withdrawal(techFund, techFundAllocation);
         }
         // there was an else here that marked fund  ... what was the idea
     }

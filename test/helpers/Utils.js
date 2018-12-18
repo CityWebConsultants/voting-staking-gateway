@@ -4,7 +4,6 @@ function isException(error) {
 }
 
 function ensureException(error) {
-    console.log(isException(error), error);
     assert.isTrue(isException(error));
 }
 
@@ -62,7 +61,6 @@ function addPercent(value, rate) {
 }
 
 // Something for calculating numbers and padding
-
 module.exports = {
     advanceToBlock: advanceToBlock,
     ensureException: ensureException,

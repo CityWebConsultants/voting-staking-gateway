@@ -30,9 +30,8 @@ const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 
 const day = new BN('86400');
 
-
 const fundingGoal = 0;
-var minimumSpend = web3.toWei(0.34, 'ether');
+const minimumSpend = web3.toWei(0.34, 'ether');
 // token cost should be derived from contract
 
 // @todo tests for
@@ -55,7 +54,7 @@ contract("Crowdsale", function(accounts) {
     let saleBeneficiary = accounts[4];
     let techBeneficiary = accounts[5];
     let gatewayBeneficiary = accounts[6];
-    // contract should have a start time
+
     beforeEach('setup and deploy gateway contract', async function() {
 
         startTime = new BN(utils.blockNow());
@@ -99,7 +98,8 @@ contract("Crowdsale", function(accounts) {
         const aliceBalanceBefore = await token.balanceOf(alice)
         assert.equal(aliceBalanceBefore.toString(), '0', 'Balance should be 0');
         
-        let sentTransaction = await sale.sendTransaction({from: alice, value: ethWeiValue});
+        const sentTransaction = await sale.sendTransaction({from: alice, value: ethWeiValue});
+
         const aliceBalanceAfter = await token.balanceOf(alice);
 
         const tokens = tokensPurchased(ethWeiValue);
