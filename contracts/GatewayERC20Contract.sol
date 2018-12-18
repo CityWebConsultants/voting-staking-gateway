@@ -8,11 +8,17 @@ contract GatewayERC20Contract is ERC20, Ownable{
 
     address paymentGatewayAddress;
     bool transferActive;
+
+
+    modifier callerIsGatewayContract(){
+        require(msg.sender == paymentGatewayAddress, "Sender is not gateway");
+        _;
+    }
     
     // humho
     constructor(address _gatewayContract, uint256 _initialSupply, string _symbol, string _name)
     ERC20(_initialSupply, _name, 10, _symbol)
-    public //internal?  
+    public //internal?
     {
         paymentGatewayAddress = _gatewayContract;
         transferActive = true;
@@ -47,8 +53,11 @@ contract GatewayERC20Contract is ERC20, Ownable{
         transferActive = _status;
     }
 
-    function gatewayTokenTransfer(address from, address to, uint tokens) public
-        callerIsGatewayContract() returns (bool success) { // no params passed so why ()
+    // can remove most of this
+    function gatewayTokenTransfer(address from, address to, uint tokens) 
+    public
+    callerIsGatewayContract
+    returns (bool success) { // no params passed so why ()
         //transfer(to, tokens)
         //or transferFrom
         require(hasSufficientBalanceForTransfer(from, tokens));
@@ -56,11 +65,6 @@ contract GatewayERC20Contract is ERC20, Ownable{
         balances[to] = balances[to].add(tokens);
         emit Transfer(msg.sender, to, tokens); // should this not be from, to, tokens?
         return true;
-    }
-
-    modifier callerIsGatewayContract(){
-        require(msg.sender == paymentGatewayAddress);
-        _;
     }
 
     function hasSufficientBalanceForTransfer(address _sender, uint _amount) 
