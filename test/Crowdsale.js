@@ -4,17 +4,9 @@ const Crowdsale = artifacts.require("Crowdsale");
 const BN = require('bignumber.js');
 const utils = require('./helpers/Utils.js');
 
-
-
-
-// set BN rounding mode floro same as soklidity
-// set big number precision
-// kinda fucks things using 10...
-// should equally work with 18
-
 //@todo go through whitepaper and esnure specs are properly implemented in smart contract 
 // @todo have a wee look at other crowdsales and see what types of bounderies etc...
-
+// @ todo add constants to utils
 const tokenSymbol = 'BUD';
 const tokenName = 'eBudz';
 const tokenDecimals = 10;
@@ -37,12 +29,10 @@ const weekTwoBonus = (amount) => amount.div(100).times(10).toFixed(0);
 const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
 
 const day = new BN('86400');
-//@todo change this to use millseconds and measure in days.
-//@todo or should we just specifiy an end time
-const saleDurationInMins = 43200; // 30 days
+
 
 const fundingGoal = 0;
-var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
+var minimumSpend = web3.toWei(0.34, 'ether');
 // token cost should be derived from contract
 
 // @todo tests for
@@ -50,33 +40,30 @@ var minimumSpend = web3.toWei(0.34, 'ether'); // $100 = 340 finney ?
 // admin withdrawal on success
 // setting closed state
 // setting past time state
-// really hard to do the math... costing time....
-// @todo rename presale to sale
-    // consider locking coins until sale is completed
-    // then we have no issues with refunds
-    // need to calculate how many ether
-    // @todo check our boundaries
-
-
-
+// consider locking coins until sale is completed
+// then we have no issues with refunds
+// need to calculate how many ether
+// @todo check our boundaries
 
 contract("Crowdsale", function(accounts) {
-    let gatewayContract;
-    let token;
-    let sale;
+    
+    // Contracts
+    let gateway, token, sale;
+    let startTime, endTime
     let alice = accounts[2];
     let clientB = accounts[3];
     let saleBeneficiary = accounts[4];
     let techBeneficiary = accounts[5];
     let gatewayBeneficiary = accounts[6];
     // contract should have a start time
-    // Aha -- couldn't understand why was not being reset everytime -- 
-    // cos it wasn't coded that way.... doh!...
     beforeEach('setup and deploy gateway contract', async function() {
 
-        gatewayContract = await PaymentGatewayContract.new('4', gatewayBeneficiary);
-        token = await GatewayERC20Contract.new(gatewayContract.address, totalSupply, tokenSymbol, tokenName);
-        sale = await Crowdsale.new(token.address, saleBeneficiary, techBeneficiary, fundingGoal, saleDurationInMins, tokenCostInWei,  minimumSpend);
+        startTime = new BN(utils.blockNow());
+        endTime = startTime.plus(day.times(30));
+
+        gateway = await PaymentGatewayContract.new('4', gatewayBeneficiary);
+        token = await GatewayERC20Contract.new(gateway.address, totalSupply, tokenSymbol, tokenName);
+        sale = await Crowdsale.new(token.address, saleBeneficiary, techBeneficiary, fundingGoal, startTime, endTime, tokenCostInWei,  minimumSpend);
         await token.transfer(sale.address, icoSupply);
     })
 
@@ -86,13 +73,18 @@ contract("Crowdsale", function(accounts) {
         assert(icoSupply.equals(await token.balanceOf(sale.address)), "token supply doesn't match");
     })
 
+    // @todo should finalise at end date 
+    // don't use minutes. Use timestamp
     it("Should be finalised at end date", async () => {
-
+        // check for event
+        // should also be able to call this
     })
 
     it("Should withdraw funds at end of successful crowdsale", async () => {
         
     })
+
+    it("Should deal with refunds") // need to consult before doing this
 
     it("Should return correct bonus amounts", async () => {
         assert.equal(await sale.getBonus.call(100), '20')
@@ -101,25 +93,24 @@ contract("Crowdsale", function(accounts) {
         // could also test our own helper function matches
     })
 
-    // the only useful things therse tests do is check one successful and one unsuccessful transefr
-    // thats not nearly enough coverage
     // @todo assert the value of the sale
     it("Should buy tokens via sale during first week", async () => {
 
         const aliceBalanceBefore = await token.balanceOf(alice)
         assert.equal(aliceBalanceBefore.toString(), '0', 'Balance should be 0');
- 
+        
         let sentTransaction = await sale.sendTransaction({from: alice, value: ethWeiValue});
         const aliceBalanceAfter = await token.balanceOf(alice);
 
         const tokens = tokensPurchased(ethWeiValue);
         const expected = tokens.add(weekOneBonus(tokens))
-
-        assert.equal(aliceBalanceAfter.toString(), expected, 'Balance does not match expected amount');
-        // test firing of event
+        assert(aliceBalanceAfter.equals(expected), 'Balance does not match expected amount');
+        // @todo test firing of event
         // then don't have to after that
     });
 
+    // wtf!!!! why would this work before and not now!????
+    // is it a timwe hting?
     it("Should buy tokens after first week", async () => {
 
         await utils.increaseTime((day.mul(8)).toNumber());
@@ -128,10 +119,8 @@ contract("Crowdsale", function(accounts) {
         const aliceBalance = await token.balanceOf(alice);
         const tokens = tokensPurchased(ethWeiValue);
         const expected = tokens.add(weekTwoBonus(tokens))
-        assert.equal(aliceBalance.toString(), expected, 'Balance does not match expected amount');
+        assert(aliceBalance.equals(expected) , 'Balance does not match expected amount');
     })
-
-
 
     it("Should not allow purchase of tokens greater than amout remaining", async function(){
         // advance to time with no bonus
@@ -139,13 +128,13 @@ contract("Crowdsale", function(accounts) {
 
         const maxEth = icoSupply.dividedToIntegerBy(tokensPerEth);
 
-        const boughtTokens = await sale.sendTransaction({from: alice, value: web3.toWei(maxEth.minus(1), "ether")});
+        await sale.sendTransaction({from: alice, value: web3.toWei(maxEth.minus(1), "ether")});
         let failed
         try {
-            let result = await sale.sendTransaction({from: alice, value: web3.toWei(1, "ether")});
-            result
+            await sale.sendTransaction({from: alice, value: web3.toWei(1, "ether")});
         }
         catch (error) {
+            // @todo add assertion for exception message
             failed = true
         }
 

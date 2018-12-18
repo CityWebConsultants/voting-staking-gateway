@@ -4,13 +4,24 @@ var GatewayERC20Contract = artifacts.require("./GatewayERC20Contract.sol");
 var Crowdsale = artifacts.require("./Crowdsale.sol");
 var Staking = artifacts.require('./Staking.sol');
 
+
+const BN = require('bignumber.js');
 var gatewayFee = 4;
+
+//@todo derive this from env
 var gatewayBeneficiary = '0x05f00bbd02658561442165456bef7eaa49a950ac'; // test admin address
 var techFundAddr = '0x3c0516a1b90c0de455b34895dfca7ed0ee09f626'; // test tech fund address
 var totalEthToRaise = 10000;
-var saleDurationInMins = 99999; 
+
+
+//@todo define what we are going to deplyu and when!
+// @todo this needs defined
+const day = new BN('86400');
+const startTime = new BN(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
+const endTime = startTime.plus(day.times(30));
 var tokenCostInEth = 2600; // $0.75 = 2600 szabo ?
 var minimumSpend = 340; // $100 = 340 finney ?
+// token cost an min spend
 
 module.exports = function(deployer) {  
   //const foo = await deployer.deploy(Migrations);
@@ -25,9 +36,10 @@ module.exports = function(deployer) {
           erc20.address, 
           gatewayBeneficiary, 
           techFundAddr, 
-          totalEthToRaise, // do we need totalEthToRaise if there is a finite amount to distibute?
-          saleDurationInMins, 
-          tokenCostInEth, 
+          totalEthToRaise,
+          startTime,
+          endTime, 
+          tokenCostInEth, // this should be in wei!!!!!!!!!!!
           minimumSpend);
       })
       .then((crowdale) => {

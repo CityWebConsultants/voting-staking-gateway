@@ -4,6 +4,10 @@ import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 import "./math/SafeMath.sol";
 
+
+
+//@todo add start-time to constructor
+//@todo make endtime a fixed date and not a calculaiton in minutes
 //@todo implement max spend
 //@todo separate funds going in from funds going out in event
 contract Crowdsale {
@@ -13,8 +17,8 @@ contract Crowdsale {
     address public techFund;
     uint public fundingGoal; // need feedback on usage
     uint public amountRaised;
-    uint public deadline;
     uint public startTime;
+    uint public endTime;
     uint public price;
     uint public minimumSpend; // whats the reasoning behing a minimum spend
 
@@ -39,16 +43,18 @@ contract Crowdsale {
         address _token,
         address _beneficiary, 
         address _techFund, 
-        uint256 fundingGoalInEthers, // no longer used @todo consult with Adam about removal // this should be wei
-        uint256 _durationInMinutes,
+        uint256 fundingGoalInEthers, // actually makes sense to have a funding goal -- but it should be in wei
+        uint256 _startTime,
+        uint256 _endTime,
         uint256 _tokenCost,
         uint256 _minimumSpend
     ) public {
         token = GatewayERC20Contract(_token);
-        startTime = now;
+        startTime = _startTime;
         beneficiary = _beneficiary;
         techFund = _techFund;
-        deadline = now + (_durationInMinutes * 1 minutes); // mightbe better to take a similar approach in staking contract using  days
+        startTime = _startTime;
+        endTime = _endTime;
         price = _tokenCost; 
         minimumSpend = _minimumSpend;
     }
@@ -94,9 +100,9 @@ contract Crowdsale {
         // emit FundTransfer(msg.sender, discount, true);
     }
 
-    modifier afterDeadline() 
+    modifier afterendTime() 
     {
-        require(block.timestamp > deadline);
+        require(block.timestamp > endTime);
         _;
     }
 
@@ -109,7 +115,7 @@ contract Crowdsale {
      */
     function checkGoalReached() 
     public 
-    afterDeadline 
+    afterendTime 
     {
         require(crowdsaleClosed == false, "Crowdsale is already closed");
         uint balance = token.balanceOf(address(this));
@@ -132,7 +138,7 @@ contract Crowdsale {
      */
     function safeWithdrawal() 
     public 
-    afterDeadline 
+    afterendTime 
     {   
         if (!fundingGoalReached) {
         
