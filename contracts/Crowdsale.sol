@@ -16,7 +16,7 @@ contract Crowdsale {
     uint public endTime;
     uint public price;
     uint public minSpend; // whats the reasoning behing a minimum spend
-
+    //uint public maxSpend;
     // @todo should be disambiguated from erc20 token balance of?
     mapping(address => uint256) public balanceOf; // 
     bool fundingGoalReached = false;
@@ -149,7 +149,7 @@ contract Crowdsale {
             beneficiary.transfer(benficiaryAllocation);
             techFund.transfer(techFundAllocation);
             
-            // do we even need a withdrawal function -- we can see this from erc20?
+            // do we even need a withdrawal event -- we can see this from erc20?
             emit Withdrawal(beneficiary, benficiaryAllocation);
             emit Withdrawal(techFund, techFundAllocation);
 
