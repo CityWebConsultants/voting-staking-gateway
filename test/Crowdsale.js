@@ -113,8 +113,6 @@ contract("Crowdsale", function(accounts) {
         assert(aliceBalanceAfter.equals(expected), 'Balance does not match expected amount');
     });
 
-    // wtf!!!! why would this work before and not now!????
-    // is it a timwe hting?
     it("Should buy tokens after first week", async () => {
 
         await utils.increaseTime((day.mul(8)).toNumber());
@@ -145,7 +143,3 @@ contract("Crowdsale", function(accounts) {
         assert.equal(failed, true, "Should not be able to make payment")
     });
 });
-
-
-// add additional tests to presale
-// add safe math to presale
