@@ -1,0 +1,168 @@
+diff --git a/contracts/token/Staking.sol b/contracts/token/Staking.sol
+index e2906b6..c649676 100644
+--- a/contracts/token/Staking.sol
++++ b/contracts/token/Staking.sol
+@@ -5,10 +5,13 @@ import "./StakingInterface.sol";
+ import "../math/SafeMath.sol";
+ import "../MultiSigWallet.sol";
+ 
++// SUGGESTIONS 
++// instead of using //solium-disable-line you could use recommended method for timestamp,...
++
+ // @todo add multisig functionality to withdraw all funds in case of emergency.
+ // have to initialise multisig at point... have to go back and change tests for same
+ 
+-contract Staking is StakingInterface, MultiSigWallet {
++contract Staking is StakingInterface, MultiSigWallet { // SUGESTION do not extend the MultiSigWallet, instead make it the owner
+ 
+     using SafeMath for uint256;
+ 
+@@ -22,11 +25,11 @@ contract Staking is StakingInterface, MultiSigWallet {
+ 
+     uint256 public availableBonusTokens;
+     // 30 days in seconds
+-    uint256 public constant month = 2592000;
++    uint256 public constant month = 2592000; // SUGESTION call this variable _30days to make it more clear or something like rateIncreasePeriod
+ 
+     mapping (address => StakeEntry[]) public stakesFor;
+ 
+-    event debugUint(string msg, uint256);
++    event debugUint(string msg, uint256); // TODO remove
+ 
+     ///@param _token Token that can be staked.
+     constructor(ERC20Interface _token, address[] _signers, uint256 _required) MultiSigWallet(_signers, _required)
+@@ -37,7 +40,7 @@ contract Staking is StakingInterface, MultiSigWallet {
+     }
+ 
+     ///@notice all ur eth r not belong to us
+-    function () 
++    function () // TODO if MultiSigWallet is not used anymore the default function can be removed
+     public
+     payable {
+         revert("Contract does not accept Ether");
+@@ -45,7 +48,7 @@ contract Staking is StakingInterface, MultiSigWallet {
+     
+     ///@notice Transfer tokens from sender to this contract
+     ///@param _amount of tokens to deposit
+-    function depositBonusTokens(uint256 _amount)
++    function depositBonusTokens(uint256 _amount) // QUESTION who is going to add bonus ?
+     public
+     {   
+         availableBonusTokens = availableBonusTokens.add(_amount);
+@@ -56,7 +59,7 @@ contract Staking is StakingInterface, MultiSigWallet {
+     ///@param _amount Amount of tokens to stake.
+     ///@param _time Length of time in seconds to take for.
+     ///@param _claimBonus Whether a bonus should be applied.
+-    function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
++    function stake(uint256 _amount, uint256 _time, bool _claimBonus) public { // QUESTION why would someone not claim bonus ?
+         stakeFor(msg.sender, _amount, _time, _claimBonus);
+     }
+ 
+@@ -65,7 +68,7 @@ contract Staking is StakingInterface, MultiSigWallet {
+     ///@param _amount Amount of tokens to stake.
+     ///@param _time Length of time in seconds to take for.
+     ///@param _claimBonus Whether a bonus should be applied.
+-    function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) 
++    function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) // SUGGESTION rename _amount to something else to not confuse with amount, could be "userAmountStaked" and "totalAmountStaked"
+     public
+     {
+         uint256 stakeUntil = (_time + block.timestamp); //solium-disable-line security/no-block-members
+@@ -77,14 +80,14 @@ contract Staking is StakingInterface, MultiSigWallet {
+ 
+         if (_claimBonus == true) {
+             // @todo check this for re-entrance issues
+-            require(availableBonusTokens >= bonus, "Not enough bonus tokens left to pay out");
++            require(availableBonusTokens >= bonus, "Not enough bonus tokens left to pay out"); // SUGGESTION let take the min of the available bonus vs bonus
+             amount = _amount + bonus;
+             availableBonusTokens -= bonus;
+         } else {
+             amount = _amount;
+         }
+ 
+-        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
++        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens"); // ATTACK as soon as a user approve the smart contract for the ERC20, anyone could stake all the user belonging into that contract
+ 
+         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
+         stakesFor[_user].push(stakeItem);
+@@ -101,7 +104,7 @@ contract Staking is StakingInterface, MultiSigWallet {
+         require(withdrawStake(msg.sender, _amount), "Unable to withdraw");
+         require(token.transfer(msg.sender, _amount), "Unable to transfer tokens");
+ 
+-        totalStaked = totalStaked.sub(_amount);
++        totalStaked = totalStaked.sub(_amount); // SUGGESTION move that into withdrawStake where the stake is actuall reduced // actual the whole withdrawStake function could be there
+ 
+         emit Unstaked(msg.sender, _amount);
+     }
+@@ -115,14 +118,14 @@ contract Staking is StakingInterface, MultiSigWallet {
+     view 
+     returns (uint256 amount)
+     {
+-        //@q? Is it acceptable to let amount be defined in return value statement and not in body of function?
++        //@q? Is it acceptable to let amount be defined in return value statement and not in body of function? // ANSWER yes 
+         StakeEntry[] memory stakes = stakesFor[_addr];
+         for (uint256 i = 0; i < stakes.length; i++) {
+             if (stakes[i].stakeUntil > _time) { //solium-disable-line security/no-block-members
+                 amount = amount.add(stakes[i].amount);
+             }
+         }
+-        return amount;   
++        return amount;   // SUGGESTION this line can be removed
+     }
+ 
+     ///@notice internal accounting of token withdrawal
+@@ -138,19 +141,19 @@ contract Staking is StakingInterface, MultiSigWallet {
+         uint256 withdrawn = 0;
+ 
+         // @todo consider refactoring (do..while) for efficiency
+-        for (uint256 i = 0; i < stakes.length; i++) {
++        for (uint256 i = 0; i < stakes.length; i++) { // ATTACK dangerous loop. Combined with the attack described above, someone could stake all the user fund with many call, making the loop too expensive to compute, As a result it could lock all the user's fund
+ 
+             if (stakes[i].stakeUntil <= block.timestamp) { //solium-disable-line security/no-block-members
+                 if (toWithdraw > 0 && stakes[i].amount >= toWithdraw) {
+                     stakes[i].amount = stakes[i].amount.sub(toWithdraw);
+                     withdrawn = withdrawn.add(toWithdraw);
+-                    toWithdraw = 0;
++                    toWithdraw = 0; // TODO could quit now
+                 }
+                 else if (stakes[i].amount > 0 && stakes[i].amount < toWithdraw) {
+                     withdrawn = withdrawn.add(stakes[i].amount);
+                     toWithdraw = toWithdraw.sub(stakes[i].amount);
+-                    stakes[i].amount = 0;
+-                }
++                    stakes[i].amount = 0; 
++                } // TODO could quit early when no more to withdraw
+             }
+         }
+ 
+diff --git a/test/TestStaking.js b/test/TestStaking.js
+index 0822a85..e430e9a 100644
+--- a/test/TestStaking.js
++++ b/test/TestStaking.js
+@@ -16,6 +16,7 @@ contract('Staking', function (accounts) {
+     let admin = accounts[1];
+     let bob = accounts[2];
+     let carol = accounts[3];
++    let attacker = accounts[4];
+ 
+     const second = new BigNumber('1');
+     const day = new BigNumber('86400');
+@@ -68,6 +69,19 @@ contract('Staking', function (accounts) {
+         assert(aliceBalance.toString(), '10000')
+     })
+ 
++    it.only("attack", async () => {
++        const stakeDuration = 0;
++
++        for(let i=0; i< initialBalance / 10; i++) { // if this is big enough loop, withrawal will fail (here 1000 loop)
++            await bank.stakeFor(alice, 10, stakeDuration, false, {from: attacker});
++        }
++        
++        const unstaked = await bank.unstake(initialBalance, {from: alice});
++
++        const aliceBalance = await token.balanceOf.call(alice);
++        assert(aliceBalance.toString(), '10000')
++    })
++
+     it("Should not retrieve tokens whilst time locked", async () => {
+         const stakeDuration = month.times('6').plus(day);
+         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});

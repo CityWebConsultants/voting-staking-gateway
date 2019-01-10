@@ -9,7 +9,7 @@ module.exports = {
       host: "127.0.0.1",
       port: 7545,
       network_id: "*",
-      gas: 3000000,
+      gas: 5000000,
    //   from: '0x3fabe74712f7cbaed335ba7b60c3493fc16c7bdb'
     },
     rinkeby: {
@@ -23,7 +23,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "^0.4.15"
+      version: "0.4.24"
     }
   }
 };

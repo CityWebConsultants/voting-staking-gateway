@@ -4,7 +4,10 @@ import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 import "./math/SafeMath.sol";
 
-//@todo implement max spend
+//@todo remove max spend
+//@todo set minimum spend
+//@todo set refund mechanism
+
 contract Crowdsale {
     using SafeMath for uint256;
 
@@ -18,6 +21,7 @@ contract Crowdsale {
     uint public minSpend; // whats the reasoning behing a minimum spend
     //uint public maxSpend;
     // @todo should be disambiguated from erc20 token balance of?
+    // change this to tokenBalance
     mapping(address => uint256) public balanceOf; // 
     bool fundingGoalReached = false;
     bool crowdsaleClosed = false;
@@ -50,7 +54,7 @@ contract Crowdsale {
         techFund = _techFund;
         startTime = _startTime;
         endTime = _endTime;
-        price = _tokenCost; 
+        price = _tokenCost;
         minSpend = _minSpend;
         //maxSpend = _maxSpend;
     }
@@ -123,7 +127,9 @@ contract Crowdsale {
     afterEndTime 
     {   
         if (!fundingGoalReached) {
-        
+            // transfer tokens 
+            // tokenAmount = 
+            // transfer(address(this), )
             uint256 amount = balanceOf[msg.sender];
 
             if (amount > 0) {
@@ -136,7 +142,18 @@ contract Crowdsale {
         // there was an else here that marked fund  ... what was the idea
     }
 
+    // settlement time
 
+    // function refund(uint256 tokens) 
+    // public 
+    // afterEndTime
+    // {
+    //     token.transfer();
+    // }
+
+
+    // this only covers eth, we also have to pass out tokens too...
+    // after end time
     function allocateFunds()
     public
     afterEndTime
