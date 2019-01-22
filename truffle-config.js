@@ -27,7 +27,6 @@ module.exports = {
       port: 7545,
       network_id: "*",
       gas: 5000000,
-      from: contractOwner,
     },
     rinkebyLocal: {
       provider: () => new HookedWeb3Provider({
