@@ -5,9 +5,9 @@ import "../math/SafeMath.sol";
 /*
 Implements ERC20 token standard: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md
 .*/
-// @todo use safeMath
-contract ERC20 is ERC20Interface {
 
+contract ERC20 is ERC20Interface {
+    
     uint256 constant private MAX_UINT256 = 2**256 - 1;
     mapping (address => uint256) public balances;
     mapping (address => mapping (address => uint256)) public allowed;
@@ -15,7 +15,6 @@ contract ERC20 is ERC20Interface {
     string public name;
     uint8 public decimals;
     string public symbol;
-    // uint256 totalSupply;
 
     constructor(
         uint256 _initialAmount,
@@ -24,9 +23,9 @@ contract ERC20 is ERC20Interface {
         string _tokenSymbol
     ) public {
         balances[msg.sender] = _initialAmount;
-        totalSupply = _initialAmount;
-        name = _tokenName;
         decimals = _decimalUnits;
+        totalSupply = _initialAmount; //* 10**uint256(decimals);
+        name = _tokenName;
         symbol = _tokenSymbol;
     }
 

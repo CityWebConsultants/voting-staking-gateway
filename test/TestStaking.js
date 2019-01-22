@@ -46,7 +46,6 @@ contract('Staking', function (accounts) {
     })
 
     // Staking
-
     it('Should transfer tokens to stake', async () => {
 
         await bank.stake(initialBalance, month.plus(day), true, {from: alice});

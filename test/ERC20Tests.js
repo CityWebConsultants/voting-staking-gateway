@@ -23,7 +23,9 @@ contract('ERC20', (accounts) => {
     const symbol = await ERC20Instance.symbol.call();
     assert.strictEqual(symbol, 'TC');
   });
+  
 
+  // @todo this fails with 10 decimal places...
   it('creation: should succeed in creating over 2^256 - 1 (max) tokens', async () => {
     // 2^256 - 1
     const HST2 = await ERC20Contract.new('115792089237316195423570985008687907853269984665640564039457584007913129639935', 'Simon Bucks', 1, 'SBX', { from: accounts[0] });

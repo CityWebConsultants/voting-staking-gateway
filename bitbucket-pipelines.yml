@@ -12,8 +12,9 @@ pipelines:
           - node
         script: # Modify the commands below to build your repository.
           - npm install
-          - npm install -g truffle
+          - npm install -g truffle@4.1.14
           - npm install -g ganache-cli
+          - mv app-config.env.example app-config.env
           #- ganache-cli --port=7545 --blockTime=1 2>&1 > ganache-output.log &
-          - ganache-cli --port=7545 2>&1 > ganache-output.log &
+          - ganache-cli --port=7545 --defaultBalanceEther="100000000000000000" 2>&1 > ganache-output.log &
           - truffle test --network=development
