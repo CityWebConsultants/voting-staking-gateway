@@ -1,21 +1,20 @@
 pragma solidity ^0.4.24;
 
+// @todo sort out admin withdrawal
+// @todo minimum amount left before closed (min purchase +?)
+
 import "../ownership/Ownable.sol";
 import "../GatewayERC20Contract.sol";
 import "../math/SafeMath.sol";
 import "./RefundList.sol";
 
-//@todo check 
-//@todo remove max spend
-
 contract Crowdsale is Ownable {
     using SafeMath for uint256;
 
-    address public treasury;  // consider renaming treasury...
-    address public techFund;
+    address public treasury;
+    // address public techFund;
     GatewayERC20Contract public token;
     RefundList public refundList;
-    uint256 public fundingGoal; // close to max amount minus dust... hmmmm
     uint256 public amountRaised;
     uint256 public startTime;
     uint256 public endTime;
@@ -25,19 +24,12 @@ contract Crowdsale is Ownable {
     mapping(address => uint256) public tokenAllocation; // @todo change name to tokenAllocation or tokenClaim
     bool finalised;
 
-
     event Withdrawal(address indexed account, uint amount);
     event Contribution(address indexed account, uint256 ethAmount, uint256 tokens);
     event Refund(address indexed account, uint256 ethAmount); // should we also have deposit?
     event Claimed(address indexed account, uint256 tokenAmount);
     event CrowdsaleFinalized();
-    // funding goal in tokens...
 
-    /**
-     * Constructor function
-     *
-     * Setup the owner
-     */
     constructor(
         address _token,
         address _treasury, 
@@ -52,7 +44,7 @@ contract Crowdsale is Ownable {
         token = GatewayERC20Contract(_token);
         startTime = _startTime;
         treasury = _treasury;
-        techFund = _techFund;
+        // techFund = _techFund;
         refundList = RefundList(_refundList);
         startTime = _startTime;
         endTime = _endTime;
@@ -79,10 +71,10 @@ contract Crowdsale is Ownable {
     public 
     view 
     returns (bool) {
-        return block.timestamp >= startTime && block.timestamp <= endTime;
+        return block.timestamp >= startTime && block.timestamp <= endTime; // amnd tokens remaining
     }
 
-    function hasClosed() 
+    function hasClosed()
     public 
     view 
     returns (bool) {
@@ -122,16 +114,10 @@ contract Crowdsale is Ownable {
     onlyWhileOpen
     {
         require(msg.value >= minSpend, "Value must but be greater than minimum spend");
-        // require(msg.value <= maxSpend);
         uint256 amount = msg.value;
         amountRaised = amountRaised.add(amount);
-        
         uint256 tokens = amount.div(price);
         tokenAllocation[msg.sender] = tokenAllocation[msg.sender].add(tokens);
-        // uint256 bonusTokens = getBonus(tokens);
-        // uint256 totalTokens = tokens + bonusTokens;
-
-        // Just remove token transfer until after end date
         token.transfer(msg.sender, tokens);
         emit Contribution(msg.sender, amount, tokens);
     }
@@ -140,7 +126,6 @@ contract Crowdsale is Ownable {
     public
     onlyWhenFinalised
     {
-        // maybe switch the logic round for true
         if (refundList.getAddressStatus(msg.sender) == false) {
             uint256 claimed = tokenAllocation[msg.sender];
             tokenAllocation[msg.sender] = 0;
@@ -160,6 +145,22 @@ contract Crowdsale is Ownable {
             emit Refund(msg.sender, ethRefund); // should we also have deposit?
         }
     }
+
+    function withdrawToTreasury(uint256 _amount)
+    public
+    onlyWhenFinalised
+    onlyOwner
+    {
+        treasury.transfer(_amount);
+    }
+
+    // function withdrawToTechFund(uint256 _amount)
+    // public
+    // onlyWhenFinalised
+    // onlyOwner
+    // {
+    //     techFund.transfer(_amount);
+    // }
 
     // ah, but this should happen only after all the other stuff has been paid out!!!!
     /// hmmmmmmmm
@@ -191,26 +192,6 @@ contract Crowdsale is Ownable {
     // could be a fixed amount of time
     // could calculate what is the amount that must be left in to 
     // claim 
-    function withdrawToTreasury(uint256 _amount)
-    public
-    onlyWhenFinalised
-    onlyOwner
-    {
-        // any amount withdrawn -- 25% must go to tech fund
-        // but the amount can be arbitary?
-        treasury.transfer(_amount);
-    }
-
-    // can only withdraw once and must be 25%
-    // treasure can withdraw an arbitary amount
-    function withdrawToTechFund(uint256 _amount)
-    public
-    onlyWhenFinalised
-    onlyOwner
-    {
-        techFund.transfer(_amount);
-    }
-
     // Anyone can close crowdsale, assuming this is ok?
     // this mutates values so shouldn't be called check (implies is getter)
     /**
