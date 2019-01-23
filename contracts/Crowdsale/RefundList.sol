@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./ownership/Ownable.sol";
+import "../ownership/Ownable.sol";
 
 contract RefundList is Ownable {
 
@@ -26,6 +26,14 @@ contract RefundList is Ownable {
     {   
         list[_address] = false;
         emit RefundStatus(_address, false);
+    }
+
+    function getAddressStatus(address _address)
+    public
+    view
+    returns(bool)
+    {
+        return list[_address];
     }
 
     event RefundStatus(address _address, bool refundUser);
