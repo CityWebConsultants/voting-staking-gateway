@@ -15,14 +15,15 @@ contract Crowdsale is Ownable {
     // address public techFund;
     GatewayERC20Contract public token;
     RefundList public refundList;
-    uint256 public amountRaised;
+    //uint256 public amountRaised;
+    uint256 public tokensSold;
     uint256 public startTime;
-    uint256 public endTime;
+    uint256 public endTime; 
     uint256 public price;
     uint256 public minSpend; // whats the reasoning behing a minimum spend
     uint256 public refundFee = 100000000000; //@todo make this a parameter number of tokens deducted
     mapping(address => uint256) public tokenAllocation; // @todo change name to tokenAllocation or tokenClaim
-    bool finalised;
+    bool public finalised;
 
     event Withdrawal(address indexed account, uint amount);
     event Contribution(address indexed account, uint256 ethAmount, uint256 tokens);
@@ -57,6 +58,16 @@ contract Crowdsale is Ownable {
         owner = msg.sender;
     }
 
+    function minTokenPurchase()
+    public
+    view // should be really be pure
+    returns (uint256)
+    {
+        return price * minSpend;
+        // calculate from min spend
+        // or could change min spend to minimum token purchase
+    }
+
     modifier onlyWhileOpen {
         require(isOpen(), "Crowd sale is not open");
         _;
@@ -89,7 +100,7 @@ contract Crowdsale is Ownable {
         return token.balanceOf(address(this));
     }
 
-    function finalize() 
+    function finalise() 
     public
     onlyOwner
     {
@@ -100,12 +111,12 @@ contract Crowdsale is Ownable {
         emit CrowdsaleFinalized();
     }
 
-    // do an estimation of gas -- not sure there will be enough to call this
+    // All ur eth not belong to us
     function () 
     public 
     payable
     {
-        buyTokens();
+        revert();
     }
 
     function buyTokens()
@@ -114,9 +125,11 @@ contract Crowdsale is Ownable {
     onlyWhileOpen
     {
         require(msg.value >= minSpend, "Value must but be greater than minimum spend");
-        uint256 amount = msg.value;
-        amountRaised = amountRaised.add(amount);
+        uint256 amount = msg.value;   
         uint256 tokens = amount.div(price);
+        // should this trigger finalise? how will we deal with finalise
+        require(tokens <= (token.balanceOf(address(this)) - tokensSold), "Not enough tokens left");
+        tokensSold = tokensSold.add(tokens);
         tokenAllocation[msg.sender] = tokenAllocation[msg.sender].add(tokens);
         token.transfer(msg.sender, tokens);
         emit Contribution(msg.sender, amount, tokens);
@@ -131,8 +144,10 @@ contract Crowdsale is Ownable {
         tokenAllocation[msg.sender] = 0;
         token.transfer(msg.sender, claimed);
         emit Claimed(msg.sender, claimed);
-        
     }
+
+    // oh :o 
+    // we need a way to take out any remaning in tokens!
 
     function claimRefund() 
     public
@@ -145,14 +160,26 @@ contract Crowdsale is Ownable {
         emit Refund(msg.sender, ethRefund); // should we also have deposit?
     }
 
-    function withdrawToTreasury(uint256 _amount)
+    // withdraw tokensToTreasury
+    // withdraw ethToTreasury
+
+    function withdrawEthToTreasury(uint256 _amount)
+    public
+    onlyWhenFinalised
+    onlyOwner
+    {   
+        // could we make a percentage?
+        treasury.transfer(_amount);
+    }
+
+    function withdrawTokensToTreasury(uint256 _amount)
     public
     onlyWhenFinalised
     onlyOwner
     {
-        treasury.transfer(_amount);
+        // need to calculate remaining tokens
+        token.transfer(treasury, _amount);
     }
-
     // function withdrawToTechFund(uint256 _amount)
     // public
     // onlyWhenFinalised
