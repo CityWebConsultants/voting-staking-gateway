@@ -33,7 +33,7 @@ contract Crowdsale is Ownable {
     constructor(
         address _token,
         address _treasury, 
-        address _techFund, 
+       //  address _techFund, 
         address _refundList, //break
         // uint256 fundingGoalInEthers, // actually makes sense to have a funding goal
         uint256 _startTime,
@@ -58,7 +58,7 @@ contract Crowdsale is Ownable {
     }
 
     modifier onlyWhileOpen {
-        require(isOpen(), "Crowdsale has closed");
+        require(isOpen(), "Crowd sale is not open");
         _;
     }
 
@@ -126,24 +126,23 @@ contract Crowdsale is Ownable {
     public
     onlyWhenFinalised
     {
-        if (refundList.getAddressStatus(msg.sender) == false) {
-            uint256 claimed = tokenAllocation[msg.sender];
-            tokenAllocation[msg.sender] = 0;
-            token.transfer(msg.sender, claimed);
-            emit Claimed(msg.sender, claimed);
-        }
+        require(refundList.getAddressStatus(msg.sender) == false, "This account is due refund");
+        uint256 claimed = tokenAllocation[msg.sender];
+        tokenAllocation[msg.sender] = 0;
+        token.transfer(msg.sender, claimed);
+        emit Claimed(msg.sender, claimed);
+        
     }
 
     function claimRefund() 
     public
     onlyWhenFinalised
     {
-        if (refundList.getAddressStatus(msg.sender) == true) {
-            uint256 ethRefund = (tokenAllocation[msg.sender].sub(refundFee)).mul(price);
-            tokenAllocation[msg.sender] = 0;
-            msg.sender.transfer(ethRefund);
-            emit Refund(msg.sender, ethRefund); // should we also have deposit?
-        }
+        require(refundList.getAddressStatus(msg.sender) == true, "No refund available");
+        uint256 ethRefund = (tokenAllocation[msg.sender].sub(refundFee)).mul(price);
+        tokenAllocation[msg.sender] = 0;
+        msg.sender.transfer(ethRefund);
+        emit Refund(msg.sender, ethRefund); // should we also have deposit?
     }
 
     function withdrawToTreasury(uint256 _amount)
