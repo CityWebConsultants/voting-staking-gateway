@@ -116,7 +116,7 @@ contract Crowdsale is Ownable {
     public 
     payable
     {
-        revert();
+        revert("Cannot accept eth directly");
     }
 
     function buyTokens()
@@ -131,7 +131,7 @@ contract Crowdsale is Ownable {
         require(tokens <= (token.balanceOf(address(this)) - tokensSold), "Not enough tokens left");
         tokensSold = tokensSold.add(tokens);
         tokenAllocation[msg.sender] = tokenAllocation[msg.sender].add(tokens);
-        token.transfer(msg.sender, tokens);
+        // token.transfer(msg.sender, tokens);
         emit Contribution(msg.sender, amount, tokens);
     }
 
