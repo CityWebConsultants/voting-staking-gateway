@@ -36,5 +36,5 @@ contract RefundList is Ownable {
         return list[_address];
     }
 
-    event RefundStatus(address _address, bool refundUser);
+    event RefundStatus(address account, bool refund);
 }
