@@ -152,13 +152,14 @@ contract("Crowdsale", accounts =>  {
         // token allocation set 
     });
 
-    it("Should buy all available tokens", async () => { 
+    it.only("Should buy all available tokens", async () => { 
 
         const maxEth = (new BN('945000')).shift(18);
         await sale.buyTokens({from: alice, value: maxEth});
         const available = await token.balanceOf(sale.address);
         const allocated = await sale.tokenAllocation(alice);
-
+        console.log(available)
+        console.log(allocated)
         assert.isTrue(allocated.equals(available))
     });
 
