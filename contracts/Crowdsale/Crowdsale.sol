@@ -12,10 +12,9 @@ contract Crowdsale is Ownable {
     using SafeMath for uint256;
 
     address public treasury;
-    // address public techFund;
+    address public techFund;
     GatewayERC20Contract public token;
     RefundList public refundList;
-    //uint256 public amountRaised;
     uint256 public tokensSold;
     uint256 public startTime;
     uint256 public endTime; 
@@ -32,14 +31,14 @@ contract Crowdsale is Ownable {
     event Contribution(address indexed account, uint256 ethAmount, uint256 tokens);
     event Refund(address indexed account, uint256 ethAmount); // should we also have deposit?
     event Claimed(address indexed account, uint256 tokenAmount);
+    //@todo how to test
     event CrowdsaleFinalized();
 
     constructor(
         address _token,
         address _treasury, 
-       //  address _techFund, 
-        address _refundList, //break
-        // uint256 fundingGoalInEthers, // actually makes sense to have a funding goal
+        address _techFund, 
+        address _refundList,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _tokenCost,
@@ -49,7 +48,7 @@ contract Crowdsale is Ownable {
         token = GatewayERC20Contract(_token);
         startTime = _startTime;
         treasury = _treasury;
-        // techFund = _techFund;
+        techFund = _techFund;
         refundList = RefundList(_refundList);
         startTime = _startTime;
         endTime = _endTime;
@@ -88,15 +87,14 @@ contract Crowdsale is Ownable {
     returns (bool) {
         return block.timestamp >= startTime 
         && block.timestamp <= endTime
-        && (tokensSold + minTokenPurchase()) < token.balanceOf(address(this));
+        && (tokensSold + minTokenPurchase()) <= token.balanceOf(address(this));
     }
 
     function hasClosed()
     public 
     view 
     returns (bool) {
-        return block.timestamp > endTime 
-        || (tokensSold + minTokenPurchase() >= token.balanceOf(address(this))); // @todo || or all tokens sold
+        return block.timestamp > endTime || (tokensSold + minTokenPurchase() > token.balanceOf(address(this))); // @todo || or all tokens sold
     }
 
     function remainingTokens()
@@ -162,24 +160,32 @@ contract Crowdsale is Ownable {
     {
         require(refundList.getAddressStatus(msg.sender) == true, "No refund available");
         //uint256 fee = refundFee.mul(price);
+        // double check we have the correct refund in 
         uint256 ethRefund = (tokenAllocation[msg.sender].mul(price)).sub(refundFee);//.mul(price);
-        //uint256 ethRefund = (tokenAllocation[msg.sender].sub(refundFee)).mul(price);
-        //hmmmmm, we should be able to know what the fee is...
         tokenAllocation[msg.sender] = 0;
         msg.sender.transfer(ethRefund);
         emit Refund(msg.sender, ethRefund); // should we also have deposit?
     }
 
-    // withdraw tokensToTreasury
-    // withdraw ethToTreasury
+    // @todo -- we don't really test multiple purchases
 
-    function withdrawEthToTreasury(uint256 _amount)
+    function withdrawEth(uint256 _amount)
     public
     onlyWhenFinalised
     onlyOwner
+    //  only x time after finalisation?
+    // how do we provide assurance to users?
     {   
-        // could we make a percentage?
-        treasury.transfer(_amount);
+        // 75% to treasury, 25% to technical development
+        // uint256 treasuryAllocation = address(this).balance.div(100).mul(75);
+        // uint256 techFundAllocation = address(this).balance.sub(treasuryAllocation);
+
+        uint256 treasuryAllocation = _amount.div(100).mul(75);
+        uint256 techFundAllocation = _amount.sub(treasuryAllocation);
+
+        // Transfer Eth
+        treasury.transfer(treasuryAllocation);
+        techFund.transfer(techFundAllocation);
     }
 
     // only after grace period
@@ -189,140 +195,20 @@ contract Crowdsale is Ownable {
     // what happens to allocation of tokens.
     // pre-signed transaction
     // is it possible to approve more than exists in an account?
+    // How do we provide extra security for investors here?
+    
     function withdrawTokensToTreasury(uint256 _amount)
     public
+    //  only x time after finalisation?
     onlyWhenFinalised
     onlyOwner
-    {
-        // need to calculate remaining tokens
+    {   
+        // Dont want to end up with locked coins
+        require(_amount < tokensSold, "Cannot withdraw more than available");
         token.transfer(treasury, _amount);
+        emit Withdrawal(treasury, _amount);
     }
-    // function withdrawToTechFund(uint256 _amount)
-    // public
-    // onlyWhenFinalised
-    // onlyOwner
-    // {
-    //     techFund.transfer(_amount);
-    // }
-
-    // ah, but this should happen only after all the other stuff has been paid out!!!!
-    /// hmmmmmmmm
-    // want to make sure there are no circumstances where funds could remaim lock
-    // what if something happens
-    // at what point
-    // maybe these should be stored in an array...
-    // where we can only pull funds
-    // would make much more sense just to pull out whatever we want
-    // then there is no mnot
-
-    // function allocateFunds()
-    // public
-    // onlyWhenFinalised
-    // onlyOwner
-    // {
-    //         // 75% to treasury, 25% to tech fund
-    //     uint256 treasuryAllocation = address(this).balance.div(100).mul(75);
-    //     uint256 techFundAllocation = address(this).balance.sub(treasuryAllocation);
-
-    //     treasury.transfer(treasuryAllocation);
-    //     techFund.transfer(techFundAllocation);
-        
-    //     emit Withdrawal(treasury, treasuryAllocation);
-    //     emit Withdrawal(techFund, techFundAllocation);
-    // }
-
-    // Worry about how to deal with this later
-    // could be a fixed amount of time
-    // could calculate what is the amount that must be left in to 
-    // claim 
-    // Anyone can close crowdsale, assuming this is ok?
-    // this mutates values so shouldn't be called check (implies is getter)
-    /**
-     * Check if goal was reached
-     *
-     * Checks if the goal or time limit has been reached and ends the campaign
-     */
-    // function checkGoalReached() 
-    // public 
-    // afterEndTime 
-    // {
-    //     // whole thing passes when there is no code here  : o
-    //     require(crowdsaleClosed == false, "Crowdsale is already closed");
-    //     // makes no sense
-    //     // @todo modif
-    //     // uint balance = token.balanceO(address(this));
-    //     // @todo needs fixed - this could easily end up locking coins given mimimum
-    //     // if (balance == 0) {
-    //     //     fundingGoalReached = true;
-    //     //     // why do we include treasury here!?
-    //     //     emit GoalReached(treasury, amountRaised);
-    //     // }
-    //     crowdsaleClosed = true;    // }
-
-    // settlement time
-
-    // function refund(uint256 tokens) 
-    // public 
-    // afterEndTime
-    // {
-    //     token.transfer();
-    // }
-
-
-    // this only covers eth, we also have to pass out tokens too...
-    // after end time
-
-    // /**
-    //  * Withdraw the funds
-    //  *
-    //  * Checks to see if goal or time limit has been reached, and if so, and the funding goal was reached,
-    //  * sends the entire amount to the treasury. If goal was not reached, each contributor can withdraw
-    //  * the amount they contributed.
-    //  */
-    // function safeWithdrawal() 
-    // public 
-    // afterEndTime 
-    // {   
-    //     if (!fundingGoalReached) {
-    //         // transfer tokens 
-    //         // tokenAmount = 
-    //         // transfer(address(this), )
-    //         uint256 amount = tokenAllocation[msg.sender];
-
-    //         if (amount > 0) {
-    //             tokenAllocation[msg.sender] = 0;
-    //             msg.sender.transfer(amount);
-    //             emit Withdrawal(msg.sender, amount);
-    //         }
-    //     }
-
-    //     // there was an else here that marked fund  ... what was the idea
-    // }
-
-
-    //@todo remove bonus...
-    // Need to check this against the whitepaper
-    // function getBonus(uint256 _tokens)
-    // public
-    // view  
-    // returns(uint256)
-    // {
-    //     // 20% bonus in first week
-    //     if (block.timestamp <= startTime.add(1 weeks)) {
-    //         return _tokens.div(100).mul(20); //number of tokens in week 1
-    //     //} else if (startTime + 2 weeks > now) {
-    //     //        return 750; //number of tokens in week 2
-    //     //} else if (startTime + 3 weeks > now) {
-    //     //        return 500; //number of tokens in week 3
-    //     } else if (block.timestamp > startTime.add(1 weeks) && block.timestamp <= startTime.add(2 weeks)) {
-    //         return _tokens.div(100).mul(10);
-    //     }
-    //     else {
-    //         return 0;
-    //     }
-    // }
 }
-
 
 // a single claim function... if name is not on refund list then can claim coins back
 // otherwise the account is refunded minus a certain amount of tokens...
