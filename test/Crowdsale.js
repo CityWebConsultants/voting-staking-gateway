@@ -5,6 +5,10 @@ const RefundList = artifacts.require("RefundList");
 const BN = require('bignumber.js');
 const utils = require('./helpers/Utils.js');    
 
+// @todo resolve tests failing
+// what numbers are wrong here?coin
+// @todo check sequence and be sure we transactions are fully reverted
+// send / transfer ....???
 // @ todo add constants to utils
 const tokenSymbol = 'BUD';
 const tokenName = 'eBudz';
@@ -15,6 +19,9 @@ const tokenDecimals = 10;
 const totalSupply = new BN('420000000').shift(tokenDecimals)
 const icoSupply = new BN('189000000').shift(tokenDecimals);
 
+
+// fix breaking tests...
+// when using non round numbers -- what should happen around rounding...
 // use round numbers when writing 
 // and then switch them about to make sure the arithmatic works in different 
 // circumstances
@@ -27,8 +34,8 @@ const tokensPerEth = (ethDollarValue.div(tokenDollarValue)).shift(tokenDecimals)
 const ethWeiValue = new BN(web3.toWei('1', 'ether'));
 const tokenCostInWei = ethWeiValue.dividedToIntegerBy(tokensPerEth);
 
-console.log('tpe', tokensPerEth)
-console.log('1 token = ', tokenCostInWei)
+console.log('Tokens per eth: ', tokensPerEth)
+console.log('Token cost = ', tokenCostInWei)
 
 
 // const maxAmountEthCanRaise = icoSupply.dividedToIntegerBy(tokensPerEth);
@@ -46,6 +53,7 @@ const day = new BN('86400');
 const fundingGoal = 0;
 // Keep numbers round for easy counting
 const minimumSpend = web3.toWei(0.5, 'ether');
+const maximumSpend = web3.toWei(110, 'ether');
 
 
 // token    cost should be derived from contract
@@ -97,10 +105,14 @@ contract("Crowdsale", accounts =>  {
             startTime, 
             endTime, 
             tokenCostInWei, // don't need top say in wei, doesn't say elsewhere  
-            minimumSpend
+            minimumSpend,
+            maximumSpend
         );
         await token.transfer(sale.address, icoSupply);
         await utils.increaseTime(startTime - utils.blockNow()); 
+
+        const minToken = await sale.minTokenPurchase();
+        minToken;
     })
 
     it("Should have correct settings at start of sale", async () => {
@@ -108,7 +120,11 @@ contract("Crowdsale", accounts =>  {
         assert.equal(await sale.token.call(), token.address, "Token address is not as expected");
         assert.equal(await web3.eth.getBalance(sale.address), 0, "Balance is not equal");
         assert(icoSupply.equals(await token.balanceOf(sale.address)), "token supply doesn't match");
-        // @todo check all constructor arguments
+        assert.equal(await sale.startTime(), startTime);
+        assert.equal(await sale.endTime(), endTime);
+        assert.isTrue(tokenCostInWei.equals(await sale.price()));
+        assert.equal(await sale.minSpend(), minimumSpend);
+        assert.equal(await sale.maxSpend(), maximumSpend);
     })
 
     it("Should revert when sending ether directly", async () => {
@@ -120,6 +136,7 @@ contract("Crowdsale", accounts =>  {
             error = e;
         }
         utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('Cannot accept eth directly') >= 0)
     })
 
     it("Should buy some tokens", async () => {
@@ -134,25 +151,12 @@ contract("Crowdsale", accounts =>  {
         assert.isTrue(logs.args.ethAmount.equals(ethWeiValue));
         assert.isTrue(logs.args.tokens.equals(tokensPerEth));
 
-        // are these numbers being stored correctly...
         assert.isTrue(tokensPerEth.equals(await sale.tokenAllocation(alice)));
-
-        const b = tokensPerEth;
-        b;
-
-        const c = await sale.tokenAllocation(alice);
-        c;
-        // should check for number of tokens sold
-        // should check the value of alice is set
-
-
-        // @todo amend this
-        //assert.isTrue(ethWeiValue.equals(await sale.amountRaised()));
-        // tested event fires
-        // token allocation set 
     });
 
-    it.only("Should buy all available tokens", async () => { 
+    // try running this through the latest ganache-cli and see what happens
+
+    it("Should buy all available tokens", async () => { 
 
         const maxEth = (new BN('945000')).shift(18);
         await sale.buyTokens({from: alice, value: maxEth});
@@ -161,6 +165,7 @@ contract("Crowdsale", accounts =>  {
         console.log(available)
         console.log(allocated)
         assert.isTrue(allocated.equals(available))
+        // check value of tokens sold, wtf is up with this...
     });
 
     // what about accounting for rounding and fractions of a token?
@@ -175,7 +180,22 @@ contract("Crowdsale", accounts =>  {
             error = e;
         }
         utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('Not enough tokens left') >= 0)
+        
     });
+
+    // Should maybe factor out finalising and closing
+    //@todo
+    it("Should open at start time", async () => {
+        // check now
+        // jog time forward
+    });
+
+    //@todo 
+    it("Should not buy tokens before start time", async () => {
+        // uhm, all of these assume is already after opening 
+        // probs should have left factored out :/
+    })
 
     it("Should close at end time", async () => {
         // Using +/- one second gives in intermittant results
@@ -223,7 +243,6 @@ contract("Crowdsale", accounts =>  {
     })
 
     it("Should end sale when all available tokens sold",  async () => {
-
         // how are we going to implement this
     })
 
@@ -240,47 +259,86 @@ contract("Crowdsale", accounts =>  {
 
         const aliceBalance = await token.balanceOf(alice);
         assert.isTrue(aliceBalance.equals(ethWeiValue.div(tokenCostInWei)))
-
-        // aliceBalance;
-
-        // const a = ethWeiValue.div(tokenCostInWei);
-        // a;
-
-        // const b = logs.args.tokenAmount;
-        // b;
-
-        // assert.deepEqual(a, b)
-
-        // const c = await sale.tokenAllocation(alice);
-        // c;
-        // // ok, so... whats the 
-        // const d = ethWeiValue.div(tokenCostInWei);
-        // d;
-        // uhm..........
-        // the token amount is totally not correct
-        // assert parts of logs
-        //assert.equal(logs.args.tokenAmount)
-        
-        //console.log(claim)
     })
 
     // @todo test running up to max and withdrawaing all tokens
     // @todo test the boundaries within one wei
 
     it("Should not claim tokens after finalising", async () =>  {
-        // 
+        await sale.buyTokens({from: alice, value: ethWeiValue});
+        refund.addAddress(alice);
+        await utils.increaseTime(endTime + 2 - utils.blockNow())
+        await sale.finalise({from: owner});
+
+        let error;
+        try {
+           await sale.claimTokens({from: alice});
+        } catch (e) {
+            error = e;
+        }
+
+        utils.ensureException(error);  
+        assert.isTrue(error.message.indexOf('This account is due refund') >= 0)
+
     })
 
     it("Should claim refund after finalising", async () => {
+        await sale.buyTokens({from: alice, value: ethWeiValue});
+        refund.addAddress(alice); // uhm... what does this do?
+        await utils.increaseTime(endTime + 2 - utils.blockNow())
+        await sale.finalise({from: owner});
+
+        // get user balance before
+        const refunded = await sale.claimRefund({from: alice});
+        const logs = refunded.logs[0];
+
+        const fee = await sale.refundFee();
+
+        assert.isTrue(logs.args.ethAmount.equals(ethWeiValue.sub(fee)));
+        assert.equal(logs.args.account, alice)
+        // test against user after balance
 
     })
 
-    it("Should not claim refund before finalsing", async () => {
+    it("Should not claim refund before finalising", async () => {
+        await sale.buyTokens({from: alice, value: ethWeiValue});
+        refund.addAddress(alice);
+        await utils.increaseTime(endTime + 2 - utils.blockNow());
 
+        let error
+        try {
+            await sale.claimRefund({from: alice});
+        }
+        catch(e) {
+            error = e;
+        }
+        utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('Not yet finalised') >= 0)
     })
 
     it("Should not claim refund after finalising", async () => {
+        await sale.buyTokens({from: alice, value: ethWeiValue});
+        await utils.increaseTime(endTime + 2 - utils.blockNow())
+        await sale.finalise({from: owner});
 
+        // get user balance before
+        // refund.addAddress(alice);
+        await utils.increaseTime(endTime + 2 - utils.blockNow());
+
+        // capture exception, factor this in to a one liner
+
+        let error
+        try {
+            await sale.claimRefund({from: alice});
+        }
+        catch(e) {
+            error = e;
+        }
+        utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('No refund available') >= 0)
+
+        // assert.isTrue(logs.args.ethAmount.equals(ethWeiValue.sub(fee)));
+        // assert.equal(logs.args.account, alice)
     })
 
     // it should not buy tokens after endtime
@@ -316,6 +374,7 @@ contract("Crowdsale", accounts =>  {
         assert.equal(await sale.getBonus.call(100), '20')
         await utils.increaseTime((day.mul(8)).toNumber());
         assert.equal(await sale.getBonus.call(100), 10);
+        const refunded = await sale.claimRefund({from: alice});
         // could also test our own helper function matches
     })
 

@@ -20,8 +20,11 @@ contract Crowdsale is Ownable {
     uint256 public startTime;
     uint256 public endTime; 
     uint256 public price;
-    uint256 public minSpend; // whats the reasoning behing a minimum spend
+    uint256 public minSpend;
+    uint256 public maxSpend;
+    //@todo  this should be calculated a number of tokens
     uint256 public refundFee = 100000000000; //@todo make this a parameter number of tokens deducted
+    
     mapping(address => uint256) public tokenAllocation; // @todo change name to tokenAllocation or tokenClaim
     bool public finalised;
 
@@ -40,7 +43,8 @@ contract Crowdsale is Ownable {
         uint256 _startTime,
         uint256 _endTime,
         uint256 _tokenCost,
-        uint256 _minSpend
+        uint256 _minSpend,
+        uint256 _maxSpend
     ) public {
         token = GatewayERC20Contract(_token);
         startTime = _startTime;
@@ -51,6 +55,7 @@ contract Crowdsale is Ownable {
         endTime = _endTime;
         price = _tokenCost;
         minSpend = _minSpend;
+        maxSpend = _maxSpend;
 
         // what other values do we need to check?
         require(startTime >= block.timestamp, "Opening time is earlier than now");
@@ -63,9 +68,7 @@ contract Crowdsale is Ownable {
     view // should be really be pure
     returns (uint256)
     {
-        return price * minSpend;
-        // calculate from min spend
-        // or could change min spend to minimum token purchase
+        return minSpend / price;
     }
 
     modifier onlyWhileOpen {
@@ -78,18 +81,22 @@ contract Crowdsale is Ownable {
         _;
     }
 
+    // messed up my math somewhere???
     function isOpen() 
     public 
     view 
     returns (bool) {
-        return block.timestamp >= startTime && block.timestamp <= endTime; // amnd tokens remaining
+        return block.timestamp >= startTime 
+        && block.timestamp <= endTime
+        && (tokensSold + minTokenPurchase()) < token.balanceOf(address(this));
     }
 
     function hasClosed()
     public 
     view 
     returns (bool) {
-        return block.timestamp > endTime; // @todo || or all tokens sold
+        return block.timestamp > endTime 
+        || (tokensSold + minTokenPurchase() >= token.balanceOf(address(this))); // @todo || or all tokens sold
     }
 
     function remainingTokens()
@@ -154,7 +161,10 @@ contract Crowdsale is Ownable {
     onlyWhenFinalised
     {
         require(refundList.getAddressStatus(msg.sender) == true, "No refund available");
-        uint256 ethRefund = (tokenAllocation[msg.sender].sub(refundFee)).mul(price);
+        //uint256 fee = refundFee.mul(price);
+        uint256 ethRefund = (tokenAllocation[msg.sender].mul(price)).sub(refundFee);//.mul(price);
+        //uint256 ethRefund = (tokenAllocation[msg.sender].sub(refundFee)).mul(price);
+        //hmmmmm, we should be able to know what the fee is...
         tokenAllocation[msg.sender] = 0;
         msg.sender.transfer(ethRefund);
         emit Refund(msg.sender, ethRefund); // should we also have deposit?
@@ -172,6 +182,13 @@ contract Crowdsale is Ownable {
         treasury.transfer(_amount);
     }
 
+    // only after grace period
+    // have 28 days to collect tokens
+    // is that fair and reasonable
+    // on finalisation set a grace date...
+    // what happens to allocation of tokens.
+    // pre-signed transaction
+    // is it possible to approve more than exists in an account?
     function withdrawTokensToTreasury(uint256 _amount)
     public
     onlyWhenFinalised
