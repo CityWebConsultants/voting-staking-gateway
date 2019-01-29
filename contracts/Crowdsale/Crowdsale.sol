@@ -62,25 +62,31 @@ contract Crowdsale is Ownable {
         owner = msg.sender;
     }
 
+    ///@notice calculate minimum number of purchaseable tokens
+    ///@return number of purchaseable tokens
     function minTokenPurchase()
     public
-    view // should be really be pure
+    view
     returns (uint256)
     {
         return minSpend / price;
     }
 
+    ///@notice modifier, only allow whilst crowdsale open
     modifier onlyWhileOpen {
         require(isOpen(), "Crowd sale is not open");
         _;
     }
 
+    ///@notice modifier, only allow when finalised
     modifier onlyWhenFinalised {
         require(finalised == true, "Not yet finalised");
         _;
     }
 
-    // messed up my math somewhere???
+    
+    ///@notice check if sale open
+    ///@return bool, true if open, otherwise false
     function isOpen() 
     public 
     view 
@@ -90,6 +96,8 @@ contract Crowdsale is Ownable {
         && (tokensSold + minTokenPurchase()) <= token.balanceOf(address(this));
     }
 
+    ///@notice check sale has closed
+    ///@return bool, true if closed, otherwise false
     function hasClosed()
     public 
     view 
@@ -97,6 +105,8 @@ contract Crowdsale is Ownable {
         return block.timestamp > endTime || (tokensSold + minTokenPurchase() > token.balanceOf(address(this))); // @todo || or all tokens sold
     }
 
+    ///@notice check number of tokens in this account
+    ///@return uint256 number of tokens at this account address
     function remainingTokens()
     public
     view
@@ -105,6 +115,7 @@ contract Crowdsale is Ownable {
         return token.balanceOf(address(this));
     }
 
+    ///@notice finalise contract
     function finalise() 
     public
     onlyOwner
@@ -116,7 +127,7 @@ contract Crowdsale is Ownable {
         emit CrowdsaleFinalized();
     }
 
-    // All ur eth not belong to us
+    ///@notice do not allow direct eth transfer
     function () 
     public 
     payable
@@ -124,6 +135,7 @@ contract Crowdsale is Ownable {
         revert("Cannot accept eth directly");
     }
 
+    ///@notice recieves eth deposit and reserves tokens
     function buyTokens()
     public 
     payable
@@ -140,6 +152,7 @@ contract Crowdsale is Ownable {
         emit Contribution(msg.sender, amount, tokens);
     }
 
+    ///@notice once finalised, allow accounts to claim tokens
     function claimTokens()
     public
     onlyWhenFinalised
@@ -151,9 +164,7 @@ contract Crowdsale is Ownable {
         emit Claimed(msg.sender, claimed);
     }
 
-    // oh :o 
-    // we need a way to take out any remaning in tokens!
-
+    ///@notice once finalised, allow accounts to claim tokens
     function claimRefund() 
     public
     onlyWhenFinalised
@@ -167,8 +178,8 @@ contract Crowdsale is Ownable {
         emit Refund(msg.sender, ethRefund); // should we also have deposit?
     }
 
-    // @todo -- we don't really test multiple purchases
 
+    ///@notice withdraw eth to organisation accounts
     function withdrawEth(uint256 _amount)
     public
     onlyWhenFinalised
@@ -188,33 +199,18 @@ contract Crowdsale is Ownable {
         techFund.transfer(techFundAllocation);
     }
 
-    // only after grace period
-    // have 28 days to collect tokens
-    // is that fair and reasonable
-    // on finalisation set a grace date...
-    // what happens to allocation of tokens.
-    // pre-signed transaction
-    // is it possible to approve more than exists in an account?
-    // How do we provide extra security for investors here?
-    
     function withdrawTokensToTreasury(uint256 _amount)
     public
     //  only x time after finalisation?
     onlyWhenFinalised
     onlyOwner
     {   
-        // Dont want to end up with locked coins
-        require(_amount < tokensSold, "Cannot withdraw more than available");
+        // What do we want to check here?
+        // should it be bound by time or amount or both?
         token.transfer(treasury, _amount);
         emit Withdrawal(treasury, _amount);
     }
 }
-
-// a single claim function... if name is not on refund list then can claim coins back
-// otherwise the account is refunded minus a certain amount of tokens...
-// so say it costs 10 tokens to get a refund...
-// what happens if any tokens left locked in the contract....
-
 
 
 

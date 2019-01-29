@@ -5,25 +5,16 @@ const RefundList = artifacts.require("RefundList");
 const BN = require('bignumber.js');
 const utils = require('./helpers/Utils.js'); 
 // @todo refactor to check for exceptions + message in a single line
-// @todo resolve tests failing
-// what numbers are wrong here?coin
-// @todo check sequence and be sure we transactions are fully reverted
-// send / transfer ....???
-// @ todo add constants to utils
+// @todo resolve tests failing on bitbucket
+
 const tokenSymbol = 'BUD';
 const tokenName = 'eBudz';
 const tokenDecimals = 10;
-// hmmmmmmm. shift doesn't do the same thing 
 // BigNumber.config({ POW_PRECISION: 100 })
 // Tokens shifted for ERC20 decimal places
 const totalSupply = new BN('420000000').shift(tokenDecimals)
 const icoSupply = new BN('189000000').shift(tokenDecimals);
 
-// fix breaking tests...
-// when using non round numbers -- what should happen around rounding...
-// use round numbers when writing 
-// and then switch them about to make sure the arithmatic works in different 
-// circumstances
 
 // @todo when ethdollarvalue is not a round number we get different results.
 // find and fix issue.
@@ -36,35 +27,10 @@ const tokenCostInWei = ethWeiValue.dividedToIntegerBy(tokensPerEth);
 console.log('Tokens per eth: ', tokensPerEth)
 console.log('Token cost = ', tokenCostInWei)
 
-// const maxAmountEthCanRaise = icoSupply.dividedToIntegerBy(tokensPerEth);
-// Math.pow(0.7, 2)                // 0.48999999999999994
-// x = new BigNumber(0.7)
-// x.exponentiatedBy(2)            // '0.49'
-// BigNumber(3).pow(-2)  
-
-// const weekOneBonus = (amount) => amount.div(100).times(20).toFixed(0);
-// const weekTwoBonus = (amount) => amount.div(100).times(10).toFixed(0);
-// const tokensPurchased = (wei) => wei.dividedToIntegerBy(tokenCostInWei);
-
 const day = new BN('86400');
 
-const fundingGoal = 0;
-// Keep numbers round for easy counting
 const minimumSpend = web3.toWei(0.5, 'ether');
 const maximumSpend = web3.toWei(110, 'ether');
-
-
-// token    cost should be derived from contract
-// @todo resolve intermittant fail with crowsdsale open
-// @todo tests for
-// user withdrawal on inadequate funds raised
-// admin withdrawal on success
-// setting closed state
-// setting past time state
-// consider locking coins until sale is completed
-// then we have no issues with refunds
-// need to calculate how many ether
-// @todo check our boundaries
 
 contract("Crowdsale", accounts =>  {
     
@@ -79,10 +45,6 @@ contract("Crowdsale", accounts =>  {
     let gatewayBeneficiary = accounts[6];
 
     beforeEach('setup and deploy gateway contract', async () => {
-        // should set size of integer
-        // Start one minute from now
-        // ah! each time it runs
-        // bn set decimal places
         const now = utils.blockNow();
         startTime = now+600;  // start in ten minutes
         endTime = startTime+(day*30);
@@ -174,12 +136,6 @@ contract("Crowdsale", accounts =>  {
         assert.isFalse(await sale.hasClosed())
         const sold2 = await sale.buyTokens({from: alice, value: minimumSpend});
         assert.isTrue(await sale.hasClosed())
-        // const available = await token.balanceOf(sale.address);
-        // const allocated = await sale.tokenAllocation(alice);
-        // console.log(available)
-        // console.log(allocated)
-        // assert.isTrue(allocated.equals(available))
-        // assert.isTrue(await sale.hasClosed())
     });
 
     // what about accounting for rounding and fractions of a token?
