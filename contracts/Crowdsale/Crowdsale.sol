@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
-// @todo sort out admin withdrawal
-// @todo minimum amount left before closed (min purchase +?)
+//@todo add refund fee 
 
 import "../ownership/Ownable.sol";
 import "../GatewayERC20Contract.sol";
@@ -22,7 +21,7 @@ contract Crowdsale is Ownable {
     uint256 public minSpend;
     uint256 public maxSpend;
     //@todo  this should be calculated a number of tokens
-    uint256 public refundFee = 100000000000; //@todo make this a parameter number of tokens deducted
+    uint256 public refundFee; // = 100000000000; //@todo make this a parameter number of tokens deducted
     
     mapping(address => uint256) public tokenAllocation; // @todo change name to tokenAllocation or tokenClaim
     bool public finalised;
@@ -43,7 +42,8 @@ contract Crowdsale is Ownable {
         uint256 _endTime,
         uint256 _tokenCost,
         uint256 _minSpend,
-        uint256 _maxSpend
+        uint256 _maxSpend,
+        uint256 _refundFee
     ) public {
         token = GatewayERC20Contract(_token);
         startTime = _startTime;
@@ -55,8 +55,8 @@ contract Crowdsale is Ownable {
         price = _tokenCost;
         minSpend = _minSpend;
         maxSpend = _maxSpend;
+        refundFee = _refundFee;
 
-        // what other values do we need to check?
         require(startTime >= block.timestamp, "Opening time is earlier than now");
         require(endTime > startTime, "Closing time is before opening time");
         owner = msg.sender;

@@ -35,7 +35,7 @@ const maximumSpend = web3.toWei(110, 'ether');
 contract("Crowdsale", accounts =>  {
     
     // Contracts
-    let gateway, token, sale, refund;
+    let gateway, token, sale, refundList;
     let startTime, endTime
     let owner = accounts[0];
     let alice = accounts[2];
@@ -43,6 +43,7 @@ contract("Crowdsale", accounts =>  {
     let saleBeneficiary = accounts[4];
     let techBeneficiary = accounts[5];
     let gatewayBeneficiary = accounts[6];
+    let refundFee = '100000000000';
 
     beforeEach('setup and deploy gateway contract', async () => {
         const now = utils.blockNow();
@@ -55,18 +56,19 @@ contract("Crowdsale", accounts =>  {
             tokenSymbol, 
             tokenName
         );
-        refund = await RefundList.new();
+        refundList = await RefundList.new();
         sale = await Crowdsale.new(
             token.address,
             saleBeneficiary, 
             techBeneficiary,
-            refund.address, 
+            refundList.address, 
             /*fundingGoal,*/ 
             startTime, 
             endTime, 
             tokenCostInWei, // don't need top say in wei, doesn't say elsewhere  
             minimumSpend,
-            maximumSpend
+            maximumSpend,
+            refundFee
         );
         await token.transfer(sale.address, icoSupply);
         await utils.increaseTime(startTime - utils.blockNow()); 
@@ -230,7 +232,7 @@ contract("Crowdsale", accounts =>  {
 
     it("Should not claim tokens after finalising", async () =>  {
         await sale.buyTokens({from: alice, value: ethWeiValue});
-        refund.addAddress(alice);
+        refundList.addAddress(alice);
         await utils.increaseTime(endTime + 2 - utils.blockNow())
         await sale.finalise({from: owner});
 
@@ -250,7 +252,7 @@ contract("Crowdsale", accounts =>  {
         
         
         await sale.buyTokens({from: alice, value: ethWeiValue});
-        refund.addAddress(alice); // uhm... what does this do?
+        refundList.addAddress(alice); // uhm... what does this do?
         await utils.increaseTime(endTime + 2 - utils.blockNow())
         await sale.finalise({from: owner});
 
@@ -267,7 +269,7 @@ contract("Crowdsale", accounts =>  {
 
     it("Should not claim refund before finalising", async () => {
         await sale.buyTokens({from: alice, value: ethWeiValue});
-        refund.addAddress(alice);
+        refundList.addAddress(alice);
         await utils.increaseTime(endTime + 2 - utils.blockNow());
 
         let error
@@ -329,6 +331,7 @@ contract("Crowdsale", accounts =>  {
         // to withdraw unsold tokens...
         // withdraw tokens to treasury...
         // or should these be staked...
+        //@todo
         const treasury = await token.balanceOf(saleBeneficiary);
     })
 });
