@@ -4,8 +4,6 @@ const Crowdsale = artifacts.require("Crowdsale");
 const RefundList = artifacts.require("RefundList");
 const BN = require('bignumber.js');
 const utils = require('./helpers/Utils.js'); 
-// @todo refactor to check for exceptions + message in a single line
-// @todo resolve tests failing on bitbucket
 
 const tokenSymbol = 'BUD';
 const tokenName = 'eBudz';
@@ -60,8 +58,7 @@ contract("Crowdsale", accounts =>  {
             token.address,
             saleBeneficiary, 
             techBeneficiary,
-            refundList.address, 
-            /*fundingGoal,*/ 
+            refundList.address,
             startTime, 
             endTime, 
             tokenCostInWei, // don't need top say in wei, doesn't say elsewhere  
@@ -151,7 +148,7 @@ contract("Crowdsale", accounts =>  {
     });
 
     it.skip("Should open at start time", async () => {
-        // @todo
+        // @todo 
         // since time is jogged forward in beforeEach
         // can't test the same way as rest
     });

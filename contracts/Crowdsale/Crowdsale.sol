@@ -184,8 +184,6 @@ contract Crowdsale is Ownable {
     public
     onlyWhenFinalised
     onlyOwner
-    //  only x time after finalisation?
-    // how do we provide assurance to users?
     {   
         // 75% to treasury, 25% to technical development
         uint256 treasuryAllocation = _amount.div(100).mul(75);
@@ -195,14 +193,12 @@ contract Crowdsale is Ownable {
         techFund.transfer(techFundAllocation);
     }
 
+    ///@notice withdraw remaining tokens
     function withdrawTokensToTreasury(uint256 _amount)
     public
-    //  only x time after finalisation?
     onlyWhenFinalised
     onlyOwner
     {   
-        // What do we want to check here?
-        // should it be bound by time or amount or both?
         token.transfer(treasury, _amount);
         emit Withdrawal(treasury, _amount);
     }
