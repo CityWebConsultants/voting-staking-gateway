@@ -188,13 +188,9 @@ contract Crowdsale is Ownable {
     // how do we provide assurance to users?
     {   
         // 75% to treasury, 25% to technical development
-        // uint256 treasuryAllocation = address(this).balance.div(100).mul(75);
-        // uint256 techFundAllocation = address(this).balance.sub(treasuryAllocation);
-
         uint256 treasuryAllocation = _amount.div(100).mul(75);
         uint256 techFundAllocation = _amount.sub(treasuryAllocation);
 
-        // Transfer Eth
         treasury.transfer(treasuryAllocation);
         techFund.transfer(techFundAllocation);
     }

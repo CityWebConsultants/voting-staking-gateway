@@ -15,7 +15,6 @@ const tokenDecimals = 10;
 const totalSupply = new BN('420000000').shift(tokenDecimals)
 const icoSupply = new BN('189000000').shift(tokenDecimals);
 
-
 // @todo when ethdollarvalue is not a round number we get different results.
 // find and fix issue.
 const ethDollarValue = new BN('100');
@@ -105,8 +104,6 @@ contract("Crowdsale", accounts =>  {
 
     it("Should buy some tokens", async () => {
         
-       //  console.log('gas cost', await sale.buyTokens.estimateGas({from: alice, value: ethWeiValue}));
-       // Buy one eth worth of tokens 
         const sentTransaction = await sale.buyTokens({from: alice, value: ethWeiValue});
 
         const logs = sentTransaction.logs[0];
@@ -117,9 +114,6 @@ contract("Crowdsale", accounts =>  {
 
         assert.isTrue(tokensPerEth.equals(await sale.tokenAllocation(alice)));
     });
-
-
-    // try running this through the latest ganache-cli and see what happens
 
     it("Should buy all available tokens", async () => { 
 
@@ -156,19 +150,14 @@ contract("Crowdsale", accounts =>  {
         
     });
 
-    // Should maybe factor out finalising and closing
-    //@todo
-    it("Should open at start time", async () => {
-        // check now
-        // jog time forward
+    it.skip("Should open at start time", async () => {
+        // @todo
+        // since time is jogged forward in beforeEach
+        // can't test the same way as rest
     });
 
-    //@todo 
-    it("Should not buy tokens before start time", async () => {
-        // we can't reverse time? can we?
-        // uhm, all of these assume is already after opening 
-        // probs should have left factored out :/
-    })
+
+    it.skip("Should not buy tokens before start time", async () => {})
 
     it("Should close at end time", async () => {
         // Using +/- one second gives in intermittant results
@@ -196,7 +185,6 @@ contract("Crowdsale", accounts =>  {
     })
 
     it("Should not finalise before sale ends", async () => {
-        //@todo pass a string so we can be more specific about what exception is occurring
         let error;
             try {
                 await sale.finalise({from: owner});
@@ -210,8 +198,8 @@ contract("Crowdsale", accounts =>  {
     it("Should finalise after sale ends", async () => {
         await utils.increaseTime(endTime + 2 - utils.blockNow())
         const finalised =  await sale.finalise({from: owner});
-        // Bug where an event with no params does list event name in receipt
-        // not sure how to assert logs
+        // Bug where an event with no params does not list event name in receipt
+        // not sure how to assert non-existant logs
         assert.isTrue(await sale.finalised())
     })
 
@@ -250,7 +238,6 @@ contract("Crowdsale", accounts =>  {
 
     it("Should claim refund after finalising", async () => {
         
-        
         await sale.buyTokens({from: alice, value: ethWeiValue});
         refundList.addAddress(alice); // uhm... what does this do?
         await utils.increaseTime(endTime + 2 - utils.blockNow())
@@ -263,8 +250,6 @@ contract("Crowdsale", accounts =>  {
 
         assert.isTrue(logs.args.ethAmount.equals(ethWeiValue.sub(fee)));
         assert.equal(logs.args.account, alice)
-        // should we also test against balance
-
     })
 
     it("Should not claim refund before finalising", async () => {
@@ -321,17 +306,23 @@ contract("Crowdsale", accounts =>  {
         
         assert.isTrue(saleBeneficiaryAfter.equals(saleBeneficiaryBefore.add(treasuryPortion)));
         assert.isTrue(techFundBalanceAfter.equals(techFundBalanceBefore.add(techPortion)));
-        
-        // whatd the best way to check tx -- make a call to block?
     })
 
-    it.skip("Should withdraw remaining tokens to treasury", async () => {
-        // Should the keyholder be allowed to withdraw more tokens
-        // than were sold in the sale -- or should they only be able 
-        // to withdraw unsold tokens...
-        // withdraw tokens to treasury...
-        // or should these be staked...
-        //@todo
-        const treasury = await token.balanceOf(saleBeneficiary);
+    it("Should withdraw remaining tokens to treasury", async () => {
+
+        const treasuryBalance = await token.balanceOf(saleBeneficiary);
+        const saleBalance = await token.balanceOf(sale.address);
+        treasuryBalance;
+        await utils.increaseTime(endTime + 2 - utils.blockNow())
+        await sale.finalise({from: owner});
+
+        const withdrawn = await sale.withdrawTokensToTreasury(saleBalance);
+        const logs = withdrawn.logs[0];
+        assert.equal(logs.event, 'Withdrawal');
+        assert.equal(logs.args.account, saleBeneficiary);
+        assert.isTrue(saleBalance.equals(logs.args.amount));
+
+        const treasuryBalanceAfter = await token.balanceOf(saleBeneficiary);
+        assert.isTrue(treasuryBalanceAfter.equals(saleBalance));
     })
 });
