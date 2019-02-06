@@ -34,16 +34,21 @@ function blockNow() {
     return web3.eth.getBlock(web3.eth.blockNumber).timestamp;
 }
 
+function blockNowSeconds() {
+    return Math.floor(this.blockNow() / 1000);
+}
+
 async function increaseTime(integer) {
     await web3.currentProvider.send({
         jsonrpc: "2.0", 
         method: "evm_increaseTime", 
         params: [integer],
         id: 0,
-    })  
+    })
 
     await advanceBlock();
 }
+
 
 async function advanceToBlock(number) {
     if (web3.eth.blockNumber > number) {
@@ -67,5 +72,6 @@ module.exports = {
     addPercent: addPercent,
     increaseTime: increaseTime,
     promisify: promisify,
-    blockNow: blockNow
+    blockNow: blockNow,
+    blockNowSeconds: blockNowSeconds
 };
