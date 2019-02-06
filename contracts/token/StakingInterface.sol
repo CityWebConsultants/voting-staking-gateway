@@ -2,16 +2,14 @@ pragma solidity ^0.4.24;
 
 // Adapted from EIP900
 // @see https://github.com/ethereum/EIPs/issues/900
-contract StakingInterface { 
+contract StakingInterface {
 
     uint256 public totalStaked;
     
     event Staked(address indexed user, uint256 amount, uint256 stakeUntil, bool hasBonus);
     event Unstaked(address indexed user, uint256 amount);
 
-    // @todo remove stakeFor to avoid edge case attack Vector
     function stake(uint256 amount, uint256 time, bool hasBonus) public;
-    function stakeFor(address user, uint256 amount, uint256 time, bool hasBonus) public;
     function unstake(uint256 amount) public;
     function totalStakedFor(address addr) public view returns (uint256);
     function getRate(uint256 time) public pure returns (uint256);

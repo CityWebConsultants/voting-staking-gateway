@@ -17,6 +17,8 @@ contract('Staking', function (accounts) {
     let admin = accounts[1];
     let bob = accounts[2];
     let carol = accounts[3];
+    let david = accounts[4];
+    let erin = accounts[5];
 
     const second = new BigNumber('1');
     const day = new BigNumber('86400');
@@ -184,14 +186,21 @@ contract('Staking', function (accounts) {
 
     it("Should not allow staking when inadequate bonus funds in contract to pay out", async() => {
         const availableBonusBefore = await bank.availableBonusTokens();
-        const staked = await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: bob});
-        const availableBonusAfter = await bank.availableBonusTokens();
 
+        await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: alice});
+        await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: bob});
+        await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: carol});
+        await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: david});
+        await bank.stake((initialBankBalance), month.times(24).plus(day), true, {from: erin});
+        
+        const availableBonusAfter = await bank.availableBonusTokens();
+        
         assert.equal(availableBonusAfter.toString(), '0');
 
         let error;
         try {
-            await bank.stake(10, month.times(6).plus(day), true, {from: alice});
+            const res = await bank.stake(10, month.times(12).plus(day), true, {from: alice});
+            res;
         } catch (e) {
             error = e;
         }
@@ -199,10 +208,9 @@ contract('Staking', function (accounts) {
         utils.ensureException(error);
         const stakedNoBonus = await bank.stake(initialBalance, month.times(6).plus(day), false, {from: alice});
         assert.equal(stakedNoBonus.logs[0].event, 'Staked');
-
         await utils.increaseTime(month.times(24).plus(day).toNumber());
 
-        const unstaked = await bank.unstake(initialBankBalance*2, {from: bob});
+        const unstaked = await bank.unstake(initialBankBalance*1.2, {from: bob});
         assert(unstaked.logs[0].event, 'Unstaked');
         
         const bankBalance = await token.balanceOf.call(bank.address);

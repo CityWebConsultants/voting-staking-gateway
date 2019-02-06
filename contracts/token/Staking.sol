@@ -57,17 +57,6 @@ contract Staking is StakingInterface, MultiSigWallet {
     ///@param _time Length of time in seconds to take for.
     ///@param _claimBonus Whether a bonus should be applied.
     function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
-        stakeFor(msg.sender, _amount, _time, _claimBonus);
-    }
-
-    ///@notice Stakes a certain amount of tokens for another user.
-    ///@param _user Address of the user to stake for.
-    ///@param _amount Amount of tokens to stake.
-    ///@param _time Length of time in seconds to take for.
-    ///@param _claimBonus Whether a bonus should be applied.
-    function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) 
-    public
-    {
         uint256 stakeUntil = (_time + block.timestamp); //solium-disable-line security/no-block-members
         // @todo rename amount to disambiguate
         uint256 rate = getRate(_time);
@@ -84,13 +73,13 @@ contract Staking is StakingInterface, MultiSigWallet {
             amount = _amount;
         }
 
-        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
+        require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer tokens");
 
         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
-        stakesFor[_user].push(stakeItem);
+        stakesFor[msg.sender].push(stakeItem);
         totalStaked = totalStaked.add(amount);
 
-        emit Staked(_user, amount, stakeUntil, _claimBonus);
+        emit Staked(msg.sender, amount, stakeUntil, _claimBonus);
     }
 
     ///@notice Unstakes a certain amount of tokens.
@@ -122,6 +111,7 @@ contract Staking is StakingInterface, MultiSigWallet {
                 amount = amount.add(stakes[i].amount);
             }
         }
+
         return amount;   
     }
 
