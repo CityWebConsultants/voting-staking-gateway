@@ -19,12 +19,16 @@ contract('PaymentGatewayContract - Admin',  function(accounts){
     const fee = '4'
 
     before('setup and deploy gateway contract', async () => {
-        gatewayContract = await PaymentGatewayContract.new(fee, gatewayBeneficiary);
+        gatewayContract = await PaymentGatewayContract.new(
+            fee, 
+            gatewayBeneficiary
+        );
         tokenContract = await GatewayERC20Contract.new(
             gatewayContract.address, 
             totalSupply, 
             symbol, 
-            name);
+            name
+        );
     })
 
     /*

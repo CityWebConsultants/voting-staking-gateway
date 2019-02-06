@@ -9,6 +9,7 @@ contract StakingInterface {
     event Staked(address indexed user, uint256 amount, uint256 stakeUntil, bool hasBonus);
     event Unstaked(address indexed user, uint256 amount);
 
+    // @todo remove stakeFor to avoid edge case attack Vector
     function stake(uint256 amount, uint256 time, bool hasBonus) public;
     function stakeFor(address user, uint256 amount, uint256 time, bool hasBonus) public;
     function unstake(uint256 amount) public;

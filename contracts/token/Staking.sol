@@ -210,6 +210,9 @@ contract Staking is StakingInterface, MultiSigWallet {
         return available;   
     }
     
+    //@todo update values here
+    //@todo would be nice to make this definable on contract creation
+
     ///@notice set rate
     ///@param _timeLength Length of time a user has staked for
     ///@return Percentage rate of bonus
@@ -220,28 +223,24 @@ contract Staking is StakingInterface, MultiSigWallet {
 
         require(_timeLength < month.mul(25), "Cannot stake for this long");
         
-        if (_timeLength >= 0 && _timeLength < 6) {
+        if (_timeLength < month.mul(6)) {
             return 0;
         }
     
-        if (_timeLength >= month.mul(6) && _timeLength < month.mul(9)) {
-            return 20;
-        }
-
-        if (_timeLength >= month.mul(9) && _timeLength < month.mul(12)) {
-            return 30;
+        if (_timeLength >= month.mul(6) && _timeLength < month.mul(12)) {
+            return 5;
         }
 
         if (_timeLength >= month.mul(12) && _timeLength < month.mul(18)) {
-            return 50;
+            return 10;
         }
 
         if (_timeLength >= month.mul(18) && _timeLength < month.mul(24)) {
-            return 75;
+            return 15;
         }
 
-        if (_timeLength >= month.mul(24) && _timeLength < month.mul(25)) {
-            return 100;
+        if (_timeLength >= month.mul(24)) {
+            return 20;
         }
     }
 }

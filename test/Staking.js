@@ -1,6 +1,7 @@
 // @todo consider modifying contracts so we can run tests on live chain
 // @todo tidy up comparisons so we dont have bignumber and tostring everywhere
 // @todo test eth bounce
+// @todo check we are doing boundaries correctly
 
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
@@ -22,7 +23,9 @@ contract('Staking', function (accounts) {
     // For purposes of smart contract we have 30 days in a monnth
     const month = day.times(30);
 
-    const rateBoundaries = [0,6,9,12,18,24].map(item => month.times(item));
+    // Consider making the contarct dynamic so we can pass
+    // rates and boundaries through the constructor
+    const rateBoundaries = [0,6,12,18,24].map(item => month.times(item));
 
     beforeEach(async () => {
         initialBalance = 10000;

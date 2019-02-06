@@ -15,9 +15,10 @@ contract('PaymentGatewayContract - Merchant',  function(accounts){
 
     before('setup and deploy gateway contract', async () => {
         gatewayContract = await PaymentGatewayContract.new(fee, gatewayBeneficiary);  
-        await gatewayContract.addMerchant(merchantAddress); 
+        await gatewayContract.addMerchant(merchantAddress);
     })
     
+    // uhm... what is this supposed to do!!!!!!
     // @todo add relevant tests for tokens
 });
 
