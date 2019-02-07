@@ -5,9 +5,6 @@ import "./StakingInterface.sol";
 import "../math/SafeMath.sol";
 import "../MultiSigWallet.sol";
 
-// @todo add multisig functionality to withdraw all funds in case of emergency.
-// have to initialise multisig at point... have to go back and change tests for same
-
 contract Staking is StakingInterface, MultiSigWallet {
 
     using SafeMath for uint256;
@@ -15,7 +12,7 @@ contract Staking is StakingInterface, MultiSigWallet {
     struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
         uint256 stakeUntil; // timestamp, available to withdraw
-        uint256 amount; // current balance in this tranche...
+        uint256 amount; // redeemable value in this tranche.
     }
 
     ERC20Interface public token;
