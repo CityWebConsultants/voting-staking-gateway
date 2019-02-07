@@ -75,7 +75,7 @@ module.exports = (deployer) => {
         // costs over 4.1M Gas  :/
         return deployer.deploy(Staking, tokenAddress, signers, '2')
         .then((staking) => {
-          return deployer.deploy(Voting, staking.address, 500000000000);
+          return deployer.deploy(Voting, staking.address);
         })
         // whats the voting param?
         // return deployer.deploy(
