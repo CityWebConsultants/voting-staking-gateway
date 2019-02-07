@@ -26,7 +26,7 @@ contract('Voting', function (accounts) {
 
     beforeEach(async () => {
         staking = await StakingMock.new(true, 100);
-        voting = await VotingContract.new(staking.address, 100);
+        voting = await VotingContract.new(staking.address);
         now = await utils.blockNow();
         nextWeek = now + oneWeek;
         nextMonth = now + oneMonth;
@@ -38,6 +38,7 @@ contract('Voting', function (accounts) {
         const logs = createdProposal.logs[0];
 
         // check event
+        //@todo simplify event -- remove address of creator
         assert.equal(logs.args.endTime, nextWeek);
         assert.equal(logs.args.id, 0);
         assert.equal(logs.args.user, accounts[0]);
@@ -65,6 +66,11 @@ contract('Voting', function (accounts) {
         assert.equal(optionDescriptionsText[3], optionC);
     })
 
+    it.skip("Should only allow owner to create vote", async () => {})
+    it.skip("Should not vote without stake", async () => {})
+    //@todo test out of range options
+    //@todo test weights 
+
     it("Should cast a vote", async () => {
         
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
@@ -76,8 +82,6 @@ contract('Voting', function (accounts) {
 
         const ballot = await voting.ballotOf(0, accounts[1]);
         assert.equal(ballot.toString(), '1');
-        // consider explicitly setting stakedForAt
-        // also consider changing logic <= > in contract
         const weightedCount = await voting.weightedVoteCountsOf(0, 1);
         assert.isTrue(weightedCount.eq(100));
     })
@@ -186,16 +190,5 @@ contract('Voting', function (accounts) {
         }
 
         utils.ensureException(errPoll);
-    })
-
-    it("Should prevent creation of a poll when inadequate funds staked at end date", async () => {
-        
-        let inadequateSteak;
-        try {
-            await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextMonth + oneMinute);
-        } catch(e) {
-            inadequateSteak = e;
-        }
-        utils.ensureException(inadequateSteak);
     })
 })

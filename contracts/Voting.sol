@@ -1,8 +1,10 @@
 pragma solidity ^0.4.24;
 
+// @todo rename this  doc
+
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
-
+import "./ownership/Ownable.sol";
 /**
   (1) Support multiple issues.
   (2) Supports defining multiple options
@@ -12,7 +14,7 @@ import "./VotingInterface.sol";
   */
 
   // @todo document each function
-contract Voting is VotingInterface {
+contract Voting is VotingInterface, Ownable {
     StakingInterface stake;
 
     uint256 minimumStakeToPropose;
@@ -29,16 +31,24 @@ contract Voting is VotingInterface {
 
     Proposal[] proposals;
 
-    constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
+//@todo keep the staking for voting...
+//@todo only remove it for raising proposals
+
+    constructor(StakingInterface stakingAddress) public {
         stake = StakingInterface(stakingAddress);
-        minimumStakeToPropose = _minimumStakeToPropose;
+        owner = msg.sender;
     }
 
+    ///@notice create a new issue
+    ///@param _description variable length string question
+    ///@param _optionDescriptions array of options, must be <= 32bytes each 
+    ///@param  _votingStarts unix time in seconds to open vote
+    ///@param _votingEnds un
     function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
-    public // add modifier
+    public
+    onlyOwner
     {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
-        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStakeToPropose, "Inadeqaute funds at end date");
         // Length increased by 1 to allow for first element to used as a zero (null) value
         bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
  
