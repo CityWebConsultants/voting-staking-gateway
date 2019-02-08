@@ -1,10 +1,14 @@
 pragma solidity ^0.4.24;
 
 // @todo rename this  doc
-// @todo what should happen in in stances when there is no voting?
+
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
-import "./ownership/Ownable.sol";
+
+// Can remove amount staked from this...
+// Need to add to binary version
+// @todo update docBlocks
+// consider set status 
 /**
   (1) Support multiple issues.
   (2) Supports defining multiple options
@@ -14,53 +18,42 @@ import "./ownership/Ownable.sol";
   */
 
   // @todo document each function
-contract Voting is VotingInterface, Ownable {
+contract BinaryVoting is VotingInterface {
     StakingInterface stake;
 
     uint256 minimumStakeToPropose;
+    mapping(uint256 => bytes32) voteOptions;
 
     struct Proposal {
         uint256 votingStarts;
         uint256 votingEnds;
         string issueDescription;
-        bytes32[] optionDescriptions; // maybe this should be a mapping and we consider 0 to be void
-        // do we need to have available options?
         mapping (uint256 => uint256) weightedVoteCounts;
         mapping (address => uint256) ballotOf_;
     }
 
     Proposal[] proposals;
 
-//@todo keep the staking for voting...
-//@todo only remove it for raising proposals
-
-    constructor(StakingInterface stakingAddress) public {
+    constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
         stake = StakingInterface(stakingAddress);
-        owner = msg.sender;
+        minimumStakeToPropose = _minimumStakeToPropose;
+
+        voteOptions[1] = "Yes";
+        voteOptions[2] = "No";
     }
 
-    ///@notice create a new issue
-    ///@param _description variable length string question
-    ///@param _optionDescriptions array of options, must be <= 32bytes each 
-    ///@param  _votingStarts unix time in seconds to open vote
-    ///@param _votingEnds un
-    function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
-    public
-    onlyOwner
+    //@todo should factor out adding option to proposal
+    // doesn't change so it's a waste of storage
+    function createIssue(string _description, uint256 _votingStarts, uint256 _votingEnds)
+    public  
     {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
-        // Length increased by 1 to allow for first element to used as a zero (null) value
-        bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
- 
-        for (uint256 i = 0; i < _optionDescriptions.length; i++) {
-            optionDescriptions[i+1] = _optionDescriptions[i];
-        }
+        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStakeToPropose, "Inadeqaute funds at end date");
 
         Proposal memory proposal = Proposal(
             _votingStarts, 
             _votingEnds, 
-            _description, 
-            optionDescriptions
+            _description
         );
         proposals.push(proposal);
 
@@ -75,8 +68,8 @@ contract Voting is VotingInterface, Ownable {
     returns (bool success) 
     {
         Proposal storage proposal = proposals[_proposalId];
-        require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
-        require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
+        require(_option == 1 || _option == 2, "Option out of range");
+        require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote."); 
         require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");
 
         proposal.ballotOf_[msg.sender] = _option;
@@ -95,12 +88,7 @@ contract Voting is VotingInterface, Ownable {
     view 
     returns (string description) 
     {   
-        // Should range be required here 
-        if (_option > 0 && _option <= proposals[_proposalId].optionDescriptions.length) {
-            return bytes32ToString(proposals[_proposalId].optionDescriptions[_option]); 
-        } else {
-            return "";
-        }
+        return bytes32ToString(voteOptions[_option]);
     }
 
     ///@notice Fetch list of option descriptions
@@ -109,8 +97,10 @@ contract Voting is VotingInterface, Ownable {
     function optionDescriptions(uint256 _proposalId) 
     public
     view
-    returns (bytes32[] descriptions) {
-        return proposals[_proposalId].optionDescriptions;
+    returns (bytes32[3] descriptions) {
+        descriptions[1] = voteOptions[1];
+        descriptions[2] = voteOptions[2];
+        return descriptions;
     }
 
     ///@notice Not implemented
@@ -182,30 +172,23 @@ contract Voting is VotingInterface, Ownable {
     function topOptions(uint256 _proposalId, uint256 _limit) 
     public
     view
-    returns (uint256[])
-    {      
-        //@todo in situations of no votes we should return 0;
-        // double check how that is handled here?
-        //Proposal memory proposal = proposals[_proposalId];
+    returns (uint256[] ordered)
+    {   
+        // should rename 
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
 
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length-1;
-        uint256[] memory ordinalIndex = new uint256[](_limit);
-
-        for (uint256 i = 0; i < _limit; i++) {
-            uint256 highestIndex = 0;
-            uint256 acc = 0;
-            for (uint256 j = 1; j <= optionSize; j++) {
-                if (voteCounts[j] > acc) {
-                    highestIndex = j;  
-                    acc = voteCounts[highestIndex];
-                }
-            }
-            delete voteCounts[highestIndex]; //solium-disable-line
-            ordinalIndex[i] = highestIndex;
+        if (/*voteCounts[1] > 0 &&*/ voteCounts[1] >= voteCounts[2]) {
+            ordered[1] = 1;
+            ordered[2] = 2;
+            return ordered;
+        } else if (/*voteCounts[2] > 0 && */voteCounts[1] < voteCounts[2]) {
+            ordered[1] = 2;
+            ordered[2] = 1;
+            return ordered;
         }
 
-        return ordinalIndex;
+        // ordered[0] = 0;
+        // return ordered;
     }
 
     ///@notice Get winning options
@@ -226,16 +209,12 @@ contract Voting is VotingInterface, Ownable {
     ///@return Numerical list of available options
     function availableOptions(uint256 _proposalId) 
     public 
-    view 
+    view
     returns (uint256[] options)
     {   
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length;
-        // uint256[] memory options = new uint256[](optionSize);
-        // what happens in storage versus array, is it ok to allow the return param to define?
-        for(uint256 i = 0; i < optionSize; i++) {
-            options[i] = i+1;
-        }
-
+        // should be able to do this in oneline but linter complains :/ ?
+        options[0] = 1;
+        options[1] = 2;
         return options;
     }
 
