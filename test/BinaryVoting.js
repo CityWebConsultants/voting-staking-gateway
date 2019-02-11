@@ -6,6 +6,9 @@ const utils = require('./helpers/Utils.js');
 // @todo improve exception handling for DRYness
 // @todo review tests for user votes on multiple polls
 // @todo all suggestions for improving coverage welcome
+//@todo add shared constants to utils
+// eg one month one year etc....
+//@todo change message used throughout -- stick in a var
 
 contract('BinaryVoting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -16,15 +19,25 @@ contract('BinaryVoting', function (accounts) {
     const optionAHex = web3.toHex(optionA);
     const optionBHex = web3.toHex(optionB);
 
-    const oneMonth = 2630000;
+    const oneMonth = 2592000;
     const oneWeek = 604800;
+    const oneDay = 86400;
     const oneMinute = 60;
+
+
+    const admin = accounts[0];
+    const alice = accounts[1];
+    const bob = accounts[3];
+    const charlie = accounts[4];
+    const debs = accounts[5];
+
+    const minStake = 100;
 
     before(async () => {})
 
     beforeEach(async () => {
-        staking = await StakingMock.new(true, 100);
-        voting = await BinaryVoting.new(staking.address, 100);
+        staking = await StakingMock.new(true, minStake);
+        voting = await BinaryVoting.new(staking.address, minStake);
         now = await utils.blockNow();
         nextWeek = now + oneWeek;
         nextMonth = now + oneMonth;
@@ -61,16 +74,25 @@ contract('BinaryVoting', function (accounts) {
         assert.equal(optionDescriptionsText[2], optionB);
     })
 
+    it("Should have correct status", async () => {
+
+        await voting.createIssue('Does this work?', now, nextWeek);
+        assert.equal(await voting.getStatus(0), true);
+
+        await utils.increaseTime(oneWeek + oneMinute);
+        assert.equal(await voting.getStatus(0), false);
+    })
+
     it("Should cast a vote", async () => {
         
         await voting.createIssue('Does this work?', now, nextWeek);
-        const voted = await voting.vote(0, 1, {from: accounts[1]});
+        const voted = await voting.vote(0, 1, {from: alice});
         args = voted.logs[0].args;
 
-        assert.equal(args.from, accounts[1]);
+        assert.equal(args.from, alice);
         assert.equal(args.value.toString(), '1');
 
-        const ballot = await voting.ballotOf(0, accounts[1]);
+        const ballot = await voting.ballotOf(0, alice);
         assert.equal(ballot.toString(), '1');
         // consider explicitly setting stakedForAt
         // also consider changing logic <= > in contract
@@ -80,11 +102,11 @@ contract('BinaryVoting', function (accounts) {
 
     it("Should not allow a second vote", async () => {
         await voting.createIssue('Does this work?', now, nextWeek);
-        await voting.vote(0, 1, {from: accounts[1]});   
+        await voting.vote(0, 1, {from: alice});
         
         let errVote;
         try {
-            await voting.vote(0, 1, {from: accounts[1]});
+            await voting.vote(0, 1, {from: alice});
         } catch(e) {
            errVote = e; 
         }
@@ -97,7 +119,7 @@ contract('BinaryVoting', function (accounts) {
 
         let errVote;
         try {
-            await voting.vote(0, 1, {from: accounts[1]});
+            await voting.vote(0, 1, {from: alice});
         } catch(e) {
            errVote = e; 
         }
@@ -107,7 +129,7 @@ contract('BinaryVoting', function (accounts) {
 
         errVote = '';
         try {
-            await voting.vote(0, 1, {from: accounts[2]});
+            await voting.vote(0, 1, {from: bob});
         } catch(e) {
            errVote = e; 
         }
@@ -120,8 +142,8 @@ contract('BinaryVoting', function (accounts) {
         
         // check events fire on each?
         await voting.vote(0, 1, {from: accounts[0]});
-        await voting.vote(0, 1, {from: accounts[1]});
-        await voting.vote(0, 1, {from: accounts[2]});
+        await voting.vote(0, 1, {from: alice});
+        await voting.vote(0, 1, {from: bob});
         await voting.vote(0, 2, {from: accounts[3]});
 
 
@@ -132,8 +154,8 @@ contract('BinaryVoting', function (accounts) {
         await voting.createIssue('Does this work too?', nextWeek);
 
         await voting.vote(1, 1, {from: accounts[0]});
-        await voting.vote(1, 2, {from: accounts[1]});
-        const foo = await voting.vote(1, 2, {from: accounts[2]});
+        await voting.vote(1, 2, {from: alice});
+        const foo = await voting.vote(1, 2, {from: bob});
         foo;
 */
         // checkall the results
@@ -154,7 +176,7 @@ contract('BinaryVoting', function (accounts) {
         
         let errZero;
         try {
-            await voting.vote(0, 0, {from: accounts[1]});
+            await voting.vote(0, 0, {from: alice});
         } catch(e) {
             errZero = e;
         }
@@ -163,7 +185,7 @@ contract('BinaryVoting', function (accounts) {
 
         let errTooHigh;
         try {
-            await voting.vote(0, 4, {from: accounts[1]});
+            await voting.vote(0, 4, {from: alice});
         } catch(e) {
             errTooHigh = e;
         }
@@ -172,7 +194,7 @@ contract('BinaryVoting', function (accounts) {
     });
 
     it("It should throw on non-existing poll", async () => {
-        
+ 
         let errPoll;
         try {
             await voting.vote(1, 1, {from: accounts[0]});
@@ -184,13 +206,45 @@ contract('BinaryVoting', function (accounts) {
     })
 
     it("Should prevent creation of a poll when inadequate funds staked at end date", async () => {
-        
+
+        assert.isTrue(await staking.totalStakedForAt(bob, nextMonth + oneDay) < minStake)
+
         let inadequateSteak;
         try {
-            await voting.createIssue('Does this work?', now, nextMonth + oneMinute);
+            await voting.createIssue('Does this work?', now, nextMonth + oneDay, {from: bob});
+            foo;
         } catch(e) {
             inadequateSteak = e;
         }
         utils.ensureException(inadequateSteak);
     })
+
+    it("Should have correct voting results", async () => {
+        await voting.createIssue('Does this work?', now, nextWeek);
+
+        await voting.vote(0, 1, {from: alice});
+        await voting.vote(0, 2, {from: bob});
+        await voting.vote(0, 2, {from: charlie});
+
+        assert.equal(await voting.winningOption(0), 2);
+
+        const topOptions = await voting.topOptions(0, 2);
+        assert.equal(topOptions[0], 2);
+        assert.equal(topOptions[1], 1);
+
+        await voting.createIssue('Noone votes for this?', now, nextWeek);
+        
+        const noVotesTopOptions = await voting.topOptions(1, 2);
+        assert.equal(noVotesTopOptions[0], 0);
+        assert.equal(noVotesTopOptions[1], 0);
+
+        assert(await voting.winningOption(1), 0);
+
+        await voting.createIssue('Noone votes for this?', now, nextWeek);
+        await voting.vote(2, 1, {from: alice});
+        await voting.vote(2, 2, {from: bob});
+    })
+
+    // what happens when we have 
+
 })

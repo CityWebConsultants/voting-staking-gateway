@@ -6,6 +6,8 @@ const utils = require('./helpers/Utils.js');
 // @todo improve exception handling for DRYness
 // @todo review tests for user votes on multiple polls
 // @todo all suggestions for improving coverage welcome
+//@todo make sure we have tested all functions
+//@todo make sure we have tested all events
 
 contract('Voting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -21,6 +23,12 @@ contract('Voting', function (accounts) {
     const oneMonth = 2630000;
     const oneWeek = 604800;
     const oneMinute = 60;
+
+    const admin = accounts[0];
+    const alice = accounts[1];
+    const bob = accounts[3];
+    const charlie = accounts[4];
+    const debs = accounts[5];
 
     before(async () => {})
 
@@ -66,7 +74,26 @@ contract('Voting', function (accounts) {
         assert.equal(optionDescriptionsText[3], optionC);
     })
 
-    it.skip("Should only allow owner to create vote", async () => {})
+    it("Should have correct status", async () => {
+
+        await voting.createIssue('Does this work?', now, nextWeek);
+        assert.equal(await voting.getStatus(0), true);
+
+        await utils.increaseTime(oneWeek + oneMinute);
+        assert.equal(await voting.getStatus(0), false);
+    })
+
+    it("Should only allow owner to create vote", async () => {
+ 
+        let errVote;
+        try {
+            await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek, {from: alice});
+        } catch(e) {
+           errVote = e; 
+        }
+
+        utils.ensureException(errVote);
+    })
     it.skip("Should not vote without stake", async () => {})
     //@todo test out of range options
     //@todo test weights 
@@ -122,42 +149,6 @@ contract('Voting', function (accounts) {
         utils.ensureException(errVote);
     });
 
-    // check tallies
-    it("Should cast multiple votes on multiple proposals", async () => {
-/*        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
-        
-        // check events fire on each?
-        await voting.vote(0, 1, {from: accounts[0]});
-        await voting.vote(0, 1, {from: accounts[1]});
-        await voting.vote(0, 1, {from: accounts[2]});
-        await voting.vote(0, 2, {from: accounts[3]});
-        await voting.vote(0, 3, {from: accounts[4]});
-        await voting.vote(0, 3, {from: accounts[5]});
-
-        const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
-        const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
-        const optionCVotes = await voting.weightedVoteCountsOf(0, 3);
-
-        await voting.createIssue('Does this work too?', [optionAHex, optionBHex, optionCHex], nextWeek);
-
-        await voting.vote(1, 1, {from: accounts[0]});
-        await voting.vote(1, 2, {from: accounts[1]});
-        const foo = await voting.vote(1, 2, {from: accounts[2]});
-        foo;
-*/
-        // checkall the results
-
-        // const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
-        // const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
-        // const optionCVotes = await voting.weightedVoteCountsOf(0, 3);
-        // asserttions
-        // check correct weightings
-        // do we need to check 
-        // perhaps use loops and check weights
-
-        // what other state should w ebe checking
-    })
-
     it("Should not vote outside of option range", async () => {
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         
@@ -191,4 +182,63 @@ contract('Voting', function (accounts) {
 
         utils.ensureException(errPoll);
     })
+
+    it("Should have correct voting results", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+
+        await voting.vote(0, 1, {from: alice});
+        await voting.vote(0, 2, {from: bob});
+        await voting.vote(0, 2, {from: charlie});
+
+        assert.equal(await voting.winningOption(0), 2);
+        const topOptions = await voting.topOptions(0, 3);
+        assert.equal(topOptions[0], 2);
+        assert.equal(topOptions[1], 1);
+        // zero value for options with no votes
+        assert.equal(topOptions[2], 0);
+
+        await voting.createIssue('Noone votes for this?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        
+        const noVotesTopOptions = await voting.topOptions(1, 3);
+        assert.equal(noVotesTopOptions[0], 0);
+        assert.equal(noVotesTopOptions[1], 0);
+        assert.equal(noVotesTopOptions[2], 0);
+
+        assert(await voting.winningOption(1), 0);
+    })
+
+    it.skip("Should cast votes in multiple proposals", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        await voting.createIssue('Does this work too?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        await voting.createIssue('Does this work as well?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        
+        await voting.vote(0, 1, {from: alice});
+        await voting.vote(1, 1, {from: alice});
+        await voting.vote(2, 1, {from: alice});
+    })
 })
+
+
+        // const opt1 = voting.weightedVoteCountsOf(0, 1);
+        // const opt2 = voting.weightedVoteCountsOf(0, 2);
+
+        // const winningOption = winningOption(uint256 _proposalId)
+        // const topOptions = await voting.topOptions(0, 3);
+        // assert.equal(topOptions[0], 2);
+        // assert.equal(topOptions[1], 1);
+        // // zero value for options with no votes
+        // assert.equal(topOptions[2], 0);
+
+
+
+        // const first = topOptions[0].toString();
+        // const second = topOptions[1].toString();
+        // const third = topOptions[2].toString();
+        // third;
+
+        
+        // check poll closed... need for another contract to decide on something
+        // act on poll...
+
+
+        //how winning option is treated before and after time...

@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
-// @todo rename this  doc
+/**
+ 
+ */
 
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
@@ -11,10 +13,12 @@ import "./VotingInterface.sol";
 // consider set status 
 /**
   (1) Support multiple issues.
-  (2) Supports defining multiple options
+  (2) Only Yes / No binary options.
   (3) start and end time limit on voting.
   (4) each address can only vote once.
-  (5) each address has different weights according to amount staked in external contract.
+  (5) each address has different voting weight according to amount staked in external contract.
+  
+  Perhaps a little over engineered, but is desirable to work with same interface as other voting contract
   */
 
   // @todo document each function
@@ -128,7 +132,7 @@ contract BinaryVoting is VotingInterface {
     ///@return Weight of a given voters vote
     function weightOf(uint256 _proposalId, address _addr)
     public 
-    view 
+    view
     returns (uint weight) {
         return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
     }
@@ -140,7 +144,7 @@ contract BinaryVoting is VotingInterface {
     public 
     view 
     returns (bool isOpen) 
-    {   
+    { 
         //@todo get feedback on less than or less than or equal too
         return (block.timestamp >= proposals[_proposalId].votingStarts && block.timestamp <= proposals[_proposalId].votingEnds);
     }
@@ -173,21 +177,44 @@ contract BinaryVoting is VotingInterface {
     public
     view
     returns (uint256[] ordered)
-    {   
-        // should rename 
+    {    
+        //@todo test this limit
+        require(_limit <= 2, "Only two options available");
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
 
-        if (/*voteCounts[1] > 0 &&*/ voteCounts[1] >= voteCounts[2]) {
-            ordered[1] = 1;
-            ordered[2] = 2;
-            return ordered;
-        } else if (/*voteCounts[2] > 0 && */voteCounts[1] < voteCounts[2]) {
-            ordered[1] = 2;
-            ordered[2] = 1;
-            return ordered;
+        uint256 optionSize = 2;
+        uint256[] memory ordinalIndex = new uint256[](_limit);
+
+        for (uint256 i = 0; i < _limit; i++) {
+            uint256 highestIndex = 0;
+            uint256 acc = 0;
+            for (uint256 j = 1; j <= optionSize; j++) {
+                if (voteCounts[j] > acc) {
+                    highestIndex = j;  
+                    acc = voteCounts[highestIndex];
+                }
+            }
+            delete voteCounts[highestIndex]; //solium-disable-line
+            ordinalIndex[i] = highestIndex;
         }
 
-        // ordered[0] = 0;
+        return ordinalIndex;
+        // should actually just leave it as it is!!!!
+        // should rename 
+        // mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
+
+        // if (/*voteCounts[1] > 0 &&*/ voteCounts[1] >= voteCounts[2]) {
+        //     ordered[1] = 1;
+        //     ordered[2] = 2;
+        //     return ordered;
+        // }
+        // else if (/*voteCounts[2] > 0 && */ voteCounts[1] < voteCounts[2]) {
+        //     ordered[1] = 2;
+        //     ordered[2] = 1;
+        //     return ordered;
+        // }
+
+        // // ordered[0] = 0;
         // return ordered;
     }
 
@@ -205,14 +232,13 @@ contract BinaryVoting is VotingInterface {
     }
 
     ///@notice Fetch all voting options
-    ///@param _proposalId Proposal ID
+    ///@param _proposalId Proposal ID. Not used.
     ///@return Numerical list of available options
-    function availableOptions(uint256 _proposalId) 
+    function availableOptions(uint256 _proposalId)
     public 
     view
     returns (uint256[] options)
     {   
-        // should be able to do this in oneline but linter complains :/ ?
         options[0] = 1;
         options[1] = 2;
         return options;

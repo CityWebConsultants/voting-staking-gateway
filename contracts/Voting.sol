@@ -7,7 +7,7 @@ import "./VotingInterface.sol";
 import "./ownership/Ownable.sol";
 /**
   (1) Support multiple issues.
-  (2) Supports defining multiple options
+  (2) Supports defining multiple options.
   (3) start and end time limit on voting.
   (4) each address can only vote once.
   (5) each address has different weights according to amount staked in external contract.
@@ -167,7 +167,7 @@ contract Voting is VotingInterface, Ownable {
 
     ///@notice Fetch aggregate weighted votes for an option of a proposal
     ///@param _proposalId Proposal ID
-    ///@return Weighted vote count
+    ///@return Weighted vote count (options with zero vites)
     function weightedVoteCountsOf(uint256 _proposalId, uint256 _option) 
     public 
     view 
@@ -176,7 +176,7 @@ contract Voting is VotingInterface, Ownable {
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
-    ///@notice Fetch a given number of voting options ordered by number of weighted votes
+    ///@notice Fetch a given number of voted on options ordered by number of weighted votes
     ///@param _proposalId Proposal ID
     ///@param _limit Number of items to return
     function topOptions(uint256 _proposalId, uint256 _limit) 
@@ -187,9 +187,12 @@ contract Voting is VotingInterface, Ownable {
         //@todo in situations of no votes we should return 0;
         // double check how that is handled here?
         //Proposal memory proposal = proposals[_proposalId];
+        // @todo explicitly put this in memory!!!!!!
+        uint256 optionSize = proposals[_proposalId].optionDescriptions.length-1;
+        require(_limit <= optionSize, "Limit greater than number of options"); // <-- @todo test this
+
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
 
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length-1;
         uint256[] memory ordinalIndex = new uint256[](_limit);
 
         for (uint256 i = 0; i < _limit; i++) {
