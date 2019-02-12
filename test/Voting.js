@@ -3,7 +3,6 @@ const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
 
-
 //@todo move mocks back in tst folder
 // and improt .sol
 // @todo improve exception handling for DRYness
@@ -32,11 +31,14 @@ contract('Voting', function (accounts) {
     const charlie = accounts[4];
     const debs = accounts[5];
 
+    const minStake = 100;
+
     before(async () => {})
 
     beforeEach(async () => {
-        staking = await StakingMock.new(true, 100);
-        voting = await VotingContract.new(staking.address);
+
+        staking = await StakingMock.new(true, minStake);
+        voting = await VotingContract.new(staking.address, minStake);
         now = await utils.blockNow();
         nextWeek = now + oneWeek;
         nextMonth = now + oneMonth;
@@ -62,18 +64,16 @@ contract('Voting', function (accounts) {
         assert.equal(noOption, '');
         assert.equal(optionDescriptionA, optionA);
         assert.equal(optionDescriptionB, optionB);
-        // const noOptionB = await voting.optionDescription(0, 3);
    
         // get all descriptions 
         const optionDescriptions = await voting.optionDescriptions(0);
         
         const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
-        // @todo assertions
+
         assert.equal(optionDescriptionsText[1], optionA);
         assert.equal(optionDescriptionsText[2], optionB);
         assert.equal(optionDescriptionsText[3], optionC);
 
-        // hmmmmm, how did we end up with four options!!!!!????
         const availableOptions = await voting.availableOptions(0);
         assert.isTrue(availableOptions[0].eq(1))
         assert.isTrue(availableOptions[1].eq(2))
@@ -120,18 +120,14 @@ contract('Voting', function (accounts) {
         assert.isTrue(weightedCount.eq(100));
     })
 
-    it.only("Should not vote with inadequate stake", async () => {
+    it("Should not vote with inadequate stake", async () => {
         
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         staking.setStake(0);
-        const wtf = await staking.totalStakedForAt('0x0', 0);
-        wtf;
 
         let errStake;
         try {
-            const goo = await voting.vote(0, 1, {from: alice});
-            goo;
-            console.log(goo.toString())
+            await voting.vote(0, 1, {from: alice});
         } catch(e) {
            errStake = e; 
         }

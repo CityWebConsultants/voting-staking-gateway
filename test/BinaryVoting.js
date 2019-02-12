@@ -5,10 +5,8 @@ const utils = require('./helpers/Utils.js');
 
 // @todo improve exception handling for DRYness
 // @todo review tests for user votes on multiple polls
-// @todo all suggestions for improving coverage welcome
-//@todo add shared constants to utils
-// eg one month one year etc....
-//@todo change message used throughout -- stick in a var
+//  @todo add shared constants to utils eg one month one year etc....
+// @todo change message used throughout -- stick in a var
 //@todo create an issue in the before
 // that wont affact testing other components and then can factor it out
 
@@ -49,7 +47,6 @@ contract('BinaryVoting', function (accounts) {
         const createdProposal = await voting.createIssue('Does this work?', now, nextWeek);
         const logs = createdProposal.logs[0];
 
-        // check event
         assert.equal(logs.args.endTime, nextWeek);
         assert.equal(logs.args.id, 0);
         assert.equal(logs.args.user, accounts[0]);
@@ -61,12 +58,10 @@ contract('BinaryVoting', function (accounts) {
         const optionDescriptionA = await voting.optionDescription(0, 1);
         const optionDescriptionB = await voting.optionDescription(0, 2);
 
-        // assert number of options
         assert.equal(noOption, '');
         assert.equal(optionDescriptionA, optionA);
         assert.equal(optionDescriptionB, optionB);
-   
-        // get all descriptions
+
         const optionDescriptions = await voting.optionDescriptions(0);
         
         const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
@@ -93,11 +88,7 @@ contract('BinaryVoting', function (accounts) {
         utils.ensureException(errStake);
     })
 
-    //@todo should also checking voting without sta
-
     it("Should open and close with correct status", async () => {
-        // should check firing of events and should also check this before
-        // check events
 
         await voting.createIssue('Does this work?', now + oneMinute, nextWeek);
         assert.equal(await voting.getStatus(0), false);
@@ -120,13 +111,11 @@ contract('BinaryVoting', function (accounts) {
 
         const ballot = await voting.ballotOf(0, alice);
         assert.equal(ballot.toString(), '1');
-        // consider explicitly setting stakedForAt
-        // also consider changing logic <= > in contract
+
         const weightedCount = await voting.weightedVoteCountsOf(0, 1);
         assert.isTrue(weightedCount.eq(100));
     })
 
-    //@todo apply this to other voting as well
     it("Should not count vote when inadequate stake", async () => {
         
         await voting.createIssue('Does this work?', now, nextWeek);
@@ -194,39 +183,9 @@ contract('BinaryVoting', function (accounts) {
         utils.ensureException(errVote);
     });
 
-    // check tallies
+
     it("Should cast multiple votes on multiple proposals", async () => {
-/*        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], nextWeek);
-        
-        // check events fire on each?
-        await voting.vote(0, 1, {from: accounts[0]});
-        await voting.vote(0, 1, {from: alice});
-        await voting.vote(0, 1, {from: bob});
-        await voting.vote(0, 2, {from: accounts[3]});
 
-
-        const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
-        const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
-
-
-        await voting.createIssue('Does this work too?', nextWeek);
-
-        await voting.vote(1, 1, {from: accounts[0]});
-        await voting.vote(1, 2, {from: alice});
-        const foo = await voting.vote(1, 2, {from: bob});
-        foo;
-*/
-        // checkall the results
-
-        // const optionAVotes = await voting.weightedVoteCountsOf(0, 1);
-        // const optionBVotes = await voting.weightedVoteCountsOf(0, 2);
-
-        // asserttions
-        // check correct weightings
-        // do we need to check 
-        // perhaps use loops and check weights
-
-        // what other state should w ebe checking
     })
 
     it("Should not vote outside of option range", async () => {
@@ -302,7 +261,4 @@ contract('BinaryVoting', function (accounts) {
         await voting.vote(2, 1, {from: alice});
         await voting.vote(2, 2, {from: bob});
     })
-
-    // what happens when we have 
-
 })

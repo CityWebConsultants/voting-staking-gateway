@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 // @todo rename this  doc
-// @todo what should happen in in stances when there is no voting?
+
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
 import "./ownership/Ownable.sol";
@@ -13,11 +13,10 @@ import "./ownership/Ownable.sol";
   (5) each address has different weights according to amount staked in external contract.
   */
 
-  // @todo document each function
 contract Voting is VotingInterface, Ownable {
     StakingInterface stake;
 
-    uint256 minimumStakeToPropose;
+    uint256 minimumStake;
 
     struct Proposal {
         uint256 votingStarts;
@@ -30,12 +29,10 @@ contract Voting is VotingInterface, Ownable {
     }
 
     Proposal[] proposals;
-
-//@todo keep the staking for voting...
-//@todo only remove it for raising proposals
-
-    constructor(StakingInterface stakingAddress) public {
-        stake = StakingInterface(stakingAddress);
+    
+    constructor(StakingInterface _stakingAddress, uint256 _minimumStake) public {
+        stake = StakingInterface(_stakingAddress);
+        minimumStake = _minimumStake;
         owner = msg.sender;
     }
 
@@ -76,7 +73,7 @@ contract Voting is VotingInterface, Ownable {
     {
         Proposal storage proposal = proposals[_proposalId];
         uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
-        require(staked >= minimumStakeToPropose, "Inadequate to vote");
+        require(staked >= minimumStake, "Inadequate to vote");
         require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
         require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");
@@ -153,7 +150,6 @@ contract Voting is VotingInterface, Ownable {
     view 
     returns (bool isOpen) 
     {   
-        //@todo get feedback on less than or less than or equal too
         return (block.timestamp >= proposals[_proposalId].votingStarts && block.timestamp <= proposals[_proposalId].votingEnds);
     }
 

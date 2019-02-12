@@ -26,7 +26,7 @@ import "./VotingInterface.sol";
 contract BinaryVoting is VotingInterface {
     StakingInterface stake;
 
-    uint256 minimumStakeToPropose;
+    uint256 minimumStake;
     mapping(uint256 => bytes32) voteOptions;
 
     struct Proposal {
@@ -39,9 +39,9 @@ contract BinaryVoting is VotingInterface {
 
     Proposal[] proposals;
 
-    constructor(StakingInterface stakingAddress, uint256 _minimumStakeToPropose) public {
+    constructor(StakingInterface stakingAddress, uint256 _minimumStake) public {
         stake = StakingInterface(stakingAddress);
-        minimumStakeToPropose = _minimumStakeToPropose;
+        minimumStake = _minimumStake;
 
         voteOptions[1] = "Yes";
         voteOptions[2] = "No";
@@ -55,7 +55,7 @@ contract BinaryVoting is VotingInterface {
     public  
     {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
-        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStakeToPropose, "Inadeqaute funds at end date");
+        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStake, "Inadeqaute funds at end date");
 
         Proposal memory proposal = Proposal(
             _votingStarts, 
@@ -76,7 +76,7 @@ contract BinaryVoting is VotingInterface {
     {
         Proposal storage proposal = proposals[_proposalId];
         uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
-        require(staked >= minimumStakeToPropose, "Inadequate to vote");
+        require(staked >= minimumStake, "Inadequate to vote");
        // Proposal storage proposal = proposals[_proposalId];
         require(_option == 1 || _option == 2, "Option out of range");
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote."); 
