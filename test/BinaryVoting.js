@@ -24,7 +24,6 @@ contract('BinaryVoting', function (accounts) {
     const oneDay = 86400;
     const oneMinute = 60;
 
-
     const admin = accounts[0];
     const alice = accounts[1];
     const bob = accounts[3];

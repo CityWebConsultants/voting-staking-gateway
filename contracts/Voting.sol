@@ -230,11 +230,11 @@ contract Voting is VotingInterface, Ownable {
     function availableOptions(uint256 _proposalId) 
     public 
     view 
-    returns (uint256[] options)
+    returns (uint256[])
     {   
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length;
-        // uint256[] memory options = new uint256[](optionSize);
-        // what happens in storage versus array, is it ok to allow the return param to define?
+        uint256 optionSize = proposals[_proposalId].optionDescriptions.length - 1;
+        uint256[] memory options = new uint256[](optionSize);
+        // what happens in storage versus array, is it ok to allow the return  param to define?
         for(uint256 i = 0; i < optionSize; i++) {
             options[i] = i+1;
         }
@@ -280,6 +280,5 @@ contract Voting is VotingInterface, Ownable {
 
     event OnProposal(address user, uint256 id, uint256 startTime, uint256 endTime);
     event OnVote(address indexed from, uint value);
-    event OnStatusChange(bool newIsOpen);
     event Debug(string str, uint256 num);
 }

@@ -14,9 +14,10 @@ import "./VotingInterface.sol";
 /**
   (1) Support multiple issues.
   (2) Only Yes / No binary options.
-  (3) start and end time limit on voting.
-  (4) each address can only vote once.
-  (5) each address has different voting weight according to amount staked in external contract.
+  (3) Start and end time limit on voting.
+  (4) Requires minimum stake to create issue.
+  (5) Each address can only vote once.
+  (6) Each address has different voting weight according to amount staked in external contract.
   
   Perhaps a little over engineered, but is desirable to work with same interface as other voting contract
   */
@@ -46,8 +47,10 @@ contract BinaryVoting is VotingInterface {
         voteOptions[2] = "No";
     }
 
-    //@todo should factor out adding option to proposal
-    // doesn't change so it's a waste of storage
+    ///@notice create a new issue to vote on
+    ///@param _description the question posed
+    ///@param _votingStarts timestamp in seconds to open vote
+    ///@param _votingEnds timestamp in seconds to close vote
     function createIssue(string _description, uint256 _votingStarts, uint256 _votingEnds)
     public  
     {
@@ -69,7 +72,7 @@ contract BinaryVoting is VotingInterface {
     ///@param _option Option to vote for
     function vote(uint256 _proposalId, uint256 _option) 
     public 
-    returns (bool success) 
+    returns (bool success)
     {
         Proposal storage proposal = proposals[_proposalId];
         require(_option == 1 || _option == 2, "Option out of range");
@@ -199,23 +202,6 @@ contract BinaryVoting is VotingInterface {
         }
 
         return ordinalIndex;
-        // should actually just leave it as it is!!!!
-        // should rename 
-        // mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
-
-        // if (/*voteCounts[1] > 0 &&*/ voteCounts[1] >= voteCounts[2]) {
-        //     ordered[1] = 1;
-        //     ordered[2] = 2;
-        //     return ordered;
-        // }
-        // else if (/*voteCounts[2] > 0 && */ voteCounts[1] < voteCounts[2]) {
-        //     ordered[1] = 2;
-        //     ordered[2] = 1;
-        //     return ordered;
-        // }
-
-        // // ordered[0] = 0;
-        // return ordered;
     }
 
     ///@notice Get winning options
@@ -237,8 +223,9 @@ contract BinaryVoting is VotingInterface {
     function availableOptions(uint256 _proposalId)
     public 
     view
-    returns (uint256[] options)
+    returns (uint256[])
     {   
+        uint256[] memory options = new uint256[](2);
         options[0] = 1;
         options[1] = 2;
         return options;
@@ -282,6 +269,5 @@ contract BinaryVoting is VotingInterface {
 
     event OnProposal(address user, uint256 id, uint256 startTime, uint256 endTime);
     event OnVote(address indexed from, uint value);
-    event OnStatusChange(bool newIsOpen);
     event Debug(string str, uint256 num);
 }
