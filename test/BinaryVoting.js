@@ -65,18 +65,32 @@ contract('BinaryVoting', function (accounts) {
         assert.equal(optionDescriptionA, optionA);
         assert.equal(optionDescriptionB, optionB);
    
-        // get all descriptions 
+        // get all descriptions
         const optionDescriptions = await voting.optionDescriptions(0);
         
         const optionDescriptionsText = optionDescriptions.map(item => web3.toAscii(item).replace(/\u0000/g, ''));
         
         assert.equal(optionDescriptionsText[1], optionA);
         assert.equal(optionDescriptionsText[2], optionB);
+
+        const availableOptions = await voting.availableOptions(0);
+        assert.isTrue(availableOptions[0].eq(1));
+        assert.isTrue(availableOptions[1].eq(2));
+        assert.equal(availableOptions[3], undefined);
+
+        // check events
+
+
     })
 
-    it("Should have correct status", async () => {
+    it("Should open and close with correct status", async () => {
+        // should check firing of events and should also check this before
+        // check events
 
-        await voting.createIssue('Does this work?', now, nextWeek);
+        await voting.createIssue('Does this work?', now + oneMinute, nextWeek);
+        assert.equal(await voting.getStatus(0), false);
+        
+        utils.increaseTime(oneMinute)
         assert.equal(await voting.getStatus(0), true);
 
         await utils.increaseTime(oneWeek + oneMinute);
@@ -98,6 +112,20 @@ contract('BinaryVoting', function (accounts) {
         // also consider changing logic <= > in contract
         const weightedCount = await voting.weightedVoteCountsOf(0, 1);
         assert.isTrue(weightedCount.eq(100));
+    })
+
+    it("Should retrieve a users ballot", async () => {
+        await voting.createIssue('Does this work?', now, nextWeek);
+        await voting.vote(0, 1, {from: alice});
+
+        assert.equal(await voting.ballotOf(0, alice));
+    })
+
+    it("Should retrieve voting weight", async () => {
+        await voting.createIssue('Does this work?', now, nextWeek);
+        await voting.vote(0, 1, {from: alice});
+
+        assert.equal(await voting.weightOf(0, alice), 100);
     })
 
     it("Should not allow a second vote", async () => {

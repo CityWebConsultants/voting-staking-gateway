@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-// Adapted from EIP900
+// Adapted from EIP900 draft
 // @see https://github.com/ethereum/EIPs/issues/900
 contract StakingInterface {
 

@@ -8,6 +8,7 @@ const utils = require('./helpers/Utils.js');
 // @todo all suggestions for improving coverage welcome
 //@todo make sure we have tested all functions
 //@todo make sure we have tested all events
+//@todo factor out repitiion of a single vote
 
 contract('Voting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -72,11 +73,21 @@ contract('Voting', function (accounts) {
         assert.equal(optionDescriptionsText[1], optionA);
         assert.equal(optionDescriptionsText[2], optionB);
         assert.equal(optionDescriptionsText[3], optionC);
+
+        // hmmmmm, how did we end up with four options!!!!!????
+        const availableOptions = await voting.availableOptions(0);
+        assert.isTrue(availableOptions[0].eq(1))
+        assert.isTrue(availableOptions[1].eq(2))
+        assert.isTrue(availableOptions[2].eq(3))
+        assert.equal(availableOptions[3], undefined);
     })
 
     it("Should have correct status", async () => {
 
-        await voting.createIssue('Does this work?', now, nextWeek);
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        assert.equal(await voting.getStatus(0), false);
+
+        utils.increaseTime(oneMinute);
         assert.equal(await voting.getStatus(0), true);
 
         await utils.increaseTime(oneWeek + oneMinute);
@@ -111,6 +122,20 @@ contract('Voting', function (accounts) {
         assert.equal(ballot.toString(), '1');
         const weightedCount = await voting.weightedVoteCountsOf(0, 1);
         assert.isTrue(weightedCount.eq(100));
+    })
+
+    it("Should retrieve a users ballot", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        await voting.vote(0, 1, {from: alice});
+
+        assert.equal(await voting.ballotOf(0, alice), 1);
+    })
+
+    it("Should retrieve voting weight", async () => {
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        await voting.vote(0, 1, {from: alice});
+
+        assert.equal(await voting.weightOf(0, alice), 100);
     })
 
     it("Should not allow a second vote", async () => {
