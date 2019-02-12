@@ -75,6 +75,9 @@ contract BinaryVoting is VotingInterface {
     returns (bool success)
     {
         Proposal storage proposal = proposals[_proposalId];
+        uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
+        require(staked >= minimumStakeToPropose, "Inadequate to vote");
+       // Proposal storage proposal = proposals[_proposalId];
         require(_option == 1 || _option == 2, "Option out of range");
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote."); 
         require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");

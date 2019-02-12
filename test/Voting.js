@@ -3,11 +3,12 @@ const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
 
+
+//@todo move mocks back in tst folder
+// and improt .sol
 // @todo improve exception handling for DRYness
 // @todo review tests for user votes on multiple polls
 // @todo all suggestions for improving coverage welcome
-//@todo make sure we have tested all functions
-//@todo make sure we have tested all events
 //@todo factor out repitiion of a single vote
 
 contract('Voting', function (accounts) {
@@ -46,8 +47,6 @@ contract('Voting', function (accounts) {
         const createdProposal = await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         const logs = createdProposal.logs[0];
 
-        // check event
-        //@todo simplify event -- remove address of creator
         assert.equal(logs.args.endTime, nextWeek);
         assert.equal(logs.args.id, 0);
         assert.equal(logs.args.user, accounts[0]);
@@ -84,7 +83,7 @@ contract('Voting', function (accounts) {
 
     it("Should have correct status", async () => {
 
-        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now+oneMinute, nextWeek);
         assert.equal(await voting.getStatus(0), false);
 
         utils.increaseTime(oneMinute);
@@ -105,9 +104,6 @@ contract('Voting', function (accounts) {
 
         utils.ensureException(errVote);
     })
-    it.skip("Should not vote without stake", async () => {})
-    //@todo test out of range options
-    //@todo test weights 
 
     it("Should cast a vote", async () => {
         
@@ -122,6 +118,25 @@ contract('Voting', function (accounts) {
         assert.equal(ballot.toString(), '1');
         const weightedCount = await voting.weightedVoteCountsOf(0, 1);
         assert.isTrue(weightedCount.eq(100));
+    })
+
+    it.only("Should not vote with inadequate stake", async () => {
+        
+        await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
+        staking.setStake(0);
+        const wtf = await staking.totalStakedForAt('0x0', 0);
+        wtf;
+
+        let errStake;
+        try {
+            const goo = await voting.vote(0, 1, {from: alice});
+            goo;
+            console.log(goo.toString())
+        } catch(e) {
+           errStake = e; 
+        }
+
+        utils.ensureException(errStake);
     })
 
     it("Should retrieve a users ballot", async () => {

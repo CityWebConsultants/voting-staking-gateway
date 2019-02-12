@@ -9,6 +9,8 @@ const utils = require('./helpers/Utils.js');
 //@todo add shared constants to utils
 // eg one month one year etc....
 //@todo change message used throughout -- stick in a var
+//@todo create an issue in the before
+// that wont affact testing other components and then can factor it out
 
 contract('BinaryVoting', function (accounts) {
     let staking, voting, now, nextweek;
@@ -76,11 +78,22 @@ contract('BinaryVoting', function (accounts) {
         assert.isTrue(availableOptions[0].eq(1));
         assert.isTrue(availableOptions[1].eq(2));
         assert.equal(availableOptions[3], undefined);
-
-        // check events
-
-
     })
+
+    it("Should not create issue when inadequate stake", async () => {
+        staking.setStake(0);
+
+        let errStake;
+        try {
+            await voting.createIssue('Does this work?', now, nextWeek);
+        } catch(e) {
+           errStake = e; 
+        }
+
+        utils.ensureException(errStake);
+    })
+
+    //@todo should also checking voting without sta
 
     it("Should open and close with correct status", async () => {
         // should check firing of events and should also check this before
@@ -113,11 +126,29 @@ contract('BinaryVoting', function (accounts) {
         assert.isTrue(weightedCount.eq(100));
     })
 
+    //@todo apply this to other voting as well
+    it("Should not count vote when inadequate stake", async () => {
+        
+        await voting.createIssue('Does this work?', now, nextWeek);
+        staking.setStake(0);
+
+        let errStake;
+        try {
+            const goo = await voting.vote(0, 1, {from: alice});
+            goo;
+            console.log(goo.toString())
+        } catch(e) {
+           errStake = e; 
+        }
+
+        utils.ensureException(errStake);
+    })
+
     it("Should retrieve a users ballot", async () => {
         await voting.createIssue('Does this work?', now, nextWeek);
         await voting.vote(0, 1, {from: alice});
 
-        assert.equal(await voting.ballotOf(0, alice));
+        assert.equal(await voting.ballotOf(0, alice), 1);
     })
 
     it("Should retrieve voting weight", async () => {
