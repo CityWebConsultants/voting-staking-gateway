@@ -2,6 +2,8 @@
 // @todo tidy up comparisons so we dont have bignumber and tostring everywhere
 // @todo test eth bounce
 // @todo check we are doing boundaries correctly
+// @todo check falls over when trying to stake for too long
+// @todo check for throwing
 
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
@@ -28,6 +30,7 @@ contract('Staking', function (accounts) {
     // Consider making the contarct dynamic so we can pass
     // rates and boundaries through the constructor
     const rateBoundaries = [0,6,12,18,24].map(item => month.times(item));
+    const rates = [0,5,10,15,20];
 
     beforeEach(async () => {
         initialBalance = 10000;
@@ -218,7 +221,13 @@ contract('Staking', function (accounts) {
 
     })
 
-    it.skip("Should retrieve correct rates")
+    it("Should have correct rate boundaries", async () => {
+        let retrievedRates = []
+        for (const boundary of rateBoundaries) {
+            retrievedRates.push((await bank.getRate(boundary)).toNumber())
+        }
+        assert.deepEqual(rates, retrievedRates);
+    })
 
 
     // MultiSig

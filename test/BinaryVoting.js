@@ -3,13 +3,6 @@ const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
 
-// @todo improve exception handling for DRYness
-// @todo review tests for user votes on multiple polls
-//  @todo add shared constants to utils eg one month one year etc....
-// @todo change message used throughout -- stick in a var
-//@todo create an issue in the before
-// that wont affact testing other components and then can factor it out
-
 contract('BinaryVoting', function (accounts) {
     let staking, voting, now, nextweek;
 
@@ -76,7 +69,7 @@ contract('BinaryVoting', function (accounts) {
     })
 
     it("Should not create issue when inadequate stake", async () => {
-        staking.setStake(0);
+        await staking.setStake(0);
 
         let errStake;
         try {

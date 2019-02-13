@@ -109,7 +109,7 @@ contract('Voting', function (accounts) {
         
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         const voted = await voting.vote(0, 1, {from: accounts[1]});
-        args = voted.logs[0].args;
+        const args = voted.logs[0].args;
 
         assert.equal(args.from, accounts[1]);
         assert.equal(args.value.toString(), '1');

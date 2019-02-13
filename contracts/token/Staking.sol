@@ -58,7 +58,7 @@ contract Staking is StakingInterface, MultiSigWallet {
         // @todo rename amount to disambiguate
         uint256 rate = getRate(_time);
         uint256 amount;
-
+        // @todo safe math
         uint256 bonus = _amount * rate / 100;
 
         if (_claimBonus == true) {
@@ -197,8 +197,6 @@ contract Staking is StakingInterface, MultiSigWallet {
         return available;   
     }
     
-    //@todo update values here
-    //@todo would be nice to make this definable on contract creation
 
     ///@notice set rate
     ///@param _timeLength Length of time a user has staked for
@@ -208,11 +206,11 @@ contract Staking is StakingInterface, MultiSigWallet {
     pure
     returns (uint256 rate) {
 
-        require(_timeLength < month.mul(25), "Cannot stake for this long");
+        // require(_timeLength < month.mul(25), "Cannot stake for this long");
         
         if (_timeLength < month.mul(6)) {
             return 0;
-        }
+        }  
     
         if (_timeLength >= month.mul(6) && _timeLength < month.mul(12)) {
             return 5;
@@ -229,6 +227,9 @@ contract Staking is StakingInterface, MultiSigWallet {
         if (_timeLength >= month.mul(24)) {
             return 20;
         }
+        
+        //@todo dynamic set rates...
+        // private 
     }
 }
 

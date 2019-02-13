@@ -1,6 +1,7 @@
 pragma solidity ^0.4.24;
 
-contract StakingMock {    
+contract StakingMock {
+       
     bool public valid;
     uint256 public mayUnstake;
     uint256 public staked;

@@ -7,10 +7,6 @@ pragma solidity ^0.4.24;
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
 
-// Can remove amount staked from this...
-// Need to add to binary version
-// @todo update docBlocks
-// consider set status 
 /**
   (1) Support multiple issues.
   (2) Only Yes / No binary options.
@@ -18,8 +14,7 @@ import "./VotingInterface.sol";
   (4) Requires minimum stake to create issue.
   (5) Each address can only vote once.
   (6) Each address has different voting weight according to amount staked in external contract.
-  
-  Perhaps a little over engineered, but is desirable to work with same interface as other voting contract
+  (7) A bit over engineered, but necessary to work with this interface.
   */
 
   // @todo document each function
@@ -75,7 +70,7 @@ contract BinaryVoting is VotingInterface {
     returns (bool success)
     {
         Proposal storage proposal = proposals[_proposalId];
-        uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
+        uint256 staked = weightOf(_proposalId, msg.sender);
         require(staked >= minimumStake, "Inadequate to vote");
        // Proposal storage proposal = proposals[_proposalId];
         require(_option == 1 || _option == 2, "Option out of range");
