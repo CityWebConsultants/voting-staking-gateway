@@ -13,6 +13,7 @@ const tokenDecimals = 10;
 const totalSupply = new BN('420000000').shift(tokenDecimals)
 const icoSupply = new BN('189000000').shift(tokenDecimals);
 
+
 // @todo when ethdollarvalue is not a round number we get different results.
 // find and fix issue.
 const ethDollarValue = new BN('100');
@@ -32,7 +33,7 @@ const maximumSpend = web3.toWei(110, 'ether');
 contract("Crowdsale", accounts =>  {
     
     // Contracts
-    let gateway, token, sale, refundList;
+    let gateway, token, sale, refundList, minToken;
     let startTime, endTime
     let owner = accounts[0];
     let alice = accounts[2];
@@ -69,8 +70,7 @@ contract("Crowdsale", accounts =>  {
         await token.transfer(sale.address, icoSupply);
         await utils.increaseTime(startTime - utils.blockNow()); 
 
-        const minToken = await sale.minTokenPurchase();
-        minToken;
+        minToken = await sale.minTokenPurchase(); // do we need this line?
     })
 
     it("Should have correct settings at start of sale", async () => {
@@ -146,15 +146,6 @@ contract("Crowdsale", accounts =>  {
         assert.isTrue(error.message.indexOf('Not enough tokens left') >= 0)
         
     });
-
-    it.skip("Should open at start time", async () => {
-        // @todo 
-        // since time is jogged forward in beforeEach
-        // can't test the same way as rest
-    });
-
-
-    it.skip("Should not buy tokens before start time", async () => {})
 
     it("Should close at end time", async () => {
         // Using +/- one second gives in intermittant results
@@ -321,5 +312,49 @@ contract("Crowdsale", accounts =>  {
 
         const treasuryBalanceAfter = await token.balanceOf(saleBeneficiary);
         assert.isTrue(treasuryBalanceAfter.equals(saleBalance));
+    })
+
+    it("Should only open and accept funds at start time", async () => {
+
+        const now = utils.blockNow();
+        startTime = now+600;  // start in ten minutes
+        endTime = startTime+(day*30);
+        gateway = await PaymentGatewayContract.new('4', gatewayBeneficiary);
+        token = await GatewayERC20Contract.new(
+            gateway.address, 
+            totalSupply, 
+            tokenSymbol, 
+            tokenName
+        );
+        refundList = await RefundList.new();
+        sale = await Crowdsale.new(
+            token.address,
+            saleBeneficiary, 
+            techBeneficiary,
+            refundList.address,
+            startTime, 
+            endTime, 
+            tokenCostInWei, // don't need top say in wei, doesn't say elsewhere  
+            minimumSpend,
+            maximumSpend,
+            refundFee
+        );
+
+        await token.transfer(sale.address, icoSupply);
+        
+        assert.isFalse(await sale.isOpen());
+
+        let error;
+        try {
+            await sale.buyTokens({from: alice, value: ethWeiValue});
+        } catch (e) {
+            error = e;
+        }
+
+        utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('Crowd sale is not open') >= 0)
+        
+        await utils.increaseTime(600);
+        assert.isTrue(await sale.isOpen());
     })
 });

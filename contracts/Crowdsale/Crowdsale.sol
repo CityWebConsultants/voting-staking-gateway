@@ -70,7 +70,7 @@ contract Crowdsale is Ownable {
     view
     returns (uint256)
     {
-        return minSpend / price;
+        return minSpend.div(price);
     }
 
     ///@notice modifier, only allow whilst crowdsale open
