@@ -222,11 +222,15 @@ contract('Staking', function (accounts) {
     })
 
     it("Should have correct rate boundaries", async () => {
-        let retrievedRates = []
-        for (const boundary of rateBoundaries) {
-            retrievedRates.push((await bank.getRate(boundary)).toNumber())
+        
+        for (const index of rateBoundaries.keys()) {
+            assert.equal(await bank.getRate(rateBoundaries[index]), rates[index])
+            assert.equal(await bank.getRate(rateBoundaries[index].plus(month)), rates[index])
+
+            if (index > 0) {
+                assert.equal(await bank.getRate(rateBoundaries[index].minus(day)), rates[index-1])
+            }
         }
-        assert.deepEqual(rates, retrievedRates);
     })
 
 
