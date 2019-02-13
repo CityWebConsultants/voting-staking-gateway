@@ -61,10 +61,9 @@ contract Staking is StakingInterface, MultiSigWallet {
         uint256 rate = getRate(_time);
         uint256 amount;
         // @todo safe math
-        uint256 bonus = _amount * rate / 100;
+        uint256 bonus = _amount.mul(rate).div(100);
 
         if (_claimBonus == true) {
-            // @todo check this for re-entrance issues
             require(availableBonusTokens >= bonus, "Not enough bonus tokens left to pay out");
             amount = _amount + bonus;
             availableBonusTokens -= bonus;
@@ -207,8 +206,6 @@ contract Staking is StakingInterface, MultiSigWallet {
     public 
     pure
     returns (uint256 rate) {
-
-        // require(_timeLength < month.mul(25), "Cannot stake for this long");
         
         if (_timeLength < month.mul(6)) {
             return 0;
@@ -229,9 +226,6 @@ contract Staking is StakingInterface, MultiSigWallet {
         if (_timeLength >= month.mul(24)) {
             return 20;
         }
-        
-        //@todo dynamic set rates...
-        // private 
     }
 }
 

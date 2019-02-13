@@ -65,7 +65,16 @@ contract('Staking', function (accounts) {
         assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
     });
 
-    it.skip("Should transfer tokens to stake with no bonus", async () => {})
+    it("Should transfer tokens to stake with no bonus", async () => {
+
+        await bank.stake(initialBalance, month.times(12), false, {from: alice});
+        const aliceBalance = await token.balanceOf.call(alice);
+        const bankBalance = await token.balanceOf.call(bank.address);
+
+        assert.equal(aliceBalance.toString(), 0);
+        assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
+        assert.equal(await bank.totalStakedFor(alice), initialBalance);
+    })
 
     it("Should unstake tokens with no time lock", async () => {
         const stakeDuration = 0;
