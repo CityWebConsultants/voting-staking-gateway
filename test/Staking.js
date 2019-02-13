@@ -4,6 +4,7 @@
 // @todo check we are doing boundaries correctly
 // @todo check falls over when trying to stake for too long
 // @todo check for throwing
+// @todo check for fail on 25 months
 
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
@@ -221,8 +222,27 @@ contract('Staking', function (accounts) {
 
     })
 
+    it("Should not stake for 25 months or more", async () => {
+
+        let error;
+        try {
+            await bank.stake((initialBankBalance), month.times(25), true, {from: alice});
+        } catch (e) {
+            error = e;
+        }
+        utils.ensureException(error);
+
+        error;
+        try {
+            await bank.stake((initialBankBalance), month.times(26), true, {from: alice});
+        } catch (e) {
+            error = e;
+        }
+        utils.ensureException(error);
+    })
+
     it("Should have correct rate boundaries", async () => {
-        
+
         for (const index of rateBoundaries.keys()) {
             assert.equal(await bank.getRate(rateBoundaries[index]), rates[index])
             assert.equal(await bank.getRate(rateBoundaries[index].plus(month)), rates[index])

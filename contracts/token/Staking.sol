@@ -54,8 +54,10 @@ contract Staking is StakingInterface, MultiSigWallet {
     ///@param _time Length of time in seconds to take for.
     ///@param _claimBonus Whether a bonus should be applied.
     function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
+
+        require(_time < month.mul(25), "Cannot stake for this long");
+
         uint256 stakeUntil = (_time + block.timestamp); //solium-disable-line security/no-block-members
-        // @todo rename amount to disambiguate
         uint256 rate = getRate(_time);
         uint256 amount;
         // @todo safe math
