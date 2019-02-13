@@ -5,6 +5,7 @@
 // @todo check falls over when trying to stake for too long
 // @todo check for throwing
 // @todo check for fail on 25 months
+//@toodo make sure we are increasing time correctly
 
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
@@ -82,17 +83,22 @@ contract('Staking', function (accounts) {
         const unstaked = await bank.unstake(initialBalance, {from: alice});
 
         const aliceBalance = await token.balanceOf.call(alice);
-        assert(aliceBalance.toString(), '10000')
+        assert(aliceBalance.toString(), '10000');
     })
 
-    it("Should not retrieve tokens whilst time locked", async () => {
+    it.only("Should not retrieve tokens whilst time locked", async () => {
         const stakeDuration = month.times('6').plus(day);
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
 
-        // get amount locked at this time
         const stakedAt = await bank.totalStakedForAt(alice, stakeDuration.minus(day));
         const stakedAt2 = await bank.totalStakedForAt(alice, stakeDuration.plus(day));
-        // @todo -- make an assertion here
+
+        // this should be testing available to unstake at...
+
+
+
+        console.log(stakedAt);
+        console.log(stakedAt2);
         
         let error;
         try {

@@ -208,7 +208,7 @@ contract('Voting', function (accounts) {
         utils.ensureException(errTooHigh);
     });
 
-    it("It should throw on non-existing poll", async () => {
+    it("Should throw attempting to vote on non-existing poll", async () => {
         
         let errPoll;
         try {
