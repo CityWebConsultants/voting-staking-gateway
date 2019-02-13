@@ -74,8 +74,7 @@ contract Voting is VotingInterface, Ownable {
     returns (bool success) 
     {
         Proposal storage proposal = proposals[_proposalId];
-        uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
-        // return(minimumStake == 100);  
+        uint256 staked = weightOf(_proposalId, msg.sender);   //stake.totalStakedForAt(msg.sender, proposal.votingEnds); 
         require(staked >= minimumStake, "Inadequate to vote");
         require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");

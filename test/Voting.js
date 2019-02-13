@@ -93,7 +93,7 @@ contract('Voting', function (accounts) {
         assert.equal(await voting.getStatus(0), false);
     })
 
-    it("Should only allow owner to create vote", async () => {
+    it("Should only allow owner to create proposal", async () => {
  
         let errVote;
         try {
