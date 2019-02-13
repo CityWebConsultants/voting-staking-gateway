@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 contract StakingMock {    
     bool public valid;
     uint256 public mayUnstake;
-    uint256 staked;
+    uint256 public staked;
     uint256 public oneMonth = 2630000;
 
     constructor(bool _valid, uint256 _mayUnstake) 

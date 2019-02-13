@@ -123,11 +123,12 @@ contract('Voting', function (accounts) {
     it("Should not vote with inadequate stake", async () => {
         
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
-        staking.setStake(0);
+        await staking.setStake(0);
 
         let errStake;
         try {
-            await voting.vote(0, 1, {from: alice});
+            const goo = await voting.vote.call(0, 1, {from: alice});
+            goo;
         } catch(e) {
            errStake = e; 
         }

@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
 // @todo rename this  doc
+/// consider using weightOf instead of line with staked
+/// wld need to add that tp 
 
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
@@ -73,6 +75,7 @@ contract Voting is VotingInterface, Ownable {
     {
         Proposal storage proposal = proposals[_proposalId];
         uint256 staked = stake.totalStakedForAt(msg.sender, proposal.votingEnds);
+        // return(minimumStake == 100);  
         require(staked >= minimumStake, "Inadequate to vote");
         require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
         require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote.");
