@@ -77,7 +77,7 @@ contract('BinaryVoting', function (accounts) {
            errStake = e; 
         }
 
-        utils.ensureException(errStake);
+        utils.ensureException(errStake, 'Inadequate funds at end date');
     })
 
     it("Should open and close with correct status", async () => {
@@ -115,14 +115,12 @@ contract('BinaryVoting', function (accounts) {
 
         let errStake;
         try {
-            const goo = await voting.vote(0, 1, {from: alice});
-            goo;
-            console.log(goo.toString())
+            await voting.vote(0, 1, {from: alice});
         } catch(e) {
            errStake = e; 
         }
 
-        utils.ensureException(errStake);
+        utils.ensureException(errStake, 'Inadequate stake to vote');
     })
 
     it("Should retrieve a users ballot", async () => {
@@ -150,29 +148,31 @@ contract('BinaryVoting', function (accounts) {
            errVote = e; 
         }
 
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Vote already cast');
     })
 
     it("Should not accept votes outside of start and end times", async () => {
         await voting.createIssue('Does this work?', now + oneMinute, nextWeek);
 
+        // before
         let errVote;
         try {
             await voting.vote(0, 1, {from: alice});
         } catch(e) {
            errVote = e; 
         }
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Attempted vote outside of time constraints');
 
         await utils.increaseTime(oneWeek + oneMinute);
 
+        // after
         errVote = '';
         try {
             await voting.vote(0, 1, {from: bob});
         } catch(e) {
            errVote = e; 
         }
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Attempted vote outside of time constraints');
     });
 
     it("Should not vote outside of option range", async () => {
@@ -185,7 +185,7 @@ contract('BinaryVoting', function (accounts) {
             errZero = e;
         }
 
-        utils.ensureException(errZero);
+        utils.ensureException(errZero, 'Option out of range');
 
         let errTooHigh;
         try {
@@ -194,7 +194,7 @@ contract('BinaryVoting', function (accounts) {
             errTooHigh = e;
         }
 
-        utils.ensureException(errTooHigh);
+        utils.ensureException(errTooHigh,  'Option out of range');
     });
 
     it("It should throw on non-existing poll", async () => {
@@ -209,6 +209,7 @@ contract('BinaryVoting', function (accounts) {
         utils.ensureException(errPoll);
     })
 
+    // @todo is this duped from above
     it("Should prevent creation of a poll when inadequate funds staked at end date", async () => {
 
         assert.isTrue(await staking.totalStakedForAt(bob, nextMonth + oneDay) < minStake)
@@ -220,7 +221,7 @@ contract('BinaryVoting', function (accounts) {
         } catch(e) {
             inadequateSteak = e;
         }
-        utils.ensureException(inadequateSteak);
+        utils.ensureException(inadequateSteak, );
     })
 
     it("Should have correct voting results", async () => {

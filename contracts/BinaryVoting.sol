@@ -50,7 +50,7 @@ contract BinaryVoting is VotingInterface {
     public  
     {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
-        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStake, "Inadeqaute funds at end date");
+        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStake, "Inadequate funds at end date");
 
         Proposal memory proposal = Proposal(
             _votingStarts, 
@@ -71,10 +71,10 @@ contract BinaryVoting is VotingInterface {
     {
         Proposal storage proposal = proposals[_proposalId];
         uint256 staked = weightOf(_proposalId, msg.sender);
-        require(staked >= minimumStake, "Inadequate to vote");
+        require(staked >= minimumStake, "Inadequate stake to vote");
        // Proposal storage proposal = proposals[_proposalId];
         require(_option == 1 || _option == 2, "Option out of range");
-        require(proposal.ballotOf_[msg.sender] == 0, "The sender has already cast their vote."); 
+        require(proposal.ballotOf_[msg.sender] == 0, "Vote already cast"); 
         require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");
 
         proposal.ballotOf_[msg.sender] = _option;

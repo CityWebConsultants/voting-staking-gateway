@@ -1,10 +1,17 @@
-function isException(error) {
+function isException(error, message) {
     let strError = error.toString();
-    return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+    const exceptionFound = strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+    if (message !== undefined) {
+        return (exceptionFound && strError.includes(message));
+    }
+
+    return exceptionFound;
+    //  const messageFound;
+    //return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
 }
 
-function ensureException(error) {
-    assert.isTrue(isException(error));
+function ensureException(error, message) {
+    assert.isTrue(isException(error, message));
 }
 
 const promisify = (inner) =>
