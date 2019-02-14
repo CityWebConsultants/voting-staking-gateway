@@ -44,8 +44,7 @@ contract('Staking', function (accounts) {
 
         let error;
         try {
-            const boo = await bank.sendTransaction({from: alice, value: web3.toWei(1, 'ether')});
-            boo;
+            await bank.sendTransaction({from: alice, value: web3.toWei(1, 'ether')});
         } catch (e) {
             error = e;
         }
@@ -101,7 +100,7 @@ contract('Staking', function (accounts) {
 
         let error;
         try {
-            const bug = await bank.unstake(initialBalance, {from: alice});
+            await bank.unstake(initialBalance, {from: alice});
         } catch (e) {
             error = e;
         }
@@ -219,7 +218,6 @@ contract('Staking', function (accounts) {
         let error;
         try {
             await bank.stake(10, month.times(12).plus(day), true, {from: alice});
-
         } catch (e) {
             error = e;
         }

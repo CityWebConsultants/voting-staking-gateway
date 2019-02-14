@@ -1,13 +1,12 @@
 function isException(error, message) {
     let strError = error.toString();
     const exceptionFound = strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+    
     if (message !== undefined) {
         return (exceptionFound && strError.includes(message));
     }
 
     return exceptionFound;
-    //  const messageFound;
-    //return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
 }
 
 function ensureException(error, message) {
@@ -55,7 +54,6 @@ async function increaseTime(integer) {
 
     await advanceBlock();
 }
-
 
 async function advanceToBlock(number) {
     if (web3.eth.blockNumber > number) {
