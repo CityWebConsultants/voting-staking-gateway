@@ -92,6 +92,7 @@ contract('Voting', function (accounts) {
         assert.equal(await voting.getStatus(0), false);
     })
 
+    // hmmm, throws without message
     it("Should only allow owner to create proposal", async () => {
  
         let errVote;
@@ -132,7 +133,7 @@ contract('Voting', function (accounts) {
            errStake = e; 
         }
 
-        utils.ensureException(errStake);
+        utils.ensureException(errStake, 'Inadequate stake to vote');
     })
 
     it("Should retrieve a users ballot", async () => {
@@ -163,7 +164,7 @@ contract('Voting', function (accounts) {
            errVote = e; 
         }
 
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Vote has already been cast');
     })
 
     it("Should not accept votes outside of start and end times", async () => {
@@ -175,7 +176,7 @@ contract('Voting', function (accounts) {
         } catch(e) {
            errVote = e; 
         }
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Attempted vote outside of time constraints');
 
         await utils.increaseTime(oneWeek + oneMinute);
 
@@ -185,7 +186,7 @@ contract('Voting', function (accounts) {
         } catch(e) {
            errVote = e; 
         }
-        utils.ensureException(errVote);
+        utils.ensureException(errVote, 'Attempted vote outside of time constraints');
     });
 
     it("Should not vote outside of option range", async () => {
@@ -198,7 +199,7 @@ contract('Voting', function (accounts) {
             errZero = e;
         }
 
-        utils.ensureException(errZero);
+        utils.ensureException(errZero, 'Vote out of range');
 
         let errTooHigh;
         try {
@@ -207,7 +208,7 @@ contract('Voting', function (accounts) {
             errTooHigh = e;
         }
 
-        utils.ensureException(errTooHigh);
+        utils.ensureException(errTooHigh, 'Vote out of range');
     });
 
     it("Should throw attempting to vote on non-existing poll", async () => {
