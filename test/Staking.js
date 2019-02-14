@@ -1,6 +1,5 @@
-// @todo consider modifying contracts so we can run tests on live chain
-// @todo tidy up comparisons so we dont have bignumber and tostring everywhere
-// @todo test eth bounce
+
+
 // @todo check we are doing boundaries correctly
 // @todo check falls over when trying to stake for too long
 // @todo check for throwing
@@ -15,7 +14,7 @@ BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4)
 
 contract('Staking', function (accounts) {
 
-    let bank, token, initialBalance, initialBankBalance, rate;
+    let bank, token, initialBalance, initialBankBalance, rate, now;
     let signers = [accounts[7], accounts[8], accounts[9]];
     let alice = accounts[0];
     let admin = accounts[1];
@@ -26,6 +25,7 @@ contract('Staking', function (accounts) {
 
     const second = new BigNumber('1');
     const day = new BigNumber('86400');
+    
     // For purposes of smart contract we have 30 days in a monnth
     const month = day.times(30);
 
@@ -35,6 +35,7 @@ contract('Staking', function (accounts) {
     const rates = [0,5,10,15,20];
 
     beforeEach(async () => {
+        now = new BigNumber(utils.blockNow());
         initialBalance = 10000;
         initialBankBalance = 100000;
 
@@ -48,6 +49,19 @@ contract('Staking', function (accounts) {
         await bank.depositBonusTokens(initialBankBalance, {from: admin})
         await token.balanceOf.call(bank.address);
         
+    });
+
+    it("Should revert when sending ether directly", async () => {
+
+        let error;
+        try {
+            const boo = await bank.sendTransaction({from: alice, value: web3.toWei(1, 'ether')});
+            boo;
+        } catch (e) {
+            error = e;
+        }
+        utils.ensureException(error);
+        assert.isTrue(error.message.indexOf('Contract does not accept Ether') >= 0)
     });
 
     it("Should start with seeded amount", async () => {
@@ -86,20 +100,18 @@ contract('Staking', function (accounts) {
         assert(aliceBalance.toString(), '10000');
     })
 
-    it.only("Should not retrieve tokens whilst time locked", async () => {
-        const stakeDuration = month.times('6').plus(day);
+    it("Should not retrieve tokens whilst time locked", async () => {
+
+        const stakeDuration = month.times('6');
         const staked = await bank.stake(initialBalance, stakeDuration, true, {from: alice});
 
-        const stakedAt = await bank.totalStakedForAt(alice, stakeDuration.minus(day));
-        const stakedAt2 = await bank.totalStakedForAt(alice, stakeDuration.plus(day));
+        const unavailable = await bank.availableToUnstakeAt(alice, now.plus(stakeDuration.minus(day)));
+        const available = await bank.availableToUnstakeAt(alice, now.plus(stakeDuration.plus(day)));/*.plus(day.times(2)));*/
+        assert.isTrue(unavailable.eq(0))
+        assert.isTrue(available.gt(initialBalance))
 
-        // this should be testing available to unstake at...
+        utils.increaseTime((stakeDuration.minus(day)).toNumber())
 
-
-
-        console.log(stakedAt);
-        console.log(stakedAt2);
-        
         let error;
         try {
             const bug = await bank.unstake(initialBalance, {from: alice});
@@ -107,6 +119,10 @@ contract('Staking', function (accounts) {
             error = e;
         }
         utils.ensureException(error);
+
+        utils.increaseTime(day.toNumber());
+        const unstaked = await bank.unstake(initialBalance, {from: alice});
+        assert.equal(unstaked.logs[0].event, "Unstaked");
     })
 
     // perhaps should do one min befoe and one min after 
