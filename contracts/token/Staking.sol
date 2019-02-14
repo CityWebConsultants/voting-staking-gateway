@@ -145,7 +145,6 @@ contract Staking is StakingInterface, MultiSigWallet {
         return (toWithdraw == 0 && withdrawn == _amount);
     }
 
-
     ///@notice Returns total tokens staked for address.
     ///@param _addr Address to check.
     ///@return amount of tokens staked.
@@ -172,7 +171,7 @@ contract Staking is StakingInterface, MultiSigWallet {
     ///@param _user Address of staker
     ///@return Address of token.
     function availableToUnstake(address _user)
-    public // @todo this should call the next
+    public
     view 
     returns (uint256)
     {

@@ -4,6 +4,7 @@ const utils = require('./helpers/Utils.js');
 const BigNumber = require('bignumber.js');
 BigNumber.config({ DECIMAL_PLACES: 0}) // ROUND_FLOOR (4) 
 
+// be sure to check each exception state!!!!!
 contract('Staking', function (accounts) {
 
     let bank, token, initialBalance, initialBankBalance, rate, now;
@@ -37,7 +38,6 @@ contract('Staking', function (accounts) {
 
         await bank.depositBonusTokens(initialBankBalance, {from: admin})
         await token.balanceOf.call(bank.address);
-        
     });
 
     it("Should revert when sending ether directly", async () => {
@@ -49,8 +49,7 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        utils.ensureException(error);
-        assert.isTrue(error.message.indexOf('Contract does not accept Ether') >= 0)
+        utils.ensureException(error, 'Contract does not accept Ether');
     });
 
     it("Should start with seeded amount", async () => {
@@ -106,7 +105,7 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        utils.ensureException(error);
+        utils.ensureException(error, 'Unable to withdraw');
 
         utils.increaseTime(day.toNumber());
         const unstaked = await bank.unstake(initialBalance, {from: alice});
@@ -219,13 +218,13 @@ contract('Staking', function (accounts) {
 
         let error;
         try {
-            const res = await bank.stake(10, month.times(12).plus(day), true, {from: alice});
-            res;
+            await bank.stake(10, month.times(12).plus(day), true, {from: alice});
+
         } catch (e) {
             error = e;
         }
 
-        utils.ensureException(error);
+        utils.ensureException(error, 'Not enough bonus tokens left to pay out');
         const stakedNoBonus = await bank.stake(initialBalance, month.times(6).plus(day), false, {from: alice});
         assert.equal(stakedNoBonus.logs[0].event, 'Staked');
         await utils.increaseTime(month.times(24).plus(day).toNumber());
@@ -246,7 +245,7 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        utils.ensureException(error);
+        utils.ensureException(error, 'Cannot stake for this long');
 
         error;
         try {
@@ -254,7 +253,7 @@ contract('Staking', function (accounts) {
         } catch (e) {
             error = e;
         }
-        utils.ensureException(error);
+        utils.ensureException(error,  'Cannot stake for this long');
     })
 
     it("Should have correct rate boundaries", async () => {
