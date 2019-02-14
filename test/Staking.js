@@ -1,11 +1,3 @@
-
-
-// @todo check we are doing boundaries correctly
-// @todo check falls over when trying to stake for too long
-// @todo check for throwing
-// @todo check for fail on 25 months
-//@toodo make sure we are increasing time correctly
-
 const Staking = artifacts.require('Staking.sol');
 const TokenMock = artifacts.require('Token.sol');
 const utils = require('./helpers/Utils.js');
@@ -28,9 +20,6 @@ contract('Staking', function (accounts) {
     
     // For purposes of smart contract we have 30 days in a monnth
     const month = day.times(30);
-
-    // Consider making the contarct dynamic so we can pass
-    // rates and boundaries through the constructor
     const rateBoundaries = [0,6,12,18,24].map(item => month.times(item));
     const rates = [0,5,10,15,20];
 
@@ -69,7 +58,6 @@ contract('Staking', function (accounts) {
         assert.equal(bankBalance, initialBankBalance);
     })
 
-    // Staking
     it('Should transfer tokens to stake', async () => {
 
         await bank.stake(initialBalance, month.plus(day), true, {from: alice});
@@ -125,7 +113,6 @@ contract('Staking', function (accounts) {
         assert.equal(unstaked.logs[0].event, "Unstaked");
     })
 
-    // perhaps should do one min befoe and one min after 
     it("Should retrieve tokens after time lock", async () => {
         const stakeDuration = month.times('6');
         const staked = await bank.stake(initialBalance, stakeDuration, false, {from: alice});
@@ -159,6 +146,7 @@ contract('Staking', function (accounts) {
         assert.equal(logs.args.user, alice);
     })
 
+    //@todo double check this for checking correct rates
     it("Should deposit and withdraw tranches of stakes", async () => {
         const aWeeBit = initialBalance / 10;
         let totalStaked = 0;
@@ -185,8 +173,6 @@ contract('Staking', function (accounts) {
 
             assert.equal((await bank.availableToUnstake(alice)).toString(), expectedReturn);
             assert.isOk(await bank.unstake(expectedReturn, {from: alice}));
-            // aliceTokenBalance += expectedReturn
-            // assert.equal((await token.balanceOf(alice)).toString(), aliceTokenBalance);
             assert.equal((await bank.availableToUnstake(alice)).toString(), 0);
 
             index++;
@@ -201,7 +187,6 @@ contract('Staking', function (accounts) {
         assert.equal(firedUnstakeEvents.length, rateBoundaries.length);
     })
 
-    // @todo run numbers on spreadsheet to ensure correct
     it("Should retrieve stakes deposited in tranches with one withdrawal", async () => {
         const aWeeBit = initialBalance / 10;
         let totalStaked = new BigNumber(0);

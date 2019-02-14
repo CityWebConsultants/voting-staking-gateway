@@ -5,8 +5,7 @@ const utils = require('./helpers/Utils.js');
 
 //@todo move mocks back in tst folder
 // and improt .sol
-// @todo improve exception handling for DRYness
-// @todo review tests for user votes on multiple polls
+
 // @todo all suggestions for improving coverage welcome
 //@todo factor out repitiion of a single vote
 
@@ -137,6 +136,7 @@ contract('Voting', function (accounts) {
     })
 
     it("Should retrieve a users ballot", async () => {
+
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.vote(0, 1, {from: alice});
 
@@ -144,6 +144,7 @@ contract('Voting', function (accounts) {
     })
 
     it("Should retrieve voting weight", async () => {
+
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.vote(0, 1, {from: alice});
 
@@ -151,6 +152,7 @@ contract('Voting', function (accounts) {
     })
 
     it("Should not allow a second vote", async () => {
+
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.vote(0, 1, {from: accounts[1]});   
         
@@ -244,38 +246,17 @@ contract('Voting', function (accounts) {
         assert(await voting.winningOption(1), 0);
     })
 
-    it.skip("Should cast votes in multiple proposals", async () => {
+    it("Should cast votes in multiple proposals", async () => {
         await voting.createIssue('Does this work?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.createIssue('Does this work too?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         await voting.createIssue('Does this work as well?', [optionAHex, optionBHex, optionCHex], now, nextWeek);
         
-        await voting.vote(0, 1, {from: alice});
-        await voting.vote(1, 1, {from: alice});
-        await voting.vote(2, 1, {from: alice});
+        const votedA = await voting.vote(0, 1, {from: alice});
+        const votedB = await voting.vote(1, 1, {from: alice});
+        const votedC = await voting.vote(2, 1, {from: alice});
+
+        assert.equal(votedA.logs[0].event, "OnVote")
+        assert.equal(votedB.logs[0].event, "OnVote")
+        assert.equal(votedC.logs[0].event, "OnVote")
     })
 })
-
-
-        // const opt1 = voting.weightedVoteCountsOf(0, 1);
-        // const opt2 = voting.weightedVoteCountsOf(0, 2);
-
-        // const winningOption = winningOption(uint256 _proposalId)
-        // const topOptions = await voting.topOptions(0, 3);
-        // assert.equal(topOptions[0], 2);
-        // assert.equal(topOptions[1], 1);
-        // // zero value for options with no votes
-        // assert.equal(topOptions[2], 0);
-
-
-
-        // const first = topOptions[0].toString();
-        // const second = topOptions[1].toString();
-        // const third = topOptions[2].toString();
-        // third;
-
-        
-        // check poll closed... need for another contract to decide on something
-        // act on poll...
-
-
-        //how winning option is treated before and after time...

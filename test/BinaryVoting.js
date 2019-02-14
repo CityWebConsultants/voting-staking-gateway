@@ -176,11 +176,6 @@ contract('BinaryVoting', function (accounts) {
         utils.ensureException(errVote);
     });
 
-
-    it("Should cast multiple votes on multiple proposals", async () => {
-
-    })
-
     it("Should not vote outside of option range", async () => {
         await voting.createIssue('Does this work?', now, nextWeek);
         
@@ -253,5 +248,19 @@ contract('BinaryVoting', function (accounts) {
         await voting.createIssue('Noone votes for this?', now, nextWeek);
         await voting.vote(2, 1, {from: alice});
         await voting.vote(2, 2, {from: bob});
+    })
+
+    it("Should cast votes in multiple proposals", async () => {
+        await voting.createIssue('Does this work?', now, nextWeek);
+        await voting.createIssue('Does this work too?', now, nextWeek);
+        await voting.createIssue('Does this work as well?', now, nextWeek);
+        
+        const votedA = await voting.vote(0, 1, {from: alice});
+        const votedB = await voting.vote(1, 1, {from: alice});
+        const votedC = await voting.vote(2, 1, {from: alice});
+
+        assert.equal(votedA.logs[0].event, "OnVote")
+        assert.equal(votedB.logs[0].event, "OnVote")
+        assert.equal(votedC.logs[0].event, "OnVote")
     })
 })
