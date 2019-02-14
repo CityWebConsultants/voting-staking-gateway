@@ -1,6 +1,5 @@
 const BinaryVoting = artifacts.require("BinaryVoting");
 const StakingMock = artifacts.require("StakingMock");
-
 const utils = require('./helpers/Utils.js');
 
 contract('BinaryVoting', function (accounts) {
