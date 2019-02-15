@@ -25,7 +25,7 @@ contract('Staking', function (accounts) {
     const rates = [0,5,10,15,20];
 
     beforeEach(async () => {
-        now = new BigNumber(utils.blockNow());
+        // now = new BigNumber(utils.blockNow());
         initialBalance = 10000;
         initialBankBalance = 100000;
 
@@ -38,6 +38,8 @@ contract('Staking', function (accounts) {
 
         await bank.depositBonusTokens(initialBankBalance, {from: admin})
         await token.balanceOf.call(bank.address);
+
+        now = new BigNumber(utils.blockNow());
     });
 
     it("Should revert when sending ether directly", async () => {
@@ -58,10 +60,22 @@ contract('Staking', function (accounts) {
 
     it('Should transfer tokens to stake', async () => {
 
-        await bank.stake(initialBalance, month.plus(day), true, {from: alice});
-        const aliceBalance = await token.balanceOf.call(alice);
-        const bankBalance = await token.balanceOf.call(bank.address);
+        const stakedUntil = now.plus(month);
 
+        const staked = await bank.stake(initialBalance, month, true, {from: alice});
+        const logs = staked.logs[0];
+     
+        assert.equal(logs.event, "Staked");
+        assert.isTrue(logs.args.amount.eq(initialBalance));
+        assert.equal(logs.args.hasBonus, true);
+        // Can't guarantee time < ~3 accuracy seconds in test env
+        assert.isTrue(logs.args.stakeUntil.gt(stakedUntil));
+        assert.isTrue(logs.args.stakeUntil.lte(stakedUntil.plus(3)));
+        assert.equal(logs.args.user, alice);
+        
+        const aliceBalance = await token.balanceOf(alice);
+        const bankBalance = await token.balanceOf(bank.address);
+        
         assert.equal(aliceBalance.toString(), 0);
         assert.equal(bankBalance.toString(), (initialBankBalance + initialBalance));
     });
@@ -84,6 +98,19 @@ contract('Staking', function (accounts) {
 
         const aliceBalance = await token.balanceOf.call(alice);
         assert(aliceBalance.toString(), '10000');
+    })
+
+    it.only("Should not process withdrawal of 0 tokens", async () => {
+        await bank.stake(initialBalance, month, true, {from: alice});
+        utils.increaseTime((month.plus(day)).toNumber())
+
+        let error;
+        try {
+            await bank.unstake(0, {from: alice});
+        } catch (e) {
+            error = e;
+        }
+        utils.ensureException(error, 'Amount must be greater than 0');
     })
 
     it("Should not retrieve tokens whilst time locked", async () => {
@@ -232,7 +259,13 @@ contract('Staking', function (accounts) {
         
         const bankBalance = await token.balanceOf.call(bank.address);
         assert(bankBalance.toString(), initialBalance);
+    })
 
+    it("Should desposit bonus tokens", async () => {
+        const available = await bank.availableBonusTokens();
+        const deposited = await bank.depositBonusTokens(100)
+
+        assert.equal(await bank.availableBonusTokens(), available.plus(100))
     })
 
     it("Should not stake for 25 months or more", async () => {
