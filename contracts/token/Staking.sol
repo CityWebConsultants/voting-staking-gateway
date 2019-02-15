@@ -23,8 +23,6 @@ contract Staking is StakingInterface, MultiSigWallet {
 
     mapping (address => StakeEntry[]) public stakesFor;
 
-    event debugUint(string msg, uint256);
-
     ///@param _token Token that can be staked.
     constructor(ERC20Interface _token, address[] _signers, uint256 _required) MultiSigWallet(_signers, _required)
     public 

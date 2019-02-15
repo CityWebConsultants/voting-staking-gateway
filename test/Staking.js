@@ -25,7 +25,7 @@ contract('Staking', function (accounts) {
     const rates = [0,5,10,15,20];
 
     beforeEach(async () => {
-        // now = new BigNumber(utils.blockNow());
+
         initialBalance = 10000;
         initialBankBalance = 100000;
 
@@ -68,6 +68,9 @@ contract('Staking', function (accounts) {
         assert.equal(logs.event, "Staked");
         assert.isTrue(logs.args.amount.eq(initialBalance));
         assert.equal(logs.args.hasBonus, true);
+
+        assert.isTrue(logs.args.stakedAt)
+
         // Can't guarantee time < ~3 accuracy seconds in test env
         assert.isTrue(logs.args.stakeUntil.gt(stakedUntil));
         assert.isTrue(logs.args.stakeUntil.lte(stakedUntil.plus(3)));

@@ -3,12 +3,6 @@ const StakingMock = artifacts.require("StakingMock");
 
 const utils = require('./helpers/Utils.js');
 
-//@todo move mocks back in tst folder
-// and improt .sol
-
-// @todo all suggestions for improving coverage welcome
-//@todo factor out repitiion of a single vote
-
 contract('Voting', function (accounts) {
     let staking, voting, now, nextweek;
 
@@ -92,7 +86,7 @@ contract('Voting', function (accounts) {
         assert.equal(await voting.getStatus(0), false);
     })
 
-    // hmmm, throws without message
+  
     it("Should only allow owner to create proposal", async () => {
  
         let errVote;
