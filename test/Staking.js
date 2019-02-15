@@ -69,10 +69,8 @@ contract('Staking', function (accounts) {
         assert.isTrue(logs.args.amount.eq(initialBalance));
         assert.equal(logs.args.hasBonus, true);
 
-        assert.isTrue(logs.args.stakedAt)
-
         // Can't guarantee time < ~3 accuracy seconds in test env
-        assert.isTrue(logs.args.stakeUntil.gt(stakedUntil));
+        assert.isTrue(logs.args.stakeUntil.gte(stakedUntil));
         assert.isTrue(logs.args.stakeUntil.lte(stakedUntil.plus(3)));
         assert.equal(logs.args.user, alice);
         
@@ -103,7 +101,7 @@ contract('Staking', function (accounts) {
         assert(aliceBalance.toString(), '10000');
     })
 
-    it.only("Should not process withdrawal of 0 tokens", async () => {
+    it("Should not process withdrawal of 0 tokens", async () => {
         await bank.stake(initialBalance, month, true, {from: alice});
         utils.increaseTime((month.plus(day)).toNumber())
 
@@ -268,7 +266,7 @@ contract('Staking', function (accounts) {
         const available = await bank.availableBonusTokens();
         const deposited = await bank.depositBonusTokens(100)
 
-        assert.equal(await bank.availableBonusTokens(), available.plus(100))
+        assert.equal(await bank.availableBonusTokens(), (available.plus(100).toString()));
     })
 
     it("Should not stake for 25 months or more", async () => {
