@@ -5,9 +5,6 @@ import "./StakingInterface.sol";
 import "../math/SafeMath.sol";
 import "../MultiSigWallet.sol";
 
-// @todo add multisig functionality to withdraw all funds in case of emergency.
-// have to initialise multisig at point... have to go back and change tests for same
-
 contract Staking is StakingInterface, MultiSigWallet {
 
     using SafeMath for uint256;
@@ -15,7 +12,7 @@ contract Staking is StakingInterface, MultiSigWallet {
     struct StakeEntry {
         uint256 stakedAt; // timestamp, date of deposit
         uint256 stakeUntil; // timestamp, available to withdraw
-        uint256 amount; // current balance in this tranche...
+        uint256 amount; // redeemable value in this tranche.
     }
 
     ERC20Interface public token;
@@ -25,8 +22,6 @@ contract Staking is StakingInterface, MultiSigWallet {
     uint256 public constant month = 30 days; //2592000;
 
     mapping (address => StakeEntry[]) public stakesFor;
-
-    event debugUint(string msg, uint256);
 
     ///@param _token Token that can be staked.
     constructor(ERC20Interface _token, address[] _signers, uint256 _required) MultiSigWallet(_signers, _required)
@@ -57,26 +52,16 @@ contract Staking is StakingInterface, MultiSigWallet {
     ///@param _time Length of time in seconds to take for.
     ///@param _claimBonus Whether a bonus should be applied.
     function stake(uint256 _amount, uint256 _time, bool _claimBonus) public {
-        stakeFor(msg.sender, _amount, _time, _claimBonus);
-    }
 
-    ///@notice Stakes a certain amount of tokens for another user.
-    ///@param _user Address of the user to stake for.
-    ///@param _amount Amount of tokens to stake.
-    ///@param _time Length of time in seconds to take for.
-    ///@param _claimBonus Whether a bonus should be applied.
-    function stakeFor(address _user, uint256 _amount, uint256 _time, bool _claimBonus) 
-    public
-    {
+        require(_time < month.mul(25), "Cannot stake for this long");
+
         uint256 stakeUntil = (_time + block.timestamp); //solium-disable-line security/no-block-members
-        // @todo rename amount to disambiguate
         uint256 rate = getRate(_time);
         uint256 amount;
-
-        uint256 bonus = _amount * rate / 100;
+        // @todo safe math
+        uint256 bonus = _amount.mul(rate).div(100);
 
         if (_claimBonus == true) {
-            // @todo check this for re-entrance issues
             require(availableBonusTokens >= bonus, "Not enough bonus tokens left to pay out");
             amount = _amount + bonus;
             availableBonusTokens -= bonus;
@@ -84,13 +69,13 @@ contract Staking is StakingInterface, MultiSigWallet {
             amount = _amount;
         }
 
-        require(token.transferFrom(_user, address(this), _amount), "Unable to transfer tokens");
+        require(token.transferFrom(msg.sender, address(this), _amount), "Unable to transfer tokens");
 
         StakeEntry memory stakeItem = StakeEntry(block.timestamp, stakeUntil, amount); //solium-disable-line security/no-block-members
-        stakesFor[_user].push(stakeItem);
+        stakesFor[msg.sender].push(stakeItem);
         totalStaked = totalStaked.add(amount);
 
-        emit Staked(_user, amount, stakeUntil, _claimBonus);
+        emit Staked(msg.sender, amount, stakeUntil, _claimBonus);
     }
 
     ///@notice Unstakes a certain amount of tokens.
@@ -122,6 +107,7 @@ contract Staking is StakingInterface, MultiSigWallet {
                 amount = amount.add(stakes[i].amount);
             }
         }
+
         return amount;   
     }
 
@@ -157,7 +143,6 @@ contract Staking is StakingInterface, MultiSigWallet {
         return (toWithdraw == 0 && withdrawn == _amount);
     }
 
-
     ///@notice Returns total tokens staked for address.
     ///@param _addr Address to check.
     ///@return amount of tokens staked.
@@ -184,7 +169,7 @@ contract Staking is StakingInterface, MultiSigWallet {
     ///@param _user Address of staker
     ///@return Address of token.
     function availableToUnstake(address _user)
-    public // @todo this should call the next
+    public
     view 
     returns (uint256)
     {
@@ -210,6 +195,7 @@ contract Staking is StakingInterface, MultiSigWallet {
         return available;   
     }
     
+
     ///@notice set rate
     ///@param _timeLength Length of time a user has staked for
     ///@return Percentage rate of bonus
@@ -217,31 +203,25 @@ contract Staking is StakingInterface, MultiSigWallet {
     public 
     pure
     returns (uint256 rate) {
-
-        require(_timeLength < month.mul(25), "Cannot stake for this long");
         
-        if (_timeLength >= 0 && _timeLength < 6) {
+        if (_timeLength < month.mul(6)) {
             return 0;
-        }
+        }  
     
-        if (_timeLength >= month.mul(6) && _timeLength < month.mul(9)) {
-            return 20;
-        }
-
-        if (_timeLength >= month.mul(9) && _timeLength < month.mul(12)) {
-            return 30;
+        if (_timeLength >= month.mul(6) && _timeLength < month.mul(12)) {
+            return 5;
         }
 
         if (_timeLength >= month.mul(12) && _timeLength < month.mul(18)) {
-            return 50;
+            return 10;
         }
 
         if (_timeLength >= month.mul(18) && _timeLength < month.mul(24)) {
-            return 75;
+            return 15;
         }
 
-        if (_timeLength >= month.mul(24) && _timeLength < month.mul(25)) {
-            return 100;
+        if (_timeLength >= month.mul(24)) {
+            return 20;
         }
     }
 }

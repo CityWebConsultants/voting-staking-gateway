@@ -12,7 +12,6 @@ var gatewayFee = 4;
 var gatewayBeneficiary = '0x05f00bbd02658561442165456bef7eaa49a950ac'; // test admin address
 var techFundAddr = '0x3c0516a1b90c0de455b34895dfca7ed0ee09f626'; // test tech fund address
 var totalEthToRaise = 10000;
-
 // ethToRaise
 // put this stuff in to env
 
@@ -21,7 +20,7 @@ var totalEthToRaise = 10000;
 // signer1 = web3.eth.accounts[0];
 // signer2 = accounts[1];
 // signer3 = accounts[2];
-
+// check which network we are using to establish signers
 signers = ['0x3fAbE74712f7CBaEd335BA7b60C3493Fc16c7BdB'
           ,'0x5C3356216a5AF404486f1a98A2c1C5AB68d95499' 
           ,'0xAE6C0b574524Aa57425C2dda4B913A876b1B71D1']
@@ -31,7 +30,7 @@ signers = ['0x3fAbE74712f7CBaEd335BA7b60C3493Fc16c7BdB'
 const day = new BN('86400');
 const startTime = new BN(web3.eth.getBlock(web3.eth.blockNumber).timestamp);
 const endTime = startTime.plus(day.times(30));
-
+  
 // these values need fixed...
 // check where we are ... do we have outstanding things merge
 var tokenCostInEth = 2600; // $0.75 = 2600 szabo ?
@@ -76,7 +75,8 @@ module.exports = (deployer) => {
         // costs over 4.1M Gas  :/
         return deployer.deploy(Staking, tokenAddress, signers, '2')
         .then((staking) => {
-          return deployer.deploy(Voting, staking.address, 500000000000);
+          console.log('Staking addr: ' + staking.address);
+          return deployer.deploy(Voting, staking.address, "10000000000000"); //100 tokens
         })
         // whats the voting param?
         // return deployer.deploy(

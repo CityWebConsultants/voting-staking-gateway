@@ -1,10 +1,16 @@
-function isException(error) {
+function isException(error, message) {
     let strError = error.toString();
-    return strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+    const exceptionFound = strError.includes('invalid opcode') || strError.includes('invalid JUMP') || strError.includes('revert');
+    
+    if (message !== undefined) {
+        return (exceptionFound && strError.includes(message));
+    }
+
+    return exceptionFound;
 }
 
-function ensureException(error) {
-    assert.isTrue(isException(error));
+function ensureException(error, message) {
+    assert.isTrue(isException(error, message));
 }
 
 const promisify = (inner) =>
@@ -48,7 +54,6 @@ async function increaseTime(integer) {
 
     await advanceBlock();
 }
-
 
 async function advanceToBlock(number) {
     if (web3.eth.blockNumber > number) {

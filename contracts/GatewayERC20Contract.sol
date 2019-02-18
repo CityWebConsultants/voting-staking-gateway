@@ -3,33 +3,45 @@ import "./ownership/Ownable.sol";
 import "./math/SafeMath.sol";
 import "./token/ERC20.sol";
 
-contract GatewayERC20Contract is ERC20, Ownable{
+// hmmmmmm, this should actually be separated 
+// but don't want to break things! :/
+// owner not set
+// so we have to make erc20 ownableoney
+contract GatewayERC20Contract is ERC20, Ownable {
     using SafeMath for uint256;
 
-    address paymentGatewayAddress;
+    address public paymentGatewayAddress;
     bool transferActive;
-
 
     modifier callerIsGatewayContract(){
         require(msg.sender == paymentGatewayAddress, "Sender is not gateway");
         _;
     }
     
-    // humho
-    constructor(address _gatewayContract, uint256 _initialSupply, string _symbol, string _name)
-    ERC20(_initialSupply, _name, 10, _symbol)
+    constructor(
+        address _gatewayContract, 
+        uint256 _initialSupply, 
+        string _symbol, 
+        string _name)
+    ERC20(
+        _initialSupply, 
+        _name, 
+        10,
+        _symbol)
     public //internal?
     {
         paymentGatewayAddress = _gatewayContract;
         transferActive = true;
     }
 
+    //
     function () public payable {
         revert("Bounce Eth");
     }
 
+    ///@notice Allow transferring out tokens that may have arrived by accident
     function transferAnyERC20Token(address tokenAddress, uint tokens) 
-    public 
+    public
     onlyOwner 
     returns (bool success) 
     {
@@ -54,6 +66,7 @@ contract GatewayERC20Contract is ERC20, Ownable{
     }
 
     // can remove most of this
+    // ??? does this assume there is an owner and can only be used 
     function gatewayTokenTransfer(address from, address to, uint tokens) 
     public
     callerIsGatewayContract
@@ -76,6 +89,8 @@ contract GatewayERC20Contract is ERC20, Ownable{
         return balance >= _amount;
     }
 
+
+    // this is just ownable!!???    
     function transferEnabled() 
     private 
     view 

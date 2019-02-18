@@ -1,65 +1,61 @@
 pragma solidity ^0.4.24;
 
-// @todo rename this  doc
-/// consider using weightOf instead of line with staked
-/// wld need to add that tp 
+/**
+ 
+ */
 
 import "./token/Staking.sol";
 import "./VotingInterface.sol";
-import "./ownership/Ownable.sol";
+
 /**
   (1) Support multiple issues.
-  (2) Supports defining multiple options.
-  (3) start and end time limit on voting.
-  (4) each address can only vote once.
-  (5) each address has different weights according to amount staked in external contract.
+  (2) Only Yes / No binary options.
+  (3) Start and end time limit on voting.
+  (4) Requires minimum stake to create issue.
+  (5) Each address can only vote once.
+  (6) Each address has different voting weight according to amount staked in external contract.
+  (7) A bit over engineered, but necessary to work with this interface.
   */
 
-contract Voting is VotingInterface, Ownable {
+  // @todo document each function
+contract BinaryVoting is VotingInterface {
     StakingInterface stake;
 
     uint256 minimumStake;
+    mapping(uint256 => bytes32) voteOptions;
 
     struct Proposal {
         uint256 votingStarts;
         uint256 votingEnds;
         string issueDescription;
-        bytes32[] optionDescriptions; // maybe this should be a mapping and we consider 0 to be void
-        // do we need to have available options?
         mapping (uint256 => uint256) weightedVoteCounts;
         mapping (address => uint256) ballotOf_;
     }
 
     Proposal[] proposals;
-    
-    constructor(StakingInterface _stakingAddress, uint256 _minimumStake) public {
-        stake = StakingInterface(_stakingAddress);
+
+    constructor(StakingInterface stakingAddress, uint256 _minimumStake) public {
+        stake = StakingInterface(stakingAddress);
         minimumStake = _minimumStake;
-        owner = msg.sender;
+
+        voteOptions[1] = "Yes";
+        voteOptions[2] = "No";
     }
 
-    ///@notice create a new issue
-    ///@param _description variable length string question
-    ///@param _optionDescriptions array of options, must be <= 32bytes each 
-    ///@param  _votingStarts unix time in seconds to open vote
-    ///@param _votingEnds un
-    function createIssue(string _description, bytes32[] _optionDescriptions, uint256 _votingStarts, uint256 _votingEnds)
-    public
-    onlyOwner
+    ///@notice create a new issue to vote on
+    ///@param _description the question posed
+    ///@param _votingStarts timestamp in seconds to open vote
+    ///@param _votingEnds timestamp in seconds to close vote
+    function createIssue(string _description, uint256 _votingStarts, uint256 _votingEnds)
+    public  
     {
         require(_votingStarts < _votingEnds, "End time must be later than start time");
-        // Length increased by 1 to allow for first element to used as a zero (null) value
-        bytes32[] memory optionDescriptions = new bytes32[](_optionDescriptions.length + 1); 
- 
-        for (uint256 i = 0; i < _optionDescriptions.length; i++) {
-            optionDescriptions[i+1] = _optionDescriptions[i];
-        }
+        require(stake.totalStakedForAt(msg.sender, _votingEnds) >= minimumStake, "Inadequate funds at end date");
 
         Proposal memory proposal = Proposal(
             _votingStarts, 
             _votingEnds, 
-            _description, 
-            optionDescriptions
+            _description
         );
         proposals.push(proposal);
 
@@ -71,13 +67,14 @@ contract Voting is VotingInterface, Ownable {
     ///@param _option Option to vote for
     function vote(uint256 _proposalId, uint256 _option) 
     public 
-    returns (bool success) 
+    returns (bool success)
     {
         Proposal storage proposal = proposals[_proposalId];
-        uint256 staked = weightOf(_proposalId, msg.sender);   //stake.totalStakedForAt(msg.sender, proposal.votingEnds); 
+        uint256 staked = weightOf(_proposalId, msg.sender);
         require(staked >= minimumStake, "Inadequate stake to vote");
-        require(_option > 0 && _option < proposal.optionDescriptions.length, "Vote out of range"); 
-        require(proposal.ballotOf_[msg.sender] == 0, "Vote has already been cast");
+       // Proposal storage proposal = proposals[_proposalId];
+        require(_option == 1 || _option == 2, "Option out of range");
+        require(proposal.ballotOf_[msg.sender] == 0, "Vote already cast"); 
         require(getStatus(_proposalId) == true, "Attempted vote outside of time constraints");
 
         proposal.ballotOf_[msg.sender] = _option;
@@ -96,12 +93,7 @@ contract Voting is VotingInterface, Ownable {
     view 
     returns (string description) 
     {   
-        // Should range be required here 
-        if (_option > 0 && _option <= proposals[_proposalId].optionDescriptions.length) {
-            return bytes32ToString(proposals[_proposalId].optionDescriptions[_option]); 
-        } else {
-            return "";
-        }
+        return bytes32ToString(voteOptions[_option]);
     }
 
     ///@notice Fetch list of option descriptions
@@ -110,8 +102,10 @@ contract Voting is VotingInterface, Ownable {
     function optionDescriptions(uint256 _proposalId) 
     public
     view
-    returns (bytes32[] descriptions) {
-        return proposals[_proposalId].optionDescriptions;
+    returns (bytes32[3] descriptions) {
+        descriptions[1] = voteOptions[1];
+        descriptions[2] = voteOptions[2];
+        return descriptions;
     }
 
     ///@notice Not implemented
@@ -139,7 +133,7 @@ contract Voting is VotingInterface, Ownable {
     ///@return Weight of a given voters vote
     function weightOf(uint256 _proposalId, address _addr)
     public 
-    view 
+    view
     returns (uint weight) {
         return stake.totalStakedForAt(_addr, proposals[_proposalId].votingEnds);
     }
@@ -151,7 +145,8 @@ contract Voting is VotingInterface, Ownable {
     public 
     view 
     returns (bool isOpen) 
-    {   
+    { 
+        //@todo get feedback on less than or less than or equal too
         return (block.timestamp >= proposals[_proposalId].votingStarts && block.timestamp <= proposals[_proposalId].votingEnds);
     }
 
@@ -167,7 +162,7 @@ contract Voting is VotingInterface, Ownable {
 
     ///@notice Fetch aggregate weighted votes for an option of a proposal
     ///@param _proposalId Proposal ID
-    ///@return Weighted vote count (options with zero vites)
+    ///@return Weighted vote count
     function weightedVoteCountsOf(uint256 _proposalId, uint256 _option) 
     public 
     view 
@@ -176,23 +171,19 @@ contract Voting is VotingInterface, Ownable {
         return proposals[_proposalId].weightedVoteCounts[_option];
     }
 
-    ///@notice Fetch a given number of voted on options ordered by number of weighted votes
+    ///@notice Fetch a given number of voting options ordered by number of weighted votes
     ///@param _proposalId Proposal ID
     ///@param _limit Number of items to return
     function topOptions(uint256 _proposalId, uint256 _limit) 
     public
     view
-    returns (uint256[])
-    {      
-        //@todo in situations of no votes we should return 0;
-        // double check how that is handled here?
-        //Proposal memory proposal = proposals[_proposalId];
-        // @todo explicitly put this in memory!!!!!!
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length-1;
-        require(_limit <= optionSize, "Limit greater than number of options"); // <-- @todo test this
-
+    returns (uint256[] ordered)
+    {    
+        //@todo test this limit
+        require(_limit <= 2, "Only two options available");
         mapping(uint256 => uint256) voteCounts = proposals[_proposalId].weightedVoteCounts;
 
+        uint256 optionSize = 2;
         uint256[] memory ordinalIndex = new uint256[](_limit);
 
         for (uint256 i = 0; i < _limit; i++) {
@@ -225,20 +216,16 @@ contract Voting is VotingInterface, Ownable {
     }
 
     ///@notice Fetch all voting options
-    ///@param _proposalId Proposal ID
+    ///@param _proposalId Proposal ID. Not used.
     ///@return Numerical list of available options
-    function availableOptions(uint256 _proposalId) 
+    function availableOptions(uint256 _proposalId)
     public 
-    view 
+    view
     returns (uint256[])
     {   
-        uint256 optionSize = proposals[_proposalId].optionDescriptions.length - 1;
-        uint256[] memory options = new uint256[](optionSize);
-        // what happens in storage versus array, is it ok to allow the return  param to define?
-        for(uint256 i = 0; i < optionSize; i++) {
-            options[i] = i+1;
-        }
-
+        uint256[] memory options = new uint256[](2);
+        options[0] = 1;
+        options[1] = 2;
         return options;
     }
 

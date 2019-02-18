@@ -3,15 +3,25 @@ import "./math/SafeMath.sol";
 import "./ownership/Ownable.sol";
 import "./GatewayERC20Contract.sol";
 
-contract PaymentGatewayContract is Ownable{
+contract PaymentGatewayContract is Ownable {
     using SafeMath for uint256;
     uint256 gatewayFeePercentage;
     uint256 gatewayBalance;
     address beneficiary;
     mapping(address => Merchant) merchants;
+    // why does this need to be a struct holding balance
+    // could be a mapping to a bool
+    // merchants is created and given a 0 balance
+    // but why???
+    // perhaps use enumerator
+    // allowed to make payment maybe better written as something like
+    // creating a god user that can move peoples money???
+
+
 
     GatewayERC20Contract tokenContract;
 
+    // rename to simpifty dont need explicity event
     event AddMerchantEvent(address merchant);
   //  event PaymentMadeEvent(address _merchant, string _reference, uint _amount);
     event PaymentMadeInTokensEvent(address _merchant, string _reference, uint _tokenAmount);
@@ -43,6 +53,7 @@ contract PaymentGatewayContract is Ownable{
         tokenContract = GatewayERC20Contract(_tokenContractAddress);
     }
 
+    //@todo remove func and make public for getter
     function getTokenContractAddress() 
     public
     view 
@@ -95,6 +106,7 @@ contract PaymentGatewayContract is Ownable{
     view 
     returns(uint fee) {
         return SafeMath.mul(_amount, gatewayFeePercentage) / 100;
+        // .div
     }
 
     // Require functions

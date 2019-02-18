@@ -1,6 +1,8 @@
 pragma solidity ^0.4.24;
 
-//@todo add refund fee 
+/**
+ * eBudz Crowdsale
+ */
 
 import "../ownership/Ownable.sol";
 import "../GatewayERC20Contract.sol";
@@ -20,15 +22,14 @@ contract Crowdsale is Ownable {
     uint256 public price;
     uint256 public minSpend;
     uint256 public maxSpend;
-    //@todo  this should be calculated a number of tokens
-    uint256 public refundFee; // = 100000000000; //@todo make this a parameter number of tokens deducted
+    uint256 public refundFee;
     
-    mapping(address => uint256) public tokenAllocation; // @todo change name to tokenAllocation or tokenClaim
+    mapping(address => uint256) public tokenAllocation;
     bool public finalised;
 
     event Withdrawal(address indexed account, uint amount);
     event Contribution(address indexed account, uint256 ethAmount, uint256 tokens);
-    event Refund(address indexed account, uint256 ethAmount); // should we also have deposit?
+    event Refund(address indexed account, uint256 ethAmount);
     event Claimed(address indexed account, uint256 tokenAmount);
     //@todo how to test
     event CrowdsaleFinalized();
@@ -69,7 +70,7 @@ contract Crowdsale is Ownable {
     view
     returns (uint256)
     {
-        return minSpend / price;
+        return minSpend.div(price);
     }
 
     ///@notice modifier, only allow whilst crowdsale open
@@ -194,6 +195,7 @@ contract Crowdsale is Ownable {
     }
 
     ///@notice withdraw remaining tokens
+    ///@param _amount number of tokens to withdraw
     function withdrawTokensToTreasury(uint256 _amount)
     public
     onlyWhenFinalised
